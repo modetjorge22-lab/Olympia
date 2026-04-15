@@ -55,7 +55,7 @@ export default function Login() {
             <Dumbbell className="w-8 h-8 text-brand-400" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-100 font-display">
-            GoHub's Gym
+            Olympia
           </h1>
           <p className="text-zinc-500 mt-1">
             {isSignUp ? 'Crea tu cuenta' : 'Inicia sesión para continuar'}

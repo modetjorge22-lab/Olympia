@@ -2,18 +2,18 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import Login from '@/pages/Login';
-import Dashboard from '@/pages/Dashboard';
+import Feed from '@/pages/Feed';
+import Actividad from '@/pages/Actividad';
+import Grupos from '@/pages/Grupos';
+import Mas from '@/pages/Mas';
+import AppLayout from '@/components/AppLayout';
+import LoadingScreen from '@/components/LoadingScreen';
 
-// Componente que protege rutas - redirige a login si no estás autenticado
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {
@@ -23,20 +23,15 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// Componente que redirige al dashboard si ya estás autenticado
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/feed" replace />;
   }
 
   return children;
@@ -54,15 +49,47 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/"
+        path="/feed"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <AppLayout>
+              <Feed />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
-      {/* Cualquier ruta no encontrada → redirige al inicio */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/actividad"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Actividad />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/grupos"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Grupos />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mas"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Mas />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/feed" replace />} />
+      <Route path="*" element={<Navigate to="/feed" replace />} />
     </Routes>
   );
 }
