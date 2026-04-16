@@ -10,23 +10,20 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background-color: #0a0a0b;
+  background-color: #09090b;
   color: #f4f4f5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #111113;
-}
-::-webkit-scrollbar-thumb {
-  background: #27272b;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
+/* Refined scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+
+/* Remove tap highlight on mobile */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Smooth page transitions */
+main { scroll-behavior: smooth; }
