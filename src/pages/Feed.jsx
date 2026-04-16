@@ -164,6 +164,43 @@ export default function Feed() {
         </div>
       </div>
 
+      {/* Progress highlights */}
+      {(() => {
+        const progressActivities = recentActivities.filter(a => a.training_type === 'progress' && a.progress_note);
+        if (progressActivities.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="bg-violet-500/[0.06] border border-violet-500/[0.12] rounded-2xl overflow-hidden"
+          >
+            <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+              <span className="text-sm">🔥</span>
+              <h2 className="text-[13px] font-semibold text-violet-300 uppercase tracking-wider">Progresos del equipo</h2>
+            </div>
+            {progressActivities.slice(0, 5).map((act, idx) => {
+              const memberName = members.find(m => m.email === act.user_email)?.full_name || act.user_email.split('@')[0];
+              const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
+              const isMe = act.user_email === user?.email;
+              return (
+                <div key={act.id} className={`flex items-start gap-3 px-4 py-3 ${idx < Math.min(progressActivities.length, 5) - 1 ? 'border-b border-violet-500/[0.06]' : ''}`}>
+                  <span className="text-[15px] mt-0.5">{info.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-zinc-300">
+                      <span className={`font-semibold ${isMe ? 'text-brand-400' : 'text-zinc-200'}`}>{isMe ? 'Tú' : memberName}</span>
+                      {' ha progresado en '}{info.label.toLowerCase()}
+                    </p>
+                    <p className="text-[12px] text-violet-300/80 mt-0.5 italic">"{act.progress_note}"</p>
+                    <p className="text-[11px] text-zinc-600 mt-0.5">{new Date(act.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
+        );
+      })()}
+
       {/* Activity feed */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
