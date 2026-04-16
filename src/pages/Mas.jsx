@@ -1,105 +1,210 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useSearchParams } from 'react-router-dom';
 import {
-  User,
-  Settings,
-  Link2,
-  LogOut,
-  ChevronRight,
-  BarChart3,
-  Dumbbell,
+  User, Settings, Link2, LogOut, ChevronRight,
+  BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle,
 } from 'lucide-react';
-
-const menuSections = [
-  {
-    title: 'Personal',
-    items: [
-      { icon: User, label: 'Perfil', path: '/perfil' },
-      { icon: Dumbbell, label: 'Mis Workouts', path: '/workouts' },
-      { icon: BarChart3, label: 'Estadísticas', path: '/estadisticas' },
-    ],
-  },
-  {
-    title: 'Configuración',
-    items: [
-      { icon: Link2, label: 'Integraciones', subtitle: 'Strava, Whoop', path: '/integraciones' },
-      { icon: Settings, label: 'Ajustes', path: '/ajustes' },
-    ],
-  },
-];
 
 export default function Mas() {
   const { user, signOut } = useAuth();
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+  const [searchParams] = useSearchParams();
+
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const [stravaStatus, setStravaStatus] = useState(null);
+
+  // Check URL params for strava callback result
+  useEffect(() => {
+    const stravaParam = searchParams.get('strava');
+    if (stravaParam === 'success') setStravaStatus('success');
+    else if (stravaParam === 'error') setStravaStatus('error');
+  }, [searchParams]);
+
+  // Check if Strava is connected
+  useEffect(() => {
+    async function checkStrava() {
+      if (!user?.email) return;
+      const { data } = await supabase
+        .from('strava_tokens')
+        .select('id')
+        .eq('user_email', user.email)
+        .limit(1);
+      setStravaConnected(data?.length > 0);
+    }
+    checkStrava();
+  }, [user, stravaStatus]);
+
+  const connectStrava = () => {
+    window.location.href = `/api/strava-auth?email=${encodeURIComponent(user.email)}`;
+  };
+
+  const syncStrava = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const response = await fetch('/api/strava-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSyncResult({ type: 'success', message: `${data.imported} actividades importadas` });
+      } else {
+        setSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
+      }
+    } catch (err) {
+      setSyncResult({ type: 'error', message: 'Error de conexión' });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
-    <div className="px-4 py-6 space-y-6">
+    <div className="px-4 py-5 space-y-5 max-w-lg mx-auto">
       {/* User card */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-surface-2 border border-white/5 rounded-2xl p-4 flex items-center gap-4"
+        className="bg-surface-1 border border-white/[0.04] rounded-2xl p-4 flex items-center gap-4"
       >
-        <div className="w-14 h-14 rounded-full bg-surface-4 flex items-center justify-center">
-          <span className="text-lg font-semibold text-zinc-400">
+        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500/20 to-brand-600/10 border border-brand-500/20 flex items-center justify-center">
+          <span className="text-lg font-bold text-brand-400">
             {userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </span>
         </div>
         <div>
-          <p className="font-semibold text-zinc-100 text-lg">{userName}</p>
-          <p className="text-sm text-zinc-500">{user?.email}</p>
+          <p className="text-[15px] font-semibold text-zinc-100">{userName}</p>
+          <p className="text-[13px] text-zinc-500">{user?.email}</p>
+        </div>
+      </motion.div>
+
+      {/* Strava status banner */}
+      {stravaStatus === 'success' && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 flex items-center gap-2">
+          <Check className="w-4 h-4 text-brand-400" />
+          <span className="text-[13px] text-brand-400 font-medium">Strava conectado correctamente</span>
+        </motion.div>
+      )}
+      {stravaStatus === 'error' && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-400" />
+          <span className="text-[13px] text-red-400 font-medium">Error al conectar Strava</span>
+        </motion.div>
+      )}
+
+      {/* Integrations */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <h3 className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider mb-2 px-1">Integraciones</h3>
+        <div className="bg-surface-1 border border-white/[0.04] rounded-2xl overflow-hidden">
+          {/* Strava */}
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#fc4c02">
+                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[14px] font-semibold text-zinc-200">Strava</p>
+                  <p className="text-[11px] text-zinc-500">
+                    {stravaConnected ? 'Conectado' : 'Sincroniza tus actividades'}
+                  </p>
+                </div>
+              </div>
+
+              {stravaConnected ? (
+                <button
+                  onClick={syncStrava}
+                  disabled={syncing}
+                  className="flex items-center gap-1.5 bg-surface-3 hover:bg-surface-4 text-zinc-300 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
+                >
+                  {syncing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  )}
+                  Sincronizar
+                </button>
+              ) : (
+                <button
+                  onClick={connectStrava}
+                  className="bg-[#fc4c02] hover:bg-[#e84400] text-white text-[12px] font-semibold px-3 py-2 rounded-lg transition-colors"
+                >
+                  Conectar
+                </button>
+              )}
+            </div>
+
+            {syncResult && (
+              <div className={`mt-2 px-3 py-2 rounded-lg text-[12px] ${
+                syncResult.type === 'success' 
+                  ? 'bg-brand-500/10 text-brand-400' 
+                  : 'bg-red-500/10 text-red-400'
+              }`}>
+                {syncResult.message}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/[0.03]" />
+
+          {/* Whoop - placeholder */}
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                  <span className="text-sm font-bold text-teal-400">W</span>
+                </div>
+                <div>
+                  <p className="text-[14px] font-semibold text-zinc-200">Whoop</p>
+                  <p className="text-[11px] text-zinc-500">Próximamente</p>
+                </div>
+              </div>
+              <span className="text-[11px] text-zinc-600 bg-surface-3 px-2 py-1 rounded">Pronto</span>
+            </div>
+          </div>
         </div>
       </motion.div>
 
       {/* Menu sections */}
-      {menuSections.map((section, sIdx) => (
-        <motion.div
-          key={section.title}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 * (sIdx + 1), duration: 0.3 }}
-        >
-          <h3 className="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-2 px-1">
-            {section.title}
-          </h3>
-          <div className="bg-surface-2 border border-white/5 rounded-2xl overflow-hidden">
-            {section.items.map((item, idx) => (
-              <button
-                key={item.label}
-                className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/3 transition-colors ${
-                  idx < section.items.length - 1 ? 'border-b border-white/5' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="w-5 h-5 text-zinc-400" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-zinc-200">{item.label}</p>
-                    {item.subtitle && (
-                      <p className="text-xs text-zinc-500">{item.subtitle}</p>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-600" />
-              </button>
-            ))}
-          </div>
-        </motion.div>
-      ))}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <h3 className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider mb-2 px-1">Personal</h3>
+        <div className="bg-surface-1 border border-white/[0.04] rounded-2xl overflow-hidden">
+          {[
+            { icon: User, label: 'Perfil' },
+            { icon: Dumbbell, label: 'Mis Workouts' },
+            { icon: BarChart3, label: 'Estadísticas' },
+            { icon: Settings, label: 'Ajustes' },
+          ].map((item, idx, arr) => (
+            <button key={item.label}
+              className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/[0.02] transition-colors ${
+                idx < arr.length - 1 ? 'border-b border-white/[0.03]' : ''
+              }`}>
+              <div className="flex items-center gap-3">
+                <item.icon className="w-[18px] h-[18px] text-zinc-500" />
+                <p className="text-[13px] font-medium text-zinc-300">{item.label}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-700" />
+            </button>
+          ))}
+        </div>
+      </motion.div>
 
       {/* Logout */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-      >
-        <button
-          onClick={signOut}
-          className="w-full bg-surface-2 border border-white/5 rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-red-500/5 hover:border-red-500/10 transition-colors"
-        >
-          <LogOut className="w-5 h-5 text-red-400" />
-          <span className="text-sm font-medium text-red-400">Cerrar sesión</span>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <button onClick={signOut}
+          className="w-full bg-surface-1 border border-white/[0.04] rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-red-500/5 transition-colors">
+          <LogOut className="w-[18px] h-[18px] text-red-400" />
+          <span className="text-[13px] font-medium text-red-400">Cerrar sesión</span>
         </button>
       </motion.div>
     </div>
