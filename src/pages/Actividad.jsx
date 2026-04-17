@@ -23,6 +23,37 @@ const tooltipStyle = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
 };
 
+function ChartTooltip({ active, payload, label, labelPrefix }) {
+  if (!active || !payload?.length) return null;
+  const items = payload.filter(p => p.value != null && p.value > 0);
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{
+      background: 'rgba(11,11,15,0.97)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 10,
+      padding: '8px 12px',
+      fontSize: 11,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      minWidth: 110,
+    }}>
+      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 4 }}>
+        {labelPrefix || ''}{label}
+      </p>
+      {items.map((entry, i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
+            <span style={{ color: 'rgba(255,255,255,0.75)' }}>{entry.tooltipName || entry.name}</span>
+          </div>
+          <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}h</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const ACTIVITY_COLORS = {
   strength_training: '#6366f1',
   running:           '#10b981',
@@ -420,12 +451,14 @@ export default function Actividad() {
               <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#52525b' }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} interval={xInterval} />
               <YAxis tick={{ fontSize: 9, fill: '#52525b' }} axisLine={false} tickLine={false} width={22} />
               <Tooltip
-                contentStyle={tooltipStyle}
                 cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                formatter={(v, name) => {
-                  if (name === 'hours') return [`${v}h`, 'Horas'];
-                  const t = ACTIVITY_TYPES[name];
-                  return [`${v}h`, t ? `${t.emoji} ${t.label}` : name];
+                content={(props) => {
+                  const payload = (props.payload || []).map(p => {
+                    if (p.dataKey === 'hours') return { ...p, tooltipName: 'Horas' };
+                    const t = ACTIVITY_TYPES[p.dataKey];
+                    return { ...p, tooltipName: t ? `${t.emoji} ${t.label}` : p.name };
+                  });
+                  return <ChartTooltip {...props} payload={payload} />;
                 }}
               />
 
@@ -500,7 +533,7 @@ export default function Actividad() {
             <span className="text-sm">💪</span>
           </div>
           <div>
-            <h2 className="text-[13px] font-bold text-zinc-100">Entrenamientos de fuerza</h2>
+            <h2 className="text-[13px] font-bold text-zinc-100">Progreso en fuerza</h2>
             <p className="text-[11px] text-zinc-600">Progreso vs Consolidación · 16 semanas</p>
           </div>
         </div>
@@ -509,7 +542,13 @@ export default function Actividad() {
             <BarChart data={strengthData} barCategoryGap="22%">
               <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#52525b' }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} interval={3} />
               <YAxis tick={{ fontSize: 9, fill: '#52525b' }} axisLine={false} tickLine={false} width={22} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                content={(props) => {
+                  const payload = (props.payload || []).map(p => ({ ...p, tooltipName: p.name }));
+                  return <ChartTooltip {...props} payload={payload} labelPrefix="Sem " />;
+                }}
+              />
               <Bar dataKey="progreso"      name="Progreso"      stackId="a" fill="rgba(139,92,246,0.75)" radius={[0,0,0,0]} />
               <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="rgba(16,185,129,0.7)"  radius={[3,3,0,0]} />
             </BarChart>
