@@ -1,13 +1,45 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Clock } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
-const MEMBER_COLORS = ['#ef4444', '#f97316', '#22c55e', '#a78bfa', '#60a5fa', '#f472b6'];
+const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+// Glass card style
+const glassCard = {
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  background: 'rgba(17, 19, 26, 0.65)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+};
+
+const CustomTooltip = ({ active, payload, label, memberStats }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: 'rgba(11,11,15,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 14px', fontSize: 12, minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      <p className="text-zinc-500 text-[11px] mb-2">Día {label}</p>
+      {payload.map(entry => {
+        const m = memberStats.find(s => s.email === entry.dataKey);
+        return (
+          <div key={entry.dataKey} className="flex items-center justify-between gap-3 mb-1">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
+              <span className="text-zinc-300">{m?.name || entry.dataKey}</span>
+            </div>
+            <span className="font-bold" style={{ color: entry.color }}>{entry.value}h</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export default function Feed() {
   const { currentMonth } = useMonth();
@@ -19,9 +51,6 @@ export default function Feed() {
   const month = currentMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-
-  // Build cumulative chart data + stats
   const { chartData, memberStats } = useMemo(() => {
     const emails = members.length > 0
       ? members.map(m => m.email)
@@ -48,7 +77,6 @@ export default function Feed() {
         cumByDay[d] = +(cum / 60).toFixed(1);
       }
 
-      // Activities by day for mini calendar
       const actByDay = {};
       monthActs.forEach(a => {
         const day = new Date(a.date).getDate();
@@ -57,10 +85,10 @@ export default function Feed() {
       });
 
       return {
-        email, 
+        email,
         name: member?.full_name || email.split('@')[0],
         totalHours: +(totalMins / 60).toFixed(1),
-        totalMins, 
+        totalMins,
         sessions: monthActs.length,
         color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
         cumByDay,
@@ -68,7 +96,6 @@ export default function Feed() {
       };
     }).sort((a, b) => b.totalMins - a.totalMins);
 
-    // Build chart data array
     const data = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const point = { day: d };
@@ -79,7 +106,6 @@ export default function Feed() {
     return { chartData: data, memberStats: stats };
   }, [allActivities, members, year, month, daysInMonth]);
 
-  // Recent activities
   const recentActivities = useMemo(() => {
     return allActivities
       .filter(a => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() === month; })
@@ -87,30 +113,34 @@ export default function Feed() {
       .slice(0, 12);
   }, [allActivities, year, month]);
 
-  const maxHours = memberStats.length > 0 ? Math.max(...memberStats.map(m => m.totalHours)) : 0;
-
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
-      {/* Carrera mensual - Line chart */}
+      {/* Monthly race chart */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-surface-1 border border-white/[0.04] rounded-2xl p-4 pb-3"
+        className="rounded-2xl p-4 pb-3"
+        style={glassCard}
       >
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-base">📈</span>
-          <h2 className="text-[15px] font-bold text-zinc-100">Carrera mensual</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-[14px] font-bold text-zinc-100">Carrera mensual</h2>
+            <p className="text-[11px] text-zinc-600">Horas acumuladas · {MONTHS_ES[month]} {year}</p>
+          </div>
         </div>
 
-        <div className="h-[200px] mt-2 -ml-2">
+        <div className="h-[200px] -mx-1">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis
                 dataKey="day"
                 tick={{ fontSize: 10, fill: '#52525b' }}
-                axisLine={{ stroke: '#27272a' }}
+                axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
                 tickLine={false}
-                tickFormatter={(d) => `${d} ${MONTHS_ES[month]?.slice(0,3)}`}
                 interval={Math.floor(daysInMonth / 4) - 1}
               />
               <YAxis
@@ -119,37 +149,26 @@ export default function Feed() {
                 tickLine={false}
                 width={28}
               />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: 12, fontSize: 12 }}
-                labelFormatter={(d) => `Día ${d}`}
-                formatter={(value, name) => {
-                  const m = memberStats.find(s => s.email === name);
-                  return [`${value}h`, m?.name || name];
-                }}
-              />
+              <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
               {memberStats.map(m => (
                 <Line
                   key={m.email}
                   type="monotone"
                   dataKey={m.email}
                   stroke={m.color}
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 3, fill: m.color }}
+                  activeDot={{ r: 3, fill: m.color, strokeWidth: 0 }}
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-        <p className="text-[11px] text-zinc-600 text-center mt-1">
-          Horas acumuladas · {MONTHS_ES[month]} {year}
-        </p>
       </motion.div>
 
-      {/* Miembros del equipo */}
+      {/* Team members */}
       <div>
-        <h2 className="text-[17px] font-bold text-zinc-100 mb-3">Miembros del Equipo</h2>
+        <h2 className="text-[16px] font-bold text-zinc-100 mb-3 px-0.5">Miembros del Equipo</h2>
         <div className="space-y-3">
           {memberStats.map((member, idx) => (
             <MemberCard
@@ -166,30 +185,30 @@ export default function Feed() {
 
       {/* Progress highlights */}
       {(() => {
-        const progressActivities = recentActivities.filter(a => a.training_type === 'progress' && a.progress_note);
-        if (progressActivities.length === 0) return null;
+        const progressActs = recentActivities.filter(a => a.training_type === 'progress' && a.progress_note);
+        if (!progressActs.length) return null;
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
-            className="bg-violet-500/[0.06] border border-violet-500/[0.12] rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden"
+            style={{ ...glassCard, background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}
           >
             <div className="px-4 pt-4 pb-2 flex items-center gap-2">
               <span className="text-sm">🔥</span>
-              <h2 className="text-[13px] font-semibold text-violet-300 uppercase tracking-wider">Progresos del equipo</h2>
+              <h2 className="text-[12px] font-semibold text-violet-300 uppercase tracking-widest">Progresos del equipo</h2>
             </div>
-            {progressActivities.slice(0, 5).map((act, idx) => {
+            {progressActs.slice(0, 5).map((act, idx) => {
               const memberName = members.find(m => m.email === act.user_email)?.full_name || act.user_email.split('@')[0];
               const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
               const isMe = act.user_email === user?.email;
               return (
-                <div key={act.id} className={`flex items-start gap-3 px-4 py-3 ${idx < Math.min(progressActivities.length, 5) - 1 ? 'border-b border-violet-500/[0.06]' : ''}`}>
+                <div key={act.id} className={`flex items-start gap-3 px-4 py-3 ${idx < Math.min(progressActs.length, 5) - 1 ? 'border-b border-violet-500/[0.06]' : ''}`}>
                   <span className="text-[15px] mt-0.5">{info.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] text-zinc-300">
-                      <span className={`font-semibold ${isMe ? 'text-brand-400' : 'text-zinc-200'}`}>{isMe ? 'Tú' : memberName}</span>
-                      {' ha progresado en '}{info.label.toLowerCase()}
+                      <span className={`font-semibold ${isMe ? 'text-indigo-400' : 'text-zinc-200'}`}>{isMe ? 'Tú' : memberName}</span>
+                      {' ha progresado en '}{info.label?.toLowerCase()}
                     </p>
                     <p className="text-[12px] text-violet-300/80 mt-0.5 italic">"{act.progress_note}"</p>
                     <p className="text-[11px] text-zinc-600 mt-0.5">{new Date(act.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
@@ -205,14 +224,15 @@ export default function Feed() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="bg-surface-1 border border-white/[0.04] rounded-2xl overflow-hidden"
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl overflow-hidden"
+        style={glassCard}
       >
         <div className="px-4 pt-4 pb-2">
-          <h2 className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">Actividad reciente</h2>
+          <h2 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest">Actividad reciente</h2>
         </div>
         {recentActivities.length === 0 ? (
-          <div className="px-4 pb-4 text-[13px] text-zinc-600">Sin actividades este mes</div>
+          <div className="px-4 pb-5 text-[13px] text-zinc-600">Sin actividades este mes</div>
         ) : (
           recentActivities.map((act, idx) => {
             const memberName = members.find(m => m.email === act.user_email)?.full_name || act.user_email.split('@')[0];
@@ -220,15 +240,17 @@ export default function Feed() {
             const isMe = act.user_email === user?.email;
             return (
               <div key={act.id} className={`flex items-center gap-3 px-4 py-2.5 ${idx < recentActivities.length - 1 ? 'border-b border-white/[0.03]' : ''}`}>
-                <span className="text-[15px]">{info.emoji}</span>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="text-[13px]">{info.emoji}</span>
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] text-zinc-300 truncate">
-                    <span className={`font-semibold ${isMe ? 'text-brand-400' : 'text-zinc-200'}`}>{isMe ? 'Tú' : memberName}</span>
+                    <span className={`font-semibold ${isMe ? 'text-indigo-400' : 'text-zinc-200'}`}>{isMe ? 'Tú' : memberName}</span>
                     {' · '}{info.label}{act.description ? ` · ${act.description}` : ''}
                   </p>
                   <p className="text-[11px] text-zinc-600">{new Date(act.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
                 </div>
-                <span className="text-[12px] text-zinc-500 font-mono whitespace-nowrap">{act.duration_minutes}m</span>
+                <span className="text-[11px] text-zinc-500 font-mono whitespace-nowrap">{act.duration_minutes}m</span>
               </div>
             );
           })
@@ -240,8 +262,7 @@ export default function Feed() {
 
 function MemberCard({ member, isTop, year, month, daysInMonth }) {
   const now = new Date();
-  const firstDay = new Date(year, month, 1);
-  let startDow = firstDay.getDay() - 1;
+  let startDow = new Date(year, month, 1).getDay() - 1;
   if (startDow < 0) startDow = 6;
 
   const prevLast = new Date(year, month, 0).getDate();
@@ -252,25 +273,39 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-surface-1 border border-white/[0.04] rounded-2xl p-4"
+      className="rounded-2xl p-4"
+      style={{
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        background: 'rgba(17, 19, 26, 0.65)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
     >
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: `${member.color}18`, border: `1.5px solid ${member.color}35` }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[12px] flex-shrink-0"
+            style={{
+              background: `linear-gradient(135deg, ${member.color}28, ${member.color}10)`,
+              border: `1.5px solid ${member.color}35`,
+              color: member.color,
+              boxShadow: `0 2px 8px ${member.color}15`,
+            }}
           >
-            <span className="text-[11px] font-bold" style={{ color: member.color }}>
-              {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-            </span>
+            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="text-[14px] font-semibold text-zinc-100">{member.name}</p>
-            <p className="text-[12px] text-zinc-500">{member.totalHours}h</p>
+            <p className="text-[12px]" style={{ color: member.color }}>{member.totalHours}h este mes</p>
           </div>
         </div>
         {isTop && (
-          <span className="bg-brand-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+          <span
+            className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+            style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}
+          >
             🏆 Performer
           </span>
         )}
@@ -286,17 +321,25 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
           const acts = member.actByDay[day] || [];
           const has = acts.length > 0;
+          const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
           const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
 
           return (
             <div
               key={day}
-              className={`aspect-square rounded flex flex-col items-center justify-center ${
-                has ? 'bg-brand-500/70' : 'bg-surface-2/60'
-              }`}
+              className="aspect-square rounded flex flex-col items-center justify-center"
+              style={has ? {
+                background: `${member.color}28`,
+                border: `1px solid ${member.color}35`,
+              } : isToday ? {
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              } : {
+                background: 'rgba(255,255,255,0.03)',
+              }}
             >
-              <span className={`text-[8px] font-medium leading-none ${has ? 'text-white' : 'text-zinc-700'}`}>{day}</span>
-              {emoji && <span className="text-[7px] leading-none">{emoji}</span>}
+              <span className={`text-[8px] font-medium leading-none ${has ? 'text-white' : isToday ? 'text-zinc-400' : 'text-zinc-700'}`}>{day}</span>
+              {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
             </div>
           );
         })}

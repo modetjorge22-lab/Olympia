@@ -20,25 +20,46 @@ export default function AppLayout({ children }) {
   const monthLabel = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   return (
-    <div className="min-h-screen bg-surface-0 flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-surface-0/90 backdrop-blur-xl border-b border-white/[0.04]">
-        <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border border-white/[0.08] flex items-center justify-center">
+    <div className="min-h-screen flex flex-col">
+      {/* Floating glass header */}
+      <header className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-lg">
+        <div
+          className="rounded-2xl px-4 py-3 flex items-center justify-between"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            background: 'rgba(17, 19, 26, 0.72)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+          }}
+        >
+          {/* Logo */}
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, #27272a, #18181b)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+          >
             <span className="text-[11px] font-bold text-zinc-300 tracking-tight">O</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={goBack} className="text-zinc-500 hover:text-zinc-300 transition-colors p-1">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          {/* Month navigator */}
+          <div
+            className="flex items-center gap-3 px-3 py-1.5 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <button onClick={goBack} className="text-zinc-500 hover:text-zinc-200 transition-colors">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span className="text-[13px] font-semibold text-zinc-300 min-w-[72px] text-center tracking-wide">
+            <span className="text-[12px] font-semibold text-zinc-200 min-w-[72px] text-center tracking-wide">
               {monthLabel}
             </span>
-            <button onClick={goForward} className="text-zinc-500 hover:text-zinc-300 transition-colors p-1">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <button onClick={goForward} className="text-zinc-500 hover:text-zinc-200 transition-colors">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
@@ -48,13 +69,22 @@ export default function AppLayout({ children }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pt-[72px] pb-24">
         {children}
       </main>
 
-      {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface-0/95 backdrop-blur-xl border-t border-white/[0.04]">
-        <div className="flex items-center justify-around px-2 py-1.5 max-w-lg mx-auto">
+      {/* Bottom nav — glass pill */}
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm">
+        <div
+          className="rounded-2xl px-2 py-2 flex items-center justify-around"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            background: 'rgba(17, 19, 26, 0.85)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+          }}
+        >
           {navItems.map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path ||
               (path === '/feed' && location.pathname === '/');
@@ -63,17 +93,25 @@ export default function AppLayout({ children }) {
               <NavLink
                 key={path}
                 to={path}
-                className="flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors relative"
+                className="flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all relative"
               >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: 'rgba(255,255,255,0.07)' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
                 <Icon
-                  className={`w-[20px] h-[20px] transition-colors ${
+                  className={`w-[19px] h-[19px] transition-colors relative z-10 ${
                     isActive ? 'text-zinc-100' : 'text-zinc-600'
                   }`}
-                  strokeWidth={isActive ? 2 : 1.5}
+                  strokeWidth={isActive ? 2.2 : 1.5}
                 />
                 <span
-                  className={`text-[10px] transition-colors ${
-                    isActive ? 'text-zinc-100 font-medium' : 'text-zinc-600'
+                  className={`text-[9px] font-medium transition-colors relative z-10 ${
+                    isActive ? 'text-zinc-200' : 'text-zinc-600'
                   }`}
                 >
                   {label}
