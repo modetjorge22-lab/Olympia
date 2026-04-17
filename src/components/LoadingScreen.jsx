@@ -1,34 +1,65 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export default function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <motion.div
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-12 h-12 rounded-2xl flex items-center justify-center"
-          style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05))',
-            border: '1.5px solid rgba(99,102,241,0.25)',
-            boxShadow: '0 4px 24px rgba(99,102,241,0.15)',
-          }}
-        >
-          <span className="text-xl font-black text-indigo-400">O</span>
-        </motion.div>
-        <div className="flex gap-1.5">
-          {[0, 0.15, 0.3].map((delay, i) => (
-            <motion.div
-              key={i}
-              animate={{ opacity: [0.2, 0.8, 0.2] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay }}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'rgba(99,102,241,0.5)' }}
-            />
-          ))}
+    <div style={{
+      background: '#0B0B0F',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      width: '100%',
+    }}>
+      <div style={{ position: 'relative', width: 200, height: 200 }}>
+
+        {/* Background ring */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          borderRadius: '50%',
+          border: '2px solid rgba(255,255,255,0.07)',
+        }} />
+
+        {/* Spinning arc */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          borderRadius: '50%',
+          border: '2px solid transparent',
+          borderTopColor: 'rgba(255,255,255,0.85)',
+          borderRightColor: 'rgba(255,255,255,0.25)',
+          animation: 'olympia-spin 1.4s cubic-bezier(0.4,0,0.2,1) infinite',
+        }} />
+
+        {/* Center wordmark */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <span style={{
+            fontFamily: '"DM Sans", system-ui, sans-serif',
+            fontWeight: 300,
+            fontSize: 22,
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.90)',
+            animation: 'olympia-breathe 2.8s ease-in-out infinite',
+          }}>
+            Olympia
+          </span>
         </div>
+
       </div>
+
+      <style>{`
+        @keyframes olympia-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes olympia-breathe {
+          0%, 100% { opacity: 0.65; }
+          50%       { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
