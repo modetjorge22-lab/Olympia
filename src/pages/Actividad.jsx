@@ -69,11 +69,13 @@ function ActivityDropdown({ value, onChange, types }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const selected = value === 'all'
+  const selected = value === 'accumulated'
+    ? { label: 'Acumulado', color: 'rgba(255,255,255,0.35)', emoji: null }
+    : value === 'all'
     ? { label: 'Todas', color: 'rgba(255,255,255,0.35)', emoji: null }
     : { ...ACTIVITY_TYPES[value], color: ACTIVITY_COLORS[value], emoji: ACTIVITY_TYPES[value]?.emoji };
 
-  const isAll = value === 'all';
+  const isGeneral = value === 'accumulated' || value === 'all';
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -81,10 +83,10 @@ function ActivityDropdown({ value, onChange, types }) {
       <button
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-        style={open || !isAll ? {
-          background: isAll ? 'rgba(255,255,255,0.07)' : `${ACTIVITY_COLORS[value]}18`,
-          border: `1px solid ${isAll ? 'rgba(255,255,255,0.14)' : ACTIVITY_COLORS[value] + '35'}`,
-          color: isAll ? 'rgba(255,255,255,0.75)' : ACTIVITY_COLORS[value],
+        style={open || !isGeneral ? {
+          background: isGeneral ? 'rgba(255,255,255,0.07)' : `${ACTIVITY_COLORS[value]}18`,
+          border: `1px solid ${isGeneral ? 'rgba(255,255,255,0.14)' : ACTIVITY_COLORS[value] + '35'}`,
+          color: isGeneral ? 'rgba(255,255,255,0.75)' : ACTIVITY_COLORS[value],
         } : {
           background: 'rgba(255,255,255,0.05)',
           border: '1px solid rgba(255,255,255,0.08)',
@@ -93,8 +95,8 @@ function ActivityDropdown({ value, onChange, types }) {
       >
         {/* dot */}
         <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ background: isAll ? 'rgba(255,255,255,0.4)' : ACTIVITY_COLORS[value] }} />
-        Actividad: {isAll ? 'Todas' : selected.label}
+          style={{ background: isGeneral ? 'rgba(255,255,255,0.4)' : ACTIVITY_COLORS[value] }} />
+        Actividad: {selected.label}
         <ChevronDown
           className="w-3 h-3 flex-shrink-0 transition-transform"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: 'rgba(255,255,255,0.3)' }}
@@ -126,6 +128,12 @@ function ActivityDropdown({ value, onChange, types }) {
           >
             {/* General */}
             <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', padding: '4px 8px 2px' }}>General</p>
+            <MenuItem
+              active={value === 'accumulated'}
+              dot="rgba(255,255,255,0.35)"
+              label="Acumulado"
+              onClick={() => { onChange('accumulated'); setOpen(false); }}
+            />
             <MenuItem
               active={value === 'all'}
               dot="rgba(255,255,255,0.35)"
@@ -185,7 +193,10 @@ export default function Actividad() {
   const [selectedDate, setSelectedDate]   = useState(new Date());
   const [expandedDay, setExpandedDay]     = useState(null);
   const [loadTF, setLoadTF]               = useState('weeks');
-  const [actFilter, setActFilter]         = useState('all');
+  // 'accumulated' = total sin dividir por tipo (barra única por intensidad)
+  // 'all'         = apilado por tipo con colores
+  // '<type>'      = solo ese tipo
+  const [actFilter, setActFilter]         = useState('accumulated');
 
   const year  = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -220,24 +231,46 @@ export default function Actividad() {
   }, [myActivities]);
 
   // ── Construir datos del chart ──
+  // Convierte fecha local a string YYYY-MM-DD para comparar sin problemas de timezone
+  function toDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
   function buildBuckets(count, getBounds) {
     return Array.from({ length: count }, (_, i) => {
       const { start, end, label } = getBounds(i);
+      const startStr = toDateStr(start);
+      const endStr   = toDateStr(end);
+
+      // Comparar como strings YYYY-MM-DD — evita problemas de UTC vs local
       const acts = myAllActivities.filter(a => {
-        const d = new Date(a.date);
-        return d >= start && d <= end;
+        const ds = a.date?.slice(0, 10); // "2024-04-15"
+        return ds >= startStr && ds <= endStr;
       });
 
       const point = { label };
 
       if (actFilter === 'all') {
-        // Acumular por tipo
+        // Apilado por tipo
+        const minsByType = {};
+        let totalMins = 0;
         acts.forEach(a => {
-          point[a.type] = +((( point[a.type] || 0) + (a.duration_minutes || 0)) / 60).toFixed(2);
+          minsByType[a.type] = (minsByType[a.type] || 0) + (a.duration_minutes || 0);
+          totalMins += (a.duration_minutes || 0);
         });
-        point.hours = +acts.reduce((s, a) => s + (a.duration_minutes || 0), 0).toFixed(0) / 60;
+        Object.entries(minsByType).forEach(([type, mins]) => {
+          point[type] = +(mins / 60).toFixed(2);
+        });
+        point.hours = +(totalMins / 60).toFixed(1);
+      } else if (actFilter === 'accumulated') {
+        // Total acumulado, barra única
+        const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
+        point.hours = +(totalMins / 60).toFixed(1);
       } else {
-        const mins = acts.filter(a => a.type === actFilter).reduce((s, a) => s + (a.duration_minutes || 0), 0);
+        // Tipo específico
+        const mins = acts
+          .filter(a => a.type === actFilter)
+          .reduce((s, a) => s + (a.duration_minutes || 0), 0);
         point.hours = +(mins / 60).toFixed(1);
       }
       return point;
@@ -323,7 +356,9 @@ export default function Actividad() {
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   // Subtítulo del chart
-  const chartSubtitle = actFilter === 'all'
+  const chartSubtitle = actFilter === 'accumulated'
+    ? 'Total acumulado'
+    : actFilter === 'all'
     ? 'Todas las actividades'
     : `${ACTIVITY_TYPES[actFilter]?.emoji} ${ACTIVITY_TYPES[actFilter]?.label}`;
 
@@ -407,7 +442,7 @@ export default function Actividad() {
                   />
                 ))
               ) : (
-                // Barra única con intensidad según horas
+                // Barra única (acumulado o tipo específico) con intensidad de color
                 <Bar dataKey="hours" radius={[3, 3, 0, 0]}>
                   {chartData.map((entry, i) => (
                     <Cell
@@ -415,7 +450,9 @@ export default function Actividad() {
                       fill={singleBarColor(
                         entry.hours,
                         maxHours,
-                        actFilter === 'all' ? '#6366f1' : (ACTIVITY_COLORS[actFilter] || '#6366f1')
+                        actFilter === 'accumulated' || actFilter === 'all'
+                          ? '#6366f1'
+                          : (ACTIVITY_COLORS[actFilter] || '#6366f1')
                       )}
                     />
                   ))}
@@ -425,7 +462,7 @@ export default function Actividad() {
           </ResponsiveContainer>
         </div>
 
-        {/* Leyenda tipos (modo Todas) */}
+        {/* Leyenda tipos (solo modo Todas) */}
         {actFilter === 'all' && visibleTypes.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
             {visibleTypes.map(t => (
@@ -437,15 +474,16 @@ export default function Actividad() {
           </div>
         )}
 
-        {/* Leyenda intensidad (modo tipo único) */}
+        {/* Leyenda intensidad (modo acumulado o tipo único) */}
         {actFilter !== 'all' && (
           <div className="flex items-center justify-end gap-2 mt-2">
             <span className="text-[10px] text-zinc-700">Poco</span>
             <div className="flex gap-0.5">
               {[0.22, 0.37, 0.54, 0.70, 0.95].map((op, i) => {
-                const hex = (ACTIVITY_COLORS[actFilter] || '#6366f1').replace('#', '');
-                const b = parseInt(hex, 16);
-                const rgb = `${(b>>16)&255},${(b>>8)&255},${b&255}`;
+                const baseColor = actFilter === 'accumulated' ? '#6366f1' : (ACTIVITY_COLORS[actFilter] || '#6366f1');
+                const hex = baseColor.replace('#', '');
+                const bint = parseInt(hex, 16);
+                const rgb = `${(bint>>16)&255},${(bint>>8)&255},${bint&255}`;
                 return <div key={i} className="w-3.5 h-2 rounded-sm" style={{ background: `rgba(${rgb},${op})` }} />;
               })}
             </div>
