@@ -13,11 +13,9 @@ const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','ago
 
 // Glass card style
 const glassCard = {
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  background: 'rgba(17, 19, 26, 0.65)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+  background: '#17171f',
+  border: '1px solid rgba(255,255,255,0.10)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
 };
 
 const CustomTooltip = ({ active, payload, label, memberStats }) => {
@@ -280,11 +278,9 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl p-4"
       style={{
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        background: 'rgba(17, 19, 26, 0.65)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+        background: '#17171f',
+        border: '1px solid rgba(255,255,255,0.10)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
       }}
     >
       {/* Header */}

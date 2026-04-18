@@ -8,11 +8,9 @@ import LogActivityDialog from '@/components/LogActivityDialog';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown } from 'lucide-react';
 
 const glassCard = {
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  background: 'rgba(17, 19, 26, 0.65)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+  background: '#17171f',
+  border: '1px solid rgba(255,255,255,0.10)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
 };
 
 const tooltipStyle = {
@@ -646,7 +644,7 @@ export default function Actividad() {
 function StatBox({ icon, value, label, accent }) {
   return (
     <div className="rounded-2xl p-4 flex flex-col items-center"
-      style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', background: 'rgba(17,19,26,0.65)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: `0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 20px ${accent}08` }}>
+      style={{ background: '#17171f', border: '1px solid rgba(255,255,255,0.10)', boxShadow: `0 4px 20px rgba(0,0,0,0.3), 0 0 24px ${accent}0F` }}>
       {icon}
       <span className="text-[22px] font-bold text-zinc-100 font-mono mt-1.5">{value}</span>
       <span className="text-[10px] text-zinc-600 mt-0.5">{label}</span>

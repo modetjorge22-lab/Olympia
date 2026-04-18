@@ -14,6 +14,9 @@ const navItems = [
   { path: '/mas', label: 'Más', icon: MoreHorizontal },
 ];
 
+const HEADER_H = 56;
+const NAV_H = 68;
+
 export default function AppLayout({ children }) {
   const location = useLocation();
   const { currentMonth, goBack, goForward } = useMonth();
@@ -24,29 +27,27 @@ export default function AppLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Floating glass header */}
+      {/* Top header — full width, flush to edge */}
       <header
-        className="fixed left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-lg"
-        style={{ top: 'max(12px, env(safe-area-inset-top))' }}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          background: '#070709',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
       >
         <div
-          className="rounded-2xl px-4 py-3 flex items-center justify-between"
-          style={{
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            background: 'rgba(17, 19, 26, 0.72)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-          }}
+          className="flex items-center justify-between px-4 max-w-lg mx-auto"
+          style={{ height: HEADER_H }}
         >
-          {/* Logo wordmark */}
+          {/* Wordmark */}
           <div style={{
             fontFamily: '"DM Sans", system-ui, sans-serif',
             fontWeight: 300,
             fontSize: 11,
-            letterSpacing: '0.28em',
+            letterSpacing: '0.3em',
             textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.85)',
+            color: 'rgba(255,255,255,0.88)',
           }}>
             Olympia
           </div>
@@ -54,7 +55,10 @@ export default function AppLayout({ children }) {
           {/* Month navigator */}
           <div
             className="flex items-center gap-3 px-3 py-1.5 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{
+              background: '#1a1a22',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
           >
             <button onClick={goBack} className="text-zinc-500 hover:text-zinc-200 transition-colors">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -71,34 +75,32 @@ export default function AppLayout({ children }) {
             </button>
           </div>
 
-          <div className="w-8" />
+          <div className="w-[60px]" />
         </div>
       </header>
 
       <main
         className="flex-1 overflow-y-auto"
         style={{
-          paddingTop: 'calc(max(12px, env(safe-area-inset-top)) + 60px)',
-          paddingBottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 80px)',
+          paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H}px)`,
+          paddingBottom: `calc(env(safe-area-inset-bottom) + ${NAV_H}px)`,
         }}
       >
         {children}
       </main>
 
-      {/* Bottom nav — glass pill */}
+      {/* Bottom nav — full width, flush to edge */}
       <nav
-        className="fixed left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm"
-        style={{ bottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        className="fixed bottom-0 left-0 right-0 z-50"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          background: '#070709',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}
       >
         <div
-          className="rounded-2xl px-2 py-2 flex items-center justify-around"
-          style={{
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            background: 'rgba(17, 19, 26, 0.85)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-          }}
+          className="flex items-center justify-around px-2 max-w-lg mx-auto"
+          style={{ height: NAV_H }}
         >
           {navItems.map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path ||
@@ -109,6 +111,7 @@ export default function AppLayout({ children }) {
                 key={path}
                 to={path}
                 className="flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all relative"
+                style={{ minWidth: 64 }}
               >
                 {isActive && (
                   <motion.div
@@ -119,14 +122,14 @@ export default function AppLayout({ children }) {
                   />
                 )}
                 <Icon
-                  className={`w-[19px] h-[19px] transition-colors relative z-10 ${
-                    isActive ? 'text-zinc-100' : 'text-zinc-600'
+                  className={`w-[20px] h-[20px] transition-colors relative z-10 ${
+                    isActive ? 'text-zinc-100' : 'text-zinc-500'
                   }`}
-                  strokeWidth={isActive ? 2.2 : 1.5}
+                  strokeWidth={isActive ? 2.2 : 1.6}
                 />
                 <span
-                  className={`text-[9px] font-medium transition-colors relative z-10 ${
-                    isActive ? 'text-zinc-200' : 'text-zinc-600'
+                  className={`text-[10px] font-medium transition-colors relative z-10 ${
+                    isActive ? 'text-zinc-100' : 'text-zinc-500'
                   }`}
                 >
                   {label}
