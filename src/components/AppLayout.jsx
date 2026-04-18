@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMonth } from '@/lib/MonthContext';
+import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -17,12 +18,17 @@ export default function AppLayout({ children }) {
   const location = useLocation();
   const { currentMonth, goBack, goForward } = useMonth();
 
+  useStravaAutoSync();
+
   const monthLabel = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Floating glass header */}
-      <header className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-lg">
+      <header
+        className="fixed left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-lg"
+        style={{ top: 'max(12px, env(safe-area-inset-top))' }}
+      >
         <div
           className="rounded-2xl px-4 py-3 flex items-center justify-between"
           style={{
@@ -69,12 +75,21 @@ export default function AppLayout({ children }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pt-[72px] pb-24">
+      <main
+        className="flex-1 overflow-y-auto"
+        style={{
+          paddingTop: 'calc(max(12px, env(safe-area-inset-top)) + 60px)',
+          paddingBottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 80px)',
+        }}
+      >
         {children}
       </main>
 
       {/* Bottom nav — glass pill */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm">
+      <nav
+        className="fixed left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm"
+        style={{ bottom: 'max(16px, env(safe-area-inset-bottom))' }}
+      >
         <div
           className="rounded-2xl px-2 py-2 flex items-center justify-around"
           style={{
@@ -120,7 +135,6 @@ export default function AppLayout({ children }) {
             );
           })}
         </div>
-        <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
     </div>
   );
