@@ -326,8 +326,8 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
               key={day}
               className="aspect-square rounded-md flex flex-col items-center justify-center"
               style={has ? {
-                background: '#10b981',
-                boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+                background: '#059669',
+                boxShadow: '0 2px 6px rgba(16,185,129,0.2)',
               } : isToday ? {
                 background: 'rgba(255,255,255,0.09)',
                 border: '1px solid rgba(255,255,255,0.15)',

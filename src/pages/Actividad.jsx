@@ -685,8 +685,8 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
             className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
             style={has
               ? isExp
-                ? { background: '#059669', boxShadow: '0 4px 14px rgba(16,185,129,0.5)', border: '1px solid rgba(255,255,255,0.2)' }
-                : { background: '#10b981', boxShadow: '0 2px 8px rgba(16,185,129,0.25)' }
+                ? { background: '#047857', boxShadow: '0 3px 10px rgba(16,185,129,0.35)', border: '1px solid rgba(255,255,255,0.18)' }
+                : { background: '#059669', boxShadow: '0 2px 6px rgba(16,185,129,0.2)' }
               : isToday
                 ? { background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)' }
                 : { background: 'rgba(255,255,255,0.05)' }

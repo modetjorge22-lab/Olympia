@@ -10,11 +10,7 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background-color: #16111a;
-  background-image:
-    radial-gradient(ellipse at 50% 0%, rgba(122, 36, 64, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse at 10% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 45%);
-  background-attachment: fixed;
+  background-color: #1c1420;
   color: #f4f4f5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -32,10 +28,3 @@ body {
 
 /* Smooth page transitions */
 main { scroll-behavior: smooth; }
-
-/* Elevated card utility */
-.card-elev {
-  background: #17171f;
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}

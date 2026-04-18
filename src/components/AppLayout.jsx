@@ -32,7 +32,7 @@ export default function AppLayout({ children }) {
         className="fixed top-0 left-0 right-0 z-50"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          background: '#16111a',
+          background: '#1c1420',
           borderBottom: '1px solid rgba(255,255,255,0.07)',
         }}
       >
@@ -94,7 +94,7 @@ export default function AppLayout({ children }) {
         className="fixed bottom-0 left-0 right-0 z-50"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          background: '#16111a',
+          background: '#1c1420',
           borderTop: '1px solid rgba(255,255,255,0.07)',
         }}
       >
