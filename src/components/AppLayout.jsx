@@ -33,16 +33,16 @@ export default function AppLayout({ children }) {
             boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
           }}
         >
-          {/* Logo */}
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, #27272a, #18181b)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            }}
-          >
-            <span className="text-[11px] font-bold text-zinc-300 tracking-tight">O</span>
+          {/* Logo wordmark */}
+          <div style={{
+            fontFamily: '"DM Sans", system-ui, sans-serif',
+            fontWeight: 300,
+            fontSize: 11,
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.85)',
+          }}>
+            Olympia
           </div>
 
           {/* Month navigator */}

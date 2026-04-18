@@ -577,10 +577,6 @@ export default function Actividad() {
               <p className="text-[12px] text-zinc-500">{totalHours}h este mes</p>
             </div>
           </div>
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
-            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}>
-            🏆 Performer
-          </span>
         </div>
 
         <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} onDayClick={handleDayClick} expandedDay={expandedDay} />
@@ -670,8 +666,12 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
   return (
     <div className="grid grid-cols-7 gap-[5px]">
       {trailing.map(d => (
-        <div key={`p-${d}`} className="aspect-square rounded-lg flex items-center justify-center">
-          <span className="text-[10px] text-zinc-800">{d}</span>
+        <div
+          key={`p-${d}`}
+          className="aspect-square rounded-lg flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.025)' }}
+        >
+          <span className="text-[10px] text-zinc-700">{d}</span>
         </div>
       ))}
       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -681,18 +681,23 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
         const isExp = expandedDay === day;
         const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
         return (
-          <button key={day} onClick={() => onDayClick(day)}
+          <button
+            key={day}
+            onClick={() => onDayClick(day)}
             className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
             style={has
-              ? isExp ? { background: 'rgba(99,102,241,0.4)', border: '1px solid rgba(99,102,241,0.5)' }
-                      : { background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.25)' }
-              : isToday ? { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }
-                        : { background: 'rgba(255,255,255,0.03)' }}>
-            <span className={`text-[10px] font-medium leading-none ${has ? 'text-indigo-200' : isToday ? 'text-zinc-300' : 'text-zinc-600'}`}>{day}</span>
-            {emoji && <span className="text-[9px] leading-none mt-0.5">{emoji}</span>}
+              ? isExp
+                ? { background: '#059669', boxShadow: '0 4px 14px rgba(16,185,129,0.5)', border: '1px solid rgba(255,255,255,0.2)' }
+                : { background: '#10b981', boxShadow: '0 2px 8px rgba(16,185,129,0.25)' }
+              : isToday
+                ? { background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)' }
+                : { background: 'rgba(255,255,255,0.05)' }
+            }>
+            <span className={`text-[11px] font-semibold leading-none ${has ? 'text-white' : isToday ? 'text-zinc-200' : 'text-zinc-500'}`}>{day}</span>
+            {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
             {acts.length > 1 && (
-              <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-[7px] font-bold text-white">{acts.length}</span>
+              <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center">
+                <span className="text-[7px] font-bold text-emerald-700">{acts.length}</span>
               </div>
             )}
           </button>

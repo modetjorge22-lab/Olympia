@@ -79,8 +79,12 @@ export default function Grupos() {
       };
     }).sort((a, b) => b.totalMins - a.totalMins);
 
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
     const data = [];
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (let d = 1; d <= lastDay; d++) {
       const point = { day: d };
       stats.forEach(m => { point[m.email] = m.cumByDay[d]; });
       data.push(point);
@@ -276,17 +280,15 @@ function MiniMemberCard({ member, year, month, daysInMonth, isTop }) {
             <p className="text-[11px]" style={{ color: member.color }}>{member.totalHours}h · {member.sessions} sesiones</p>
           </div>
         </div>
-        {isTop && member.totalHours > 0 && (
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
-            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}>
-            🏆 Top
-          </span>
-        )}
       </div>
       <div className="grid grid-cols-7 gap-[3px]">
         {trailing.map(d => (
-          <div key={`t-${d}`} className="aspect-square rounded flex items-center justify-center">
-            <span className="text-[7px] text-zinc-800">{d}</span>
+          <div
+            key={`t-${d}`}
+            className="aspect-square rounded-md flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.025)' }}
+          >
+            <span className="text-[8px] text-zinc-700">{d}</span>
           </div>
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -295,13 +297,20 @@ function MiniMemberCard({ member, year, month, daysInMonth, isTop }) {
           const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
           const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
           return (
-            <div key={day} className="aspect-square rounded flex flex-col items-center justify-center"
-              style={has
-                ? { background: `${member.color}25`, border: `1px solid ${member.color}30` }
-                : isToday ? { background: 'rgba(255,255,255,0.06)' }
-                : { background: 'rgba(255,255,255,0.02)' }}>
-              <span className={`text-[7px] font-medium leading-none ${has ? 'text-white' : 'text-zinc-700'}`}>{day}</span>
-              {emoji && <span className="text-[6px] leading-none">{emoji}</span>}
+            <div
+              key={day}
+              className="aspect-square rounded-md flex flex-col items-center justify-center"
+              style={has ? {
+                background: '#10b981',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+              } : isToday ? {
+                background: 'rgba(255,255,255,0.09)',
+                border: '1px solid rgba(255,255,255,0.15)',
+              } : {
+                background: 'rgba(255,255,255,0.05)',
+              }}>
+              <span className={`text-[8px] font-semibold leading-none ${has ? 'text-white' : isToday ? 'text-zinc-200' : 'text-zinc-500'}`}>{day}</span>
+              {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
             </div>
           );
         })}

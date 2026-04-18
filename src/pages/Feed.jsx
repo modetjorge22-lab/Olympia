@@ -96,8 +96,13 @@ export default function Feed() {
       };
     }).sort((a, b) => b.totalMins - a.totalMins);
 
+    // Si el mes mostrado es el actual, cortar hasta hoy. Si es pasado, mes completo.
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
     const data = [];
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (let d = 1; d <= lastDay; d++) {
       const point = { day: d };
       stats.forEach(m => { point[m.email] = m.cumByDay[d]; });
       data.push(point);
@@ -301,21 +306,17 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
             <p className="text-[12px]" style={{ color: member.color }}>{member.totalHours}h este mes</p>
           </div>
         </div>
-        {isTop && (
-          <span
-            className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
-            style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}
-          >
-            🏆 Performer
-          </span>
-        )}
       </div>
 
       {/* Mini calendar */}
       <div className="grid grid-cols-7 gap-[3px]">
         {trailing.map(d => (
-          <div key={`t-${d}`} className="aspect-square rounded flex items-center justify-center">
-            <span className="text-[8px] text-zinc-800">{d}</span>
+          <div
+            key={`t-${d}`}
+            className="aspect-square rounded-md flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.025)' }}
+          >
+            <span className="text-[9px] text-zinc-700">{d}</span>
           </div>
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -327,19 +328,23 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
           return (
             <div
               key={day}
-              className="aspect-square rounded flex flex-col items-center justify-center"
+              className="aspect-square rounded-md flex flex-col items-center justify-center"
               style={has ? {
-                background: `${member.color}28`,
-                border: `1px solid ${member.color}35`,
+                background: '#10b981',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
               } : isToday ? {
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.09)',
+                border: '1px solid rgba(255,255,255,0.15)',
               } : {
-                background: 'rgba(255,255,255,0.03)',
+                background: 'rgba(255,255,255,0.05)',
               }}
             >
-              <span className={`text-[8px] font-medium leading-none ${has ? 'text-white' : isToday ? 'text-zinc-400' : 'text-zinc-700'}`}>{day}</span>
-              {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
+              <span
+                className={`text-[9px] font-semibold leading-none ${has ? 'text-white' : isToday ? 'text-zinc-200' : 'text-zinc-500'}`}
+              >
+                {day}
+              </span>
+              {emoji && <span className="text-[8px] leading-none mt-0.5">{emoji}</span>}
             </div>
           );
         })}
