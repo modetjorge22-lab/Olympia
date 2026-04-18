@@ -86,9 +86,11 @@ export default function Login() {
         <div
           className="rounded-2xl p-6"
           style={{
-            background: '#17171f',
-            border: '1px solid rgba(255,255,255,0.10)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+            background: 'rgba(245,237,224,0.06)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(245,237,224,0.12)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
           }}
         >
           {/* Google */}

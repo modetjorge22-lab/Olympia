@@ -3,7 +3,7 @@ import React from 'react';
 export default function LoadingScreen() {
   return (
     <div style={{
-      background: '#241009',
+      background: '#281811',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

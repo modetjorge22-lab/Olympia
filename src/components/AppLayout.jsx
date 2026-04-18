@@ -27,48 +27,48 @@ export default function AppLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top header — full width, flush to edge */}
+      {/* Header — fondo vino con blur sutil */}
       <header
         className="fixed top-0 left-0 right-0 z-50"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          background: '#241009',
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          background: 'rgba(40,24,17,0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(245,237,224,0.08)',
         }}
       >
         <div
           className="flex items-center justify-between px-4 max-w-lg mx-auto"
           style={{ height: HEADER_H }}
         >
-          {/* Wordmark */}
           <div style={{
             fontFamily: '"DM Sans", system-ui, sans-serif',
             fontWeight: 300,
             fontSize: 11,
             letterSpacing: '0.3em',
             textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.88)',
+            color: 'rgba(245,237,224,0.92)',
           }}>
             Olympia
           </div>
 
-          {/* Month navigator */}
           <div
             className="flex items-center gap-3 px-3 py-1.5 rounded-xl"
             style={{
-              background: '#1a1a22',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(245,237,224,0.08)',
+              border: '1px solid rgba(245,237,224,0.14)',
             }}
           >
-            <button onClick={goBack} className="text-zinc-500 hover:text-zinc-200 transition-colors">
+            <button onClick={goBack} style={{ color: 'rgba(245,237,224,0.55)' }} className="hover:opacity-100 transition-opacity">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span className="text-[12px] font-semibold text-zinc-200 min-w-[72px] text-center tracking-wide">
+            <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(245,237,224,0.92)' }}>
               {monthLabel}
             </span>
-            <button onClick={goForward} className="text-zinc-500 hover:text-zinc-200 transition-colors">
+            <button onClick={goForward} style={{ color: 'rgba(245,237,224,0.55)' }} className="hover:opacity-100 transition-opacity">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -89,13 +89,15 @@ export default function AppLayout({ children }) {
         {children}
       </main>
 
-      {/* Bottom nav — full width, flush to edge */}
+      {/* Bottom nav — fondo vino con blur sutil */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          background: '#241009',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
+          background: 'rgba(40,24,17,0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(245,237,224,0.08)',
         }}
       >
         <div
@@ -117,20 +119,18 @@ export default function AppLayout({ children }) {
                   <motion.div
                     layoutId="nav-pill"
                     className="absolute inset-0 rounded-xl"
-                    style={{ background: 'rgba(255,255,255,0.07)' }}
+                    style={{ background: 'rgba(245,237,224,0.1)' }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
                 <Icon
-                  className={`w-[20px] h-[20px] transition-colors relative z-10 ${
-                    isActive ? 'text-zinc-100' : 'text-zinc-500'
-                  }`}
+                  className="w-[20px] h-[20px] transition-colors relative z-10"
                   strokeWidth={isActive ? 2.2 : 1.6}
+                  style={{ color: isActive ? 'rgba(245,237,224,0.95)' : 'rgba(245,237,224,0.5)' }}
                 />
                 <span
-                  className={`text-[10px] font-medium transition-colors relative z-10 ${
-                    isActive ? 'text-zinc-100' : 'text-zinc-500'
-                  }`}
+                  className="text-[10px] font-medium transition-colors relative z-10"
+                  style={{ color: isActive ? 'rgba(245,237,224,0.95)' : 'rgba(245,237,224,0.5)' }}
                 >
                   {label}
                 </span>

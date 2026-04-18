@@ -8,49 +8,17 @@ import LogActivityDialog from '@/components/LogActivityDialog';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown } from 'lucide-react';
 
 const glassCard = {
-  background: '#17171f',
-  border: '1px solid rgba(255,255,255,0.10)',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+  background: 'rgba(245,237,224,0.92)',
+  border: '1px solid rgba(255,255,255,0.35)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
 };
 
-const tooltipStyle = {
-  backgroundColor: 'rgba(11,11,15,0.97)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 10,
-  fontSize: 11,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-};
-
-function ChartTooltip({ active, payload, label, labelPrefix }) {
-  if (!active || !payload?.length) return null;
-  const items = payload.filter(p => p.value != null && p.value > 0);
-  if (items.length === 0) return null;
-
-  return (
-    <div style={{
-      background: 'rgba(11,11,15,0.97)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 10,
-      padding: '8px 12px',
-      fontSize: 11,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-      minWidth: 110,
-    }}>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 4 }}>
-        {labelPrefix || ''}{label}
-      </p>
-      {items.map((entry, i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
-            <span style={{ color: 'rgba(255,255,255,0.75)' }}>{entry.tooltipName || entry.name}</span>
-          </div>
-          <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}h</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const TEXT_PRIMARY = '#2a1a11';
+const TEXT_SECONDARY = '#6e5647';
+const TEXT_MUTED = '#8c7364';
+const TEXT_FAINT = 'rgba(42,26,17,0.35)';
 
 const ACTIVITY_COLORS = {
   strength_training: '#6366f1',
@@ -71,12 +39,37 @@ const TIMEFRAMES = [
   { key: 'days',  label: 'Días' },
 ];
 
-// Intensidad de barra única según ratio
+function ChartTooltip({ active, payload, label, labelPrefix }) {
+  if (!active || !payload?.length) return null;
+  const items = payload.filter(p => p.value != null && p.value > 0);
+  if (items.length === 0) return null;
+  return (
+    <div style={{
+      background: '#281811',
+      border: '1px solid rgba(245,237,224,0.15)',
+      borderRadius: 10, padding: '8px 12px', fontSize: 11,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
+    }}>
+      <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 10, marginBottom: 4 }}>
+        {labelPrefix || ''}{label}
+      </p>
+      {items.map((entry, i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
+            <span style={{ color: 'rgba(245,237,224,0.85)' }}>{entry.tooltipName || entry.name}</span>
+          </div>
+          <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}h</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function singleBarColor(hours, maxHours, color) {
-  if (hours === 0) return 'rgba(255,255,255,0.06)';
+  if (hours === 0) return 'rgba(42,26,17,0.08)';
   const r = Math.min(hours / Math.max(maxHours, 0.5), 1);
-  const opacity = 0.22 + r * 0.73;
-  // Convierte hex a rgb para poder aplicar opacity
+  const opacity = 0.35 + r * 0.6;
   const hex = color.replace('#','');
   const bigint = parseInt(hex, 16);
   const r2 = (bigint >> 16) & 255;
@@ -85,7 +78,6 @@ function singleBarColor(hours, maxHours, color) {
   return `rgba(${r2},${g},${b},${opacity})`;
 }
 
-// ── Dropdown component ──
 function ActivityDropdown({ value, onChange, types }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -99,40 +91,35 @@ function ActivityDropdown({ value, onChange, types }) {
   }, []);
 
   const selected = value === 'accumulated'
-    ? { label: 'Acumulado', color: 'rgba(255,255,255,0.35)', emoji: null }
+    ? { label: 'Acumulado' }
     : value === 'all'
-    ? { label: 'Todas', color: 'rgba(255,255,255,0.35)', emoji: null }
-    : { ...ACTIVITY_TYPES[value], color: ACTIVITY_COLORS[value], emoji: ACTIVITY_TYPES[value]?.emoji };
+    ? { label: 'Todas' }
+    : { ...ACTIVITY_TYPES[value] };
 
   const isGeneral = value === 'accumulated' || value === 'all';
+  const selColor = isGeneral ? 'rgba(42,26,17,0.5)' : ACTIVITY_COLORS[value];
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      {/* Trigger */}
       <button
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-        style={open || !isGeneral ? {
-          background: isGeneral ? 'rgba(255,255,255,0.07)' : `${ACTIVITY_COLORS[value]}18`,
-          border: `1px solid ${isGeneral ? 'rgba(255,255,255,0.14)' : ACTIVITY_COLORS[value] + '35'}`,
-          color: isGeneral ? 'rgba(255,255,255,0.75)' : ACTIVITY_COLORS[value],
+        style={isGeneral ? {
+          background: 'rgba(42,26,17,0.08)',
+          border: '1px solid rgba(42,26,17,0.15)',
+          color: TEXT_PRIMARY,
         } : {
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          color: 'rgba(255,255,255,0.5)',
+          background: `${ACTIVITY_COLORS[value]}20`,
+          border: `1px solid ${ACTIVITY_COLORS[value]}50`,
+          color: ACTIVITY_COLORS[value],
         }}
       >
-        {/* dot */}
-        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ background: isGeneral ? 'rgba(255,255,255,0.4)' : ACTIVITY_COLORS[value] }} />
+        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selColor }} />
         Actividad: {selected.label}
-        <ChevronDown
-          className="w-3 h-3 flex-shrink-0 transition-transform"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: 'rgba(255,255,255,0.3)' }}
-        />
+        <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: TEXT_MUTED }} />
       </button>
 
-      {/* Menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -141,49 +128,30 @@ function ActivityDropdown({ value, onChange, types }) {
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.14 }}
             style={{
-              position: 'absolute',
-              top: 'calc(100% + 6px)',
-              left: 0,
-              zIndex: 50,
-              minWidth: 172,
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
+              minWidth: 180,
+              background: 'rgba(245,237,224,0.96)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              background: 'rgba(13,13,18,0.97)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12,
-              padding: 6,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+              border: '1px solid rgba(255,255,255,0.45)',
+              borderRadius: 12, padding: 6,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
             }}
           >
-            {/* General */}
-            <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', padding: '4px 8px 2px' }}>General</p>
-            <MenuItem
-              active={value === 'accumulated'}
-              dot="rgba(255,255,255,0.35)"
-              label="Acumulado"
-              onClick={() => { onChange('accumulated'); setOpen(false); }}
-            />
-            <MenuItem
-              active={value === 'all'}
-              dot="rgba(255,255,255,0.35)"
-              label="Todas"
-              onClick={() => { onChange('all'); setOpen(false); }}
-            />
+            <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>General</p>
+            <MenuItem active={value === 'accumulated'} dot="rgba(42,26,17,0.5)" label="Acumulado"
+              onClick={() => { onChange('accumulated'); setOpen(false); }} />
+            <MenuItem active={value === 'all'} dot="rgba(42,26,17,0.5)" label="Todas"
+              onClick={() => { onChange('all'); setOpen(false); }} />
 
-            {/* Divider */}
             {types.length > 0 && (
               <>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 6px' }} />
-                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', padding: '4px 8px 2px' }}>Por actividad</p>
+                <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '4px 6px' }} />
+                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>Por actividad</p>
                 {types.map(t => (
-                  <MenuItem
-                    key={t.key}
-                    active={value === t.key}
-                    dot={ACTIVITY_COLORS[t.key]}
-                    label={`${t.emoji} ${t.label}`}
-                    color={ACTIVITY_COLORS[t.key]}
-                    onClick={() => { onChange(t.key); setOpen(false); }}
-                  />
+                  <MenuItem key={t.key} active={value === t.key} dot={ACTIVITY_COLORS[t.key]}
+                    label={`${t.emoji} ${t.label}`} color={ACTIVITY_COLORS[t.key]}
+                    onClick={() => { onChange(t.key); setOpen(false); }} />
                 ))}
               </>
             )}
@@ -200,10 +168,10 @@ function MenuItem({ active, dot, label, color, onClick }) {
       onClick={onClick}
       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all text-left"
       style={active ? {
-        background: color ? `${color}18` : 'rgba(255,255,255,0.07)',
-        color: color || 'rgba(255,255,255,0.85)',
+        background: color ? `${color}22` : 'rgba(42,26,17,0.1)',
+        color: color || TEXT_PRIMARY,
       } : {
-        color: 'rgba(255,255,255,0.5)',
+        color: TEXT_SECONDARY,
       }}
     >
       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dot }} />
@@ -222,9 +190,6 @@ export default function Actividad() {
   const [selectedDate, setSelectedDate]   = useState(new Date());
   const [expandedDay, setExpandedDay]     = useState(null);
   const [loadTF, setLoadTF]               = useState('weeks');
-  // 'accumulated' = total sin dividir por tipo (barra única por intensidad)
-  // 'all'         = apilado por tipo con colores
-  // '<type>'      = solo ese tipo
   const [actFilter, setActFilter]         = useState('accumulated');
 
   const year  = currentMonth.getFullYear();
@@ -235,7 +200,6 @@ export default function Actividad() {
     [allActivities, user]
   );
 
-  // Tipos con datos registrados
   const usedTypes = useMemo(() => {
     const keys = new Set(myAllActivities.map(a => a.type));
     return Object.entries(ACTIVITY_TYPES)
@@ -259,8 +223,6 @@ export default function Actividad() {
     return top ? ACTIVITY_TYPES[top[0]] : null;
   }, [myActivities]);
 
-  // ── Construir datos del chart ──
-  // Convierte fecha local a string YYYY-MM-DD para comparar sin problemas de timezone
   function toDateStr(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
@@ -270,17 +232,14 @@ export default function Actividad() {
       const { start, end, label } = getBounds(i);
       const startStr = toDateStr(start);
       const endStr   = toDateStr(end);
-
-      // Comparar como strings YYYY-MM-DD — evita problemas de UTC vs local
       const acts = myAllActivities.filter(a => {
-        const ds = a.date?.slice(0, 10); // "2024-04-15"
+        const ds = a.date?.slice(0, 10);
         return ds >= startStr && ds <= endStr;
       });
 
       const point = { label };
 
       if (actFilter === 'all') {
-        // Apilado por tipo
         const minsByType = {};
         let totalMins = 0;
         acts.forEach(a => {
@@ -292,11 +251,9 @@ export default function Actividad() {
         });
         point.hours = +(totalMins / 60).toFixed(1);
       } else if (actFilter === 'accumulated') {
-        // Total acumulado, barra única
         const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
         point.hours = +(totalMins / 60).toFixed(1);
       } else {
-        // Tipo específico
         const mins = acts
           .filter(a => a.type === actFilter)
           .reduce((s, a) => s + (a.duration_minutes || 0), 0);
@@ -330,11 +287,10 @@ export default function Actividad() {
     });
   }, [myAllActivities, actFilter]);
 
-  const chartData    = loadTF === 'weeks' ? weeklyData : dailyData;
-  const maxHours     = Math.max(...chartData.map(d => d.hours || 0), 0.5);
-  const xInterval    = loadTF === 'weeks' ? 3 : 9;
+  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
+  const maxHours  = Math.max(...chartData.map(d => d.hours || 0), 0.5);
+  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
-  // Tipos visibles en el período actual
   const visibleTypes = useMemo(() => {
     const keys = new Set();
     chartData.forEach(p => Object.keys(p).forEach(k => {
@@ -345,7 +301,6 @@ export default function Actividad() {
       .map(([key, val]) => ({ key, ...val }));
   }, [chartData]);
 
-  // ── Strength chart ──
   const strengthData = useMemo(() => {
     const refDate = new Date(year, month + 1, 0);
     return Array.from({ length: 16 }, (_, i) => {
@@ -355,8 +310,8 @@ export default function Actividad() {
       const start = new Date(end);
       start.setDate(end.getDate() - 6);
       const acts = myAllActivities.filter(a => {
-        const d = new Date(a.date);
-        return d >= start && d <= end && a.type === 'strength_training';
+        const ds = a.date?.slice(0, 10);
+        return ds >= toDateStr(start) && ds <= toDateStr(end) && a.type === 'strength_training';
       });
       return {
         label: `${start.getDate()}/${start.getMonth() + 1}`,
@@ -366,7 +321,6 @@ export default function Actividad() {
     });
   }, [myAllActivities, year, month]);
 
-  // ── Calendario ──
   const activitiesByDate = useMemo(() => {
     const map = {};
     myActivities.forEach(a => {
@@ -384,7 +338,6 @@ export default function Actividad() {
 
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-  // Subtítulo del chart
   const chartSubtitle = actFilter === 'accumulated'
     ? 'Total acumulado'
     : actFilter === 'all'
@@ -393,39 +346,34 @@ export default function Actividad() {
 
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
-      <h1 className="text-[17px] font-bold text-zinc-100">Mi Actividad</h1>
+      <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
 
-      {/* ── Carga de ejercicio ── */}
+      {/* Carga de ejercicio */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-4" style={glassCard}>
-
-        {/* Fila título + toggle timeframe */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
+              style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+              <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
             </div>
             <div>
-              <h2 className="text-[13px] font-bold text-zinc-100">Carga de ejercicio</h2>
-              <p className="text-[10px] text-zinc-600">
+              <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Carga de ejercicio</h2>
+              <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
                 {loadTF === 'weeks' ? 'Últimas 16 semanas' : 'Últimos 60 días'} · {chartSubtitle}
               </p>
             </div>
           </div>
 
-          {/* Timeframe toggle */}
           <div className="flex items-center gap-1 rounded-lg p-1 flex-shrink-0"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
             {TIMEFRAMES.map(tf => (
               <button key={tf.key} onClick={() => setLoadTF(tf.key)}
                 className="px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all"
                 style={loadTF === tf.key ? {
-                  background: 'rgba(99,102,241,0.25)',
-                  color: '#a5b4fc',
-                  border: '1px solid rgba(99,102,241,0.3)',
+                  background: '#2a1a11',
+                  color: 'rgba(245,237,224,0.95)',
                 } : {
-                  color: 'rgba(255,255,255,0.28)',
-                  border: '1px solid transparent',
+                  color: TEXT_MUTED,
                 }}>
                 {tf.label}
               </button>
@@ -433,23 +381,17 @@ export default function Actividad() {
           </div>
         </div>
 
-        {/* Fila dropdown actividad */}
         <div className="mb-3">
-          <ActivityDropdown
-            value={actFilter}
-            onChange={setActFilter}
-            types={usedTypes}
-          />
+          <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
         </div>
 
-        {/* Chart */}
         <div className="h-[148px] -ml-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barCategoryGap="24%">
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#52525b' }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} interval={xInterval} />
-              <YAxis tick={{ fontSize: 9, fill: '#52525b' }} axisLine={false} tickLine={false} width={22} />
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={xInterval} />
+              <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} />
               <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                cursor={{ fill: 'rgba(42,26,17,0.04)' }}
                 content={(props) => {
                   const payload = (props.payload || []).map(p => {
                     if (p.dataKey === 'hours') return { ...p, tooltipName: 'Horas' };
@@ -461,31 +403,16 @@ export default function Actividad() {
               />
 
               {actFilter === 'all' && visibleTypes.length > 0 ? (
-                // Barras apiladas por tipo con sus colores
                 visibleTypes.map((t, i) => (
-                  <Bar
-                    key={t.key}
-                    dataKey={t.key}
-                    stackId="a"
-                    fill={ACTIVITY_COLORS[t.key]}
-                    fillOpacity={0.75}
-                    radius={i === visibleTypes.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                  />
+                  <Bar key={t.key} dataKey={t.key} stackId="a" fill={ACTIVITY_COLORS[t.key]} fillOpacity={0.85}
+                    radius={i === visibleTypes.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]} />
                 ))
               ) : (
-                // Barra única (acumulado o tipo específico) con intensidad de color
                 <Bar dataKey="hours" radius={[3, 3, 0, 0]}>
                   {chartData.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={singleBarColor(
-                        entry.hours,
-                        maxHours,
-                        actFilter === 'accumulated' || actFilter === 'all'
-                          ? '#6366f1'
-                          : (ACTIVITY_COLORS[actFilter] || '#6366f1')
-                      )}
-                    />
+                    <Cell key={i} fill={singleBarColor(entry.hours, maxHours,
+                      actFilter === 'accumulated' || actFilter === 'all' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11')
+                    )} />
                   ))}
                 </Bar>
               )}
@@ -493,86 +420,82 @@ export default function Actividad() {
           </ResponsiveContainer>
         </div>
 
-        {/* Leyenda tipos (solo modo Todas) */}
         {actFilter === 'all' && visibleTypes.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
             {visibleTypes.map(t => (
               <div key={t.key} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-sm" style={{ background: ACTIVITY_COLORS[t.key], opacity: 0.8 }} />
-                <span className="text-[10px] text-zinc-600">{t.label}</span>
+                <div className="w-2 h-2 rounded-sm" style={{ background: ACTIVITY_COLORS[t.key], opacity: 0.85 }} />
+                <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{t.label}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Leyenda intensidad (modo acumulado o tipo único) */}
         {actFilter !== 'all' && (
           <div className="flex items-center justify-end gap-2 mt-2">
-            <span className="text-[10px] text-zinc-700">Poco</span>
+            <span className="text-[10px]" style={{ color: TEXT_MUTED }}>Poco</span>
             <div className="flex gap-0.5">
-              {[0.22, 0.37, 0.54, 0.70, 0.95].map((op, i) => {
-                const baseColor = actFilter === 'accumulated' ? '#6366f1' : (ACTIVITY_COLORS[actFilter] || '#6366f1');
+              {[0.3, 0.45, 0.6, 0.75, 0.95].map((op, i) => {
+                const baseColor = actFilter === 'accumulated' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11');
                 const hex = baseColor.replace('#', '');
                 const bint = parseInt(hex, 16);
                 const rgb = `${(bint>>16)&255},${(bint>>8)&255},${bint&255}`;
                 return <div key={i} className="w-3.5 h-2 rounded-sm" style={{ background: `rgba(${rgb},${op})` }} />;
               })}
             </div>
-            <span className="text-[10px] text-zinc-700">Mucho</span>
+            <span className="text-[10px]" style={{ color: TEXT_MUTED }}>Mucho</span>
           </div>
         )}
       </motion.div>
 
-      {/* ── Entrenamientos de fuerza ── */}
+      {/* Progreso en fuerza */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="rounded-2xl p-4" style={glassCard}>
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
+            style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
             <span className="text-sm">💪</span>
           </div>
           <div>
-            <h2 className="text-[13px] font-bold text-zinc-100">Progreso en fuerza</h2>
-            <p className="text-[11px] text-zinc-600">Progreso vs Consolidación · 16 semanas</p>
+            <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Progreso en fuerza</h2>
+            <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Progreso vs Consolidación · 16 semanas</p>
           </div>
         </div>
         <div className="h-[148px] -ml-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={strengthData} barCategoryGap="22%">
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#52525b' }} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} tickLine={false} interval={3} />
-              <YAxis tick={{ fontSize: 9, fill: '#52525b' }} axisLine={false} tickLine={false} width={22} />
-              <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={3} />
+              <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} />
+              <Tooltip cursor={{ fill: 'rgba(42,26,17,0.04)' }}
                 content={(props) => {
                   const payload = (props.payload || []).map(p => ({ ...p, tooltipName: p.name }));
                   return <ChartTooltip {...props} payload={payload} labelPrefix="Sem " />;
-                }}
-              />
-              <Bar dataKey="progreso"      name="Progreso"      stackId="a" fill="rgba(139,92,246,0.75)" radius={[0,0,0,0]} />
-              <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="rgba(16,185,129,0.7)"  radius={[3,3,0,0]} />
+                }} />
+              <Bar dataKey="progreso"      name="Progreso"      stackId="a" fill="rgba(139,92,246,0.85)" radius={[0,0,0,0]} />
+              <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="rgba(16,185,129,0.85)"  radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
         <div className="flex items-center gap-4 mt-2 justify-center">
-          {[['rgba(139,92,246,0.75)', 'Progreso'], ['rgba(16,185,129,0.7)', 'Consolidación']].map(([c, l]) => (
+          {[['rgba(139,92,246,0.85)', 'Progreso'], ['rgba(16,185,129,0.85)', 'Consolidación']].map(([c, l]) => (
             <div key={l} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
-              <span className="text-[10px] text-zinc-600">{l}</span>
+              <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{l}</span>
             </div>
           ))}
         </div>
       </motion.div>
 
-      {/* ── Perfil + Calendario ── */}
+      {/* Perfil + Calendario */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-2xl p-4" style={glassCard}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
-              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(99,102,241,0.05))', border: '1.5px solid rgba(99,102,241,0.25)', color: '#818cf8', boxShadow: '0 2px 12px rgba(99,102,241,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(99,102,241,0.12))', border: '1.5px solid rgba(99,102,241,0.4)', color: '#4338ca', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}>
               {initials}
             </div>
             <div>
-              <p className="text-[14px] font-semibold text-zinc-100">{userName}</p>
-              <p className="text-[12px] text-zinc-500">{totalHours}h este mes</p>
+              <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
+              <p className="text-[12px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
             </div>
           </div>
         </div>
@@ -584,22 +507,22 @@ export default function Actividad() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
               {activitiesByDate[expandedDay].map(act => (
                 <div key={act.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
                   <div className="flex items-center gap-2.5">
                     <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
                     <div>
-                      <p className="text-[13px] font-medium text-zinc-200">{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
-                      <p className="text-[11px] text-zinc-600">{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
+                      <p className="text-[13px] font-medium" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
+                      <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
                     </div>
                   </div>
                   <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5 text-zinc-700 hover:text-red-400 transition-colors" />
+                    <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
                   </button>
                 </div>
               ))}
               <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
-                className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] text-zinc-600 hover:text-indigo-400 transition-colors"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.06)' }}>
+                className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
+                style={{ background: 'rgba(42,26,17,0.04)', border: '1px dashed rgba(42,26,17,0.18)', color: TEXT_MUTED }}>
                 <Plus className="w-3.5 h-3.5" /> Añadir actividad
               </button>
             </motion.div>
@@ -607,32 +530,32 @@ export default function Actividad() {
         </AnimatePresence>
       </motion.div>
 
-      {/* ── Favorito ── */}
+      {/* Favorito */}
       {favoriteType && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="rounded-2xl px-4 py-3" style={glassCard}>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span className="text-[13px] text-zinc-300">
-              Favorito: <span className="font-semibold text-zinc-100">{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
+            <Sparkles className="w-4 h-4" style={{ color: '#4338ca' }} />
+            <span className="text-[13px]" style={{ color: TEXT_SECONDARY }}>
+              Favorito: <span className="font-semibold" style={{ color: TEXT_PRIMARY }}>{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
             </span>
           </div>
         </motion.div>
       )}
 
-      {/* ── Stats ── */}
+      {/* Stats */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid grid-cols-3 gap-3">
-        <StatBox icon={<TrendingUp className="w-4 h-4 text-blue-400" />}   value={`${totalAllTimeHours}h`} label="Total"    accent="#3b82f6" />
-        <StatBox icon={<Sparkles   className="w-4 h-4 text-indigo-400" />} value={`${totalHours}h`}        label="Este mes" accent="#6366f1" />
-        <StatBox icon={<Target     className="w-4 h-4 text-emerald-400" />} value={`${ritmo}%`}            label="Ritmo"    accent="#10b981" />
+        <StatBox icon={<TrendingUp className="w-4 h-4" style={{ color: '#3b82f6' }} />}   value={`${totalAllTimeHours}h`} label="Total"    />
+        <StatBox icon={<Sparkles   className="w-4 h-4" style={{ color: '#4338ca' }} />} value={`${totalHours}h`}        label="Este mes" />
+        <StatBox icon={<Target     className="w-4 h-4" style={{ color: '#10b981' }} />} value={`${ritmo}%`}            label="Ritmo"    />
       </motion.div>
 
-      {/* ── FAB ── */}
+      {/* FAB */}
       <motion.button
         initial={{ scale: 0 }} animate={{ scale: 1 }}
         transition={{ delay: 0.25, type: 'spring', stiffness: 300 }}
         onClick={() => { setSelectedDate(new Date()); setShowLogDialog(true); }}
         className="fixed bottom-24 right-5 w-[52px] h-[52px] rounded-full flex items-center justify-center z-40"
-        style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 20px rgba(99,102,241,0.35)', border: '1px solid rgba(99,102,241,0.5)' }}>
+        style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)', border: '1px solid rgba(99,102,241,0.5)' }}>
         <Plus className="w-5 h-5 text-white" />
       </motion.button>
 
@@ -641,13 +564,12 @@ export default function Actividad() {
   );
 }
 
-function StatBox({ icon, value, label, accent }) {
+function StatBox({ icon, value, label }) {
   return (
-    <div className="rounded-2xl p-4 flex flex-col items-center"
-      style={{ background: '#17171f', border: '1px solid rgba(255,255,255,0.10)', boxShadow: `0 4px 20px rgba(0,0,0,0.3), 0 0 24px ${accent}0F` }}>
+    <div className="rounded-2xl p-4 flex flex-col items-center" style={glassCard}>
       {icon}
-      <span className="text-[22px] font-bold text-zinc-100 font-mono mt-1.5">{value}</span>
-      <span className="text-[10px] text-zinc-600 mt-0.5">{label}</span>
+      <span className="text-[22px] font-bold font-mono mt-1.5" style={{ color: TEXT_PRIMARY }}>{value}</span>
+      <span className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>{label}</span>
     </div>
   );
 }
@@ -664,12 +586,9 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
   return (
     <div className="grid grid-cols-7 gap-[5px]">
       {trailing.map(d => (
-        <div
-          key={`p-${d}`}
-          className="aspect-square rounded-lg flex items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.025)' }}
-        >
-          <span className="text-[10px] text-zinc-700">{d}</span>
+        <div key={`p-${d}`} className="aspect-square rounded-lg flex items-center justify-center"
+          style={{ background: 'rgba(42,26,17,0.04)' }}>
+          <span className="text-[10px]" style={{ color: 'rgba(42,26,17,0.3)' }}>{d}</span>
         </div>
       ))}
       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -679,23 +598,25 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
         const isExp = expandedDay === day;
         const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
         return (
-          <button
-            key={day}
-            onClick={() => onDayClick(day)}
+          <button key={day} onClick={() => onDayClick(day)}
             className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
             style={has
               ? isExp
-                ? { background: '#047857', boxShadow: '0 3px 10px rgba(16,185,129,0.35)', border: '1px solid rgba(255,255,255,0.18)' }
-                : { background: '#059669', boxShadow: '0 2px 6px rgba(16,185,129,0.2)' }
+                ? { background: '#7a9583', boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
+                : { background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)' }
               : isToday
-                ? { background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)' }
-                : { background: 'rgba(255,255,255,0.05)' }
+                ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
+                : { background: 'rgba(42,26,17,0.07)' }
             }>
-            <span className={`text-[11px] font-semibold leading-none ${has ? 'text-white' : isToday ? 'text-zinc-200' : 'text-zinc-500'}`}>{day}</span>
+            <span className="text-[11px] font-semibold leading-none"
+              style={{ color: has ? '#1c2620' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+              {day}
+            </span>
             {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
             {acts.length > 1 && (
-              <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center">
-                <span className="text-[7px] font-bold text-emerald-700">{acts.length}</span>
+              <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+                style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.1)' }}>
+                <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{acts.length}</span>
               </div>
             )}
           </button>
