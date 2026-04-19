@@ -334,9 +334,8 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
   let startDow = new Date(year, month, 1).getDay() - 1;
   if (startDow < 0) startDow = 6;
 
-  const prevLast = new Date(year, month, 0).getDate();
   const trailing = [];
-  for (let i = startDow - 1; i >= 0; i--) trailing.push(prevLast - i);
+  for (let i = 0; i < startDow; i++) trailing.push(i);
 
   const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
@@ -349,16 +348,15 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
               src={member.avatar_url}
               alt={member.name}
               className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
-              style={{ border: `1.5px solid ${member.color}50` }}
+              style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
             />
           ) : (
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[12px] flex-shrink-0"
               style={{
-                background: `linear-gradient(135deg, ${member.color}35, ${member.color}18)`,
-                border: `1.5px solid ${member.color}50`,
+                background: 'rgba(42,26,17,0.08)',
+                border: '1.5px solid rgba(42,26,17,0.18)',
                 color: '#2a1a11',
-                boxShadow: `0 2px 8px ${member.color}20`,
               }}
             >
               {initials}
@@ -372,14 +370,8 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
       </div>
 
       <div className="grid grid-cols-7 gap-[3px]">
-        {trailing.map(d => (
-          <div
-            key={`t-${d}`}
-            className="aspect-square rounded-md flex items-center justify-center"
-            style={{ background: 'rgba(42,26,17,0.04)' }}
-          >
-            <span className="text-[9px]" style={{ color: 'rgba(42,26,17,0.3)' }}>{d}</span>
-          </div>
+        {trailing.map(i => (
+          <div key={`t-${i}`} className="aspect-square" aria-hidden="true" />
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
           const acts = member.actByDay[day] || [];

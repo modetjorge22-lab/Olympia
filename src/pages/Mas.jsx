@@ -149,16 +149,15 @@ export default function Mas() {
               src={avatarUrl}
               alt={userName}
               className="w-14 h-14 rounded-xl object-cover"
-              style={{ border: '1.5px solid rgba(99,102,241,0.45)', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}
+              style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
             />
           ) : (
             <div
               className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold"
               style={{
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(99,102,241,0.12))',
-                border: '1.5px solid rgba(99,102,241,0.45)',
+                background: 'rgba(42,26,17,0.08)',
+                border: '1.5px solid rgba(42,26,17,0.18)',
                 color: '#2a1a11',
-                boxShadow: '0 2px 12px rgba(99,102,241,0.2)',
               }}
             >
               {initials}

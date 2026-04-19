@@ -497,11 +497,11 @@ export default function Actividad() {
                 src={avatarUrl}
                 alt={userName}
                 className="w-11 h-11 rounded-xl object-cover"
-                style={{ border: '1.5px solid rgba(99,102,241,0.4)', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}
+                style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
               />
             ) : (
               <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
-                style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(99,102,241,0.12))', border: '1.5px solid rgba(99,102,241,0.4)', color: '#2a1a11', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}>
+                style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
                 {initials}
               </div>
             )}
@@ -591,17 +591,13 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   let startDow = new Date(year, month, 1).getDay() - 1;
   if (startDow < 0) startDow = 6;
-  const prevLast = new Date(year, month, 0).getDate();
   const trailing = [];
-  for (let i = startDow - 1; i >= 0; i--) trailing.push(prevLast - i);
+  for (let i = 0; i < startDow; i++) trailing.push(i);
 
   return (
     <div className="grid grid-cols-7 gap-[5px]">
-      {trailing.map(d => (
-        <div key={`p-${d}`} className="aspect-square rounded-lg flex items-center justify-center"
-          style={{ background: 'rgba(42,26,17,0.04)' }}>
-          <span className="text-[10px]" style={{ color: 'rgba(42,26,17,0.3)' }}>{d}</span>
-        </div>
+      {trailing.map(i => (
+        <div key={`p-${i}`} className="aspect-square" aria-hidden="true" />
       ))}
       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
         const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();

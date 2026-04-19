@@ -4,6 +4,7 @@ import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useMonth } from '@/lib/MonthContext';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
+import InfinityMark from './InfinityMark';
 
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -42,15 +43,18 @@ export default function AppLayout({ children }) {
           className="flex items-center justify-between px-4 max-w-lg mx-auto"
           style={{ height: HEADER_H }}
         >
-          <div style={{
-            fontFamily: '"DM Sans", system-ui, sans-serif',
-            fontWeight: 300,
-            fontSize: 11,
-            letterSpacing: '0.3em',
-            textTransform: 'uppercase',
-            color: 'rgba(245,237,224,0.92)',
-          }}>
-            Olympia
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <InfinityMark size={12} />
+            <div style={{
+              fontFamily: '"DM Sans", system-ui, sans-serif',
+              fontWeight: 400,
+              fontSize: 11,
+              letterSpacing: '0.3em',
+              textTransform: 'uppercase',
+              color: 'rgba(245,237,224,0.92)',
+            }}>
+              Olympia
+            </div>
           </div>
 
           <div

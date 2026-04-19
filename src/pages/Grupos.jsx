@@ -10,6 +10,52 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianG
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+// Gradiente verde salvia según ranking (mismo que Feed)
+function rankingGreen(rank, total) {
+  if (total <= 1) return '#8fa898';
+  const t = rank / (total - 1);
+  const from = { r: 143, g: 168, b: 152 };
+  const to   = { r: 58,  g: 36,  b: 24  };
+  const r = Math.round(from.r + (to.r - from.r) * t);
+  const g = Math.round(from.g + (to.g - from.g) * t);
+  const b = Math.round(from.b + (to.b - from.b) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+function makeMemberDot(member, lastDay, badgeDay) {
+  return function MemberDot(props) {
+    const { cx, cy, payload } = props;
+    if (cx == null || cy == null) return null;
+    if (payload.day !== badgeDay) return null;
+    const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    const radius = 10;
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={radius + 1.5} fill="rgba(245,237,224,0.95)" stroke={member.color} strokeWidth="1.5" />
+        {member.avatar_url ? (
+          <>
+            <defs>
+              <clipPath id={`clip-g-${member.email}`}>
+                <circle cx={cx} cy={cy} r={radius} />
+              </clipPath>
+            </defs>
+            <image href={member.avatar_url} x={cx - radius} y={cy - radius} width={radius * 2} height={radius * 2}
+              clipPath={`url(#clip-g-${member.email})`} preserveAspectRatio="xMidYMid slice" />
+          </>
+        ) : (
+          <>
+            <circle cx={cx} cy={cy} r={radius} fill={member.color} fillOpacity="0.25" />
+            <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="700"
+              fill={member.color} style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              {initials}
+            </text>
+          </>
+        )}
+      </g>
+    );
+  };
+}
+
 const glassCard = {
   background: 'rgba(245,237,224,0.92)',
   border: '1px solid rgba(255,255,255,0.35)',
@@ -138,12 +184,23 @@ export default function Grupos() {
   const totalTeamHours = memberStats.reduce((s, m) => s + m.totalHours, 0).toFixed(0);
   const totalSessions = memberStats.reduce((s, m) => s + m.sessions, 0);
 
+  // Escalonar burbujas cerca del final de la gráfica
+  const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
+  const badgeDays = useMemo(() => {
+    const map = {};
+    memberStats.forEach((m, i) => {
+      const offset = Math.min(i, Math.max(0, chartData.length - 2));
+      map[m.email] = lastDay - offset;
+    });
+    return map;
+  }, [memberStats, lastDay, chartData.length]);
+
   if (memberStats.length === 0) {
     return (
       <div className="px-4 py-5 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[50vh]">
         <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
-          style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-          <Users className="w-6 h-6" style={{ color: '#4338ca' }} />
+          style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
+          <Users className="w-6 h-6" style={{ color: 'rgba(245,237,224,0.75)' }} />
         </div>
         <h2 className="text-[15px] font-semibold mb-1" style={{ color: 'rgba(245,237,224,0.92)' }}>Sin actividad de equipo</h2>
         <p className="text-[13px] text-center" style={{ color: 'rgba(245,237,224,0.5)' }}>Los datos del grupo aparecerán aquí</p>
@@ -185,14 +242,26 @@ export default function Grupos() {
         </div>
         <div className="h-[180px] -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
               <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
               <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
               <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
-              {memberStats.map(m => (
-                <Line key={m.email} type="monotone" dataKey={m.email} stroke={m.color} strokeWidth={2} dot={false} activeDot={{ r: 3, fill: m.color, strokeWidth: 0 }} />
-              ))}
+              {memberStats.map((m, idx) => {
+                const lineColor = rankingGreen(idx, memberStats.length);
+                return (
+                  <Line
+                    key={m.email}
+                    type="monotone"
+                    dataKey={m.email}
+                    stroke={lineColor}
+                    strokeWidth={idx === 0 ? 2.5 : 2}
+                    dot={makeMemberDot({ ...m, color: lineColor }, lastDay, badgeDays[m.email])}
+                    activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }}
+                    isAnimationActive={false}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -207,6 +276,7 @@ export default function Grupos() {
         {memberStats.map((member, idx) => {
           const isMe = member.email === user?.email;
           const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
+          const rankColor = rankingGreen(idx, memberStats.length);
           return (
             <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
               <div className="flex items-center gap-3">
@@ -216,18 +286,18 @@ export default function Grupos() {
                     src={member.avatar_url}
                     alt={member.name}
                     className="w-8 h-8 rounded-xl object-cover"
-                    style={{ border: `1.5px solid ${member.color}50` }}
+                    style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
-                    style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: '#2a1a11' }}>
+                    style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
                     {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[12px] font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>{isMe ? 'Tú' : member.name}</p>
-                    <span className="text-[12px] font-bold font-mono" style={{ color: member.color }}>{member.totalHours}h</span>
+                    <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{isMe ? 'Tú' : member.name}</p>
+                    <span className="text-[12px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
                     <motion.div
@@ -235,7 +305,7 @@ export default function Grupos() {
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 0.8, delay: 0.1 + idx * 0.05, ease: 'easeOut' }}
                       className="h-full rounded-full"
-                      style={{ background: `linear-gradient(90deg, ${member.color}90, ${member.color})` }}
+                      style={{ background: rankColor }}
                     />
                   </div>
                 </div>
@@ -265,7 +335,7 @@ export default function Grupos() {
               <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} />
               <Tooltip cursor={{ fill: 'rgba(42,26,17,0.04)' }}
                 content={(props) => <CustomTooltip {...props} isTeam />} />
-              <Bar dataKey="horas" name="Horas" fill="rgba(99,102,241,0.75)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="horas" name="Horas" fill="#8fa898" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -288,9 +358,8 @@ function MiniMemberCard({ member, year, month, daysInMonth }) {
   const now = new Date();
   let startDow = new Date(year, month, 1).getDay() - 1;
   if (startDow < 0) startDow = 6;
-  const prevLast = new Date(year, month, 0).getDate();
   const trailing = [];
-  for (let i = startDow - 1; i >= 0; i--) trailing.push(prevLast - i);
+  for (let i = 0; i < startDow; i++) trailing.push(i);
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -302,11 +371,11 @@ function MiniMemberCard({ member, year, month, daysInMonth }) {
               src={member.avatar_url}
               alt={member.name}
               className="w-9 h-9 rounded-xl object-cover"
-              style={{ border: `1.5px solid ${member.color}50` }}
+              style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
             />
           ) : (
             <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
-              style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: '#2a1a11' }}>
+              style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
               {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -317,11 +386,8 @@ function MiniMemberCard({ member, year, month, daysInMonth }) {
         </div>
       </div>
       <div className="grid grid-cols-7 gap-[3px]">
-        {trailing.map(d => (
-          <div key={`t-${d}`} className="aspect-square rounded-md flex items-center justify-center"
-            style={{ background: 'rgba(42,26,17,0.04)' }}>
-            <span className="text-[8px]" style={{ color: 'rgba(42,26,17,0.3)' }}>{d}</span>
-          </div>
+        {trailing.map(i => (
+          <div key={`t-${i}`} className="aspect-square" aria-hidden="true" />
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
           const acts = member.actByDay[day] || [];

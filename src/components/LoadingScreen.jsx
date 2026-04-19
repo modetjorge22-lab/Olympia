@@ -1,19 +1,25 @@
 import React from 'react';
+import InfinityMark from './InfinityMark';
 
 export default function LoadingScreen() {
   return (
     <div style={{
       background: '#281811',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
       width: '100%',
+      gap: 18,
     }}>
+      <div style={{ animation: 'olympia-breathe 2.2s ease-in-out infinite' }}>
+        <InfinityMark size={28} />
+      </div>
       <span style={{
         fontFamily: '"DM Sans", system-ui, sans-serif',
         fontWeight: 400,
-        fontSize: 26,
+        fontSize: 22,
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
         color: 'rgba(245,237,224,0.92)',
