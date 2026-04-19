@@ -5,7 +5,7 @@ import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -195,6 +195,13 @@ export default function Grupos() {
     return map;
   }, [memberStats, lastDay, chartData.length]);
 
+  // Media del equipo para la línea de referencia
+  const teamAverage = useMemo(() => {
+    if (memberStats.length === 0) return null;
+    const avg = memberStats.reduce((s, m) => s + m.totalHours, 0) / memberStats.length;
+    return +avg.toFixed(1);
+  }, [memberStats]);
+
   if (memberStats.length === 0) {
     return (
       <div className="px-4 py-5 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[50vh]">
@@ -247,6 +254,21 @@ export default function Grupos() {
               <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
               <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
               <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
+              {teamAverage !== null && teamAverage > 0 && (
+                <ReferenceLine
+                  y={teamAverage}
+                  stroke="rgba(42,26,17,0.35)"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{
+                    value: `Media ${teamAverage}h`,
+                    position: 'insideTopLeft',
+                    fill: 'rgba(42,26,17,0.5)',
+                    fontSize: 9,
+                    offset: 6,
+                  }}
+                />
+              )}
               {memberStats.map((m, idx) => {
                 const lineColor = rankingGreen(idx, memberStats.length);
                 return (

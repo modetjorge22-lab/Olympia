@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
@@ -201,6 +201,13 @@ export default function Feed() {
     return map;
   }, [memberStats, lastDay, chartData.length]);
 
+  // Media del equipo de horas acumuladas en el último punto (para línea de referencia)
+  const teamAverage = useMemo(() => {
+    if (memberStats.length === 0) return null;
+    const avg = memberStats.reduce((s, m) => s + m.totalHours, 0) / memberStats.length;
+    return +avg.toFixed(1);
+  }, [memberStats]);
+
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
       {/* Monthly race chart */}
@@ -223,6 +230,21 @@ export default function Feed() {
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
               <YAxis tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={28} />
               <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
+              {teamAverage !== null && teamAverage > 0 && (
+                <ReferenceLine
+                  y={teamAverage}
+                  stroke="rgba(42,26,17,0.35)"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{
+                    value: `Media ${teamAverage}h`,
+                    position: 'insideTopLeft',
+                    fill: 'rgba(42,26,17,0.5)',
+                    fontSize: 9,
+                    offset: 6,
+                  }}
+                />
+              )}
               {memberStats.map((m, idx) => {
                 const lineColor = rankingGreen(idx, memberStats.length);
                 return (

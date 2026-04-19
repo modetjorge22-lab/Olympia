@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown, Flame } from 'lucide-react';
 
 const glassCard = {
   background: 'rgba(245,237,224,0.92)',
@@ -341,6 +341,59 @@ export default function Actividad() {
 
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
+  // ── Últimos 7 días ──
+  const last7Days = useMemo(() => {
+    const today = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const acts = myAllActivities.filter(a => a.date?.slice(0,10) === ds);
+      days.push({
+        date: d,
+        dayNum: d.getDate(),
+        dayName: ['D','L','M','X','J','V','S'][d.getDay()],
+        isToday: i === 0,
+        acts,
+        hasActivity: acts.length > 0,
+        minutes: acts.reduce((s, a) => s + (a.duration_minutes || 0), 0),
+      });
+    }
+    return days;
+  }, [myAllActivities]);
+
+  // ── Carga: comparar horas de los últimos 7 días vs media de semanas previas ──
+  const loadLevel = useMemo(() => {
+    const last7Mins = last7Days.reduce((s, d) => s + d.minutes, 0);
+    const last7Hours = last7Mins / 60;
+
+    // Media de las 12 semanas anteriores (sin contar la actual)
+    const today = new Date();
+    const weekSums = [];
+    for (let w = 1; w <= 12; w++) {
+      const end = new Date(today);
+      end.setDate(today.getDate() - w * 7);
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
+      const startStr = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+      const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+      const mins = myAllActivities
+        .filter(a => { const ds = a.date?.slice(0,10); return ds >= startStr && ds <= endStr; })
+        .reduce((s, a) => s + (a.duration_minutes || 0), 0);
+      if (mins > 0) weekSums.push(mins / 60);
+    }
+
+    if (weekSums.length === 0) {
+      return { label: last7Hours > 0 ? 'Media' : 'Sin datos', color: '#8c7364', hours: last7Hours };
+    }
+    const avg = weekSums.reduce((s, h) => s + h, 0) / weekSums.length;
+    // ±20% considerado "media"
+    if (last7Hours > avg * 1.2) return { label: 'Alta', color: '#047857', hours: last7Hours, avg };
+    if (last7Hours < avg * 0.8) return { label: 'Baja', color: '#b45309', hours: last7Hours, avg };
+    return { label: 'Media', color: '#6e5647', hours: last7Hours, avg };
+  }, [last7Days, myAllActivities]);
+
   const chartSubtitle = actFilter === 'accumulated'
     ? 'Total acumulado'
     : actFilter === 'all'
@@ -350,6 +403,58 @@ export default function Actividad() {
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
       <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
+
+      {/* ── Últimos 7 días ── */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-4" style={glassCard}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+              <Flame className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+            </div>
+            <div>
+              <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Últimos 7 días</h2>
+              <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
+                {last7Days.filter(d => d.hasActivity).length}/7 días activos
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-wider" style={{ color: TEXT_MUTED }}>Carga</p>
+            <p className="text-[13px] font-bold" style={{ color: loadLevel.color }}>{loadLevel.label}</p>
+          </div>
+        </div>
+
+        {/* Barra de 7 días */}
+        <div className="grid grid-cols-7 gap-[5px]">
+          {last7Days.map((d, i) => {
+            const emoji = d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅') : null;
+            return (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
+                <div
+                  className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative"
+                  style={d.hasActivity ? {
+                    background: '#8fa898',
+                    boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+                  } : d.isToday ? {
+                    background: 'rgba(42,26,17,0.14)',
+                    border: '1px solid rgba(42,26,17,0.22)',
+                  } : {
+                    background: 'rgba(42,26,17,0.07)',
+                  }}
+                >
+                  <span className="text-[11px] font-semibold leading-none"
+                    style={{ color: d.hasActivity ? '#1c2620' : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+                    {d.dayNum}
+                  </span>
+                  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
 
       {/* Carga de ejercicio */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-4" style={glassCard}>
@@ -388,13 +493,26 @@ export default function Actividad() {
           <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
         </div>
 
-        <div className="h-[148px] -ml-2">
+        <div className="h-[160px] -ml-2">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barCategoryGap="24%">
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11')} stopOpacity="0.35" />
+                  <stop offset="100%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11')} stopOpacity="0.02" />
+                </linearGradient>
+                {actFilter === 'all' && visibleTypes.map(t => (
+                  <linearGradient key={`g-${t.key}`} id={`gradient-${t.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={ACTIVITY_COLORS[t.key]} stopOpacity="0.5" />
+                    <stop offset="100%" stopColor={ACTIVITY_COLORS[t.key]} stopOpacity="0.05" />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={xInterval} />
               <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} />
               <Tooltip
-                cursor={{ fill: 'rgba(42,26,17,0.04)' }}
+                cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
                 content={(props) => {
                   const payload = (props.payload || []).map(p => {
                     if (p.dataKey === 'hours') return { ...p, tooltipName: 'Horas' };
@@ -406,20 +524,33 @@ export default function Actividad() {
               />
 
               {actFilter === 'all' && visibleTypes.length > 0 ? (
-                visibleTypes.map((t, i) => (
-                  <Bar key={t.key} dataKey={t.key} stackId="a" fill={ACTIVITY_COLORS[t.key]} fillOpacity={0.85}
-                    radius={i === visibleTypes.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]} />
+                visibleTypes.map((t) => (
+                  <Area
+                    key={t.key}
+                    type="monotone"
+                    dataKey={t.key}
+                    stackId="a"
+                    stroke={ACTIVITY_COLORS[t.key]}
+                    strokeWidth={2}
+                    fill={`url(#gradient-${t.key})`}
+                    dot={false}
+                    activeDot={{ r: 3, fill: ACTIVITY_COLORS[t.key], strokeWidth: 0 }}
+                    isAnimationActive={false}
+                  />
                 ))
               ) : (
-                <Bar dataKey="hours" radius={[3, 3, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={singleBarColor(entry.hours, maxHours,
-                      actFilter === 'accumulated' || actFilter === 'all' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11')
-                    )} />
-                  ))}
-                </Bar>
+                <Area
+                  type="monotone"
+                  dataKey="hours"
+                  stroke={actFilter === 'accumulated' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11')}
+                  strokeWidth={2.5}
+                  fill="url(#cargaGradient)"
+                  dot={{ r: 2.5, fill: actFilter === 'accumulated' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11'), strokeWidth: 0 }}
+                  activeDot={{ r: 4.5, fill: actFilter === 'accumulated' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11'), strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
+                  isAnimationActive={false}
+                />
               )}
-            </BarChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
@@ -431,22 +562,6 @@ export default function Actividad() {
                 <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{t.label}</span>
               </div>
             ))}
-          </div>
-        )}
-
-        {actFilter !== 'all' && (
-          <div className="flex items-center justify-end gap-2 mt-2">
-            <span className="text-[10px]" style={{ color: TEXT_MUTED }}>Poco</span>
-            <div className="flex gap-0.5">
-              {[0.3, 0.45, 0.6, 0.75, 0.95].map((op, i) => {
-                const baseColor = actFilter === 'accumulated' ? '#2a1a11' : (ACTIVITY_COLORS[actFilter] || '#2a1a11');
-                const hex = baseColor.replace('#', '');
-                const bint = parseInt(hex, 16);
-                const rgb = `${(bint>>16)&255},${(bint>>8)&255},${bint&255}`;
-                return <div key={i} className="w-3.5 h-2 rounded-sm" style={{ background: `rgba(${rgb},${op})` }} />;
-              })}
-            </div>
-            <span className="text-[10px]" style={{ color: TEXT_MUTED }}>Mucho</span>
           </div>
         )}
       </motion.div>
