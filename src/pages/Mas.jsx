@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'react-router-dom';
-import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle, Camera } from 'lucide-react';
 
 const glassCard = {
   background: 'rgba(245,237,224,0.92)',
@@ -61,26 +62,137 @@ export default function Mas() {
     }
   };
 
+  const { myProfile, upsertProfile, refresh: refreshMembers } = useTeamMembers();
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
+
+  const avatarUrl = myProfile?.avatar_url || null;
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validaciones básicas
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Solo imágenes');
+      setTimeout(() => setAvatarError(null), 3000);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Máx 5MB');
+      setTimeout(() => setAvatarError(null), 3000);
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setAvatarError(null);
+
+    try {
+      // Usar user.id como carpeta para que la policy "own folder" funcione
+      const ext = file.name.split('.').pop().toLowerCase();
+      const fileName = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+      // Upload a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Guardar en team_members
+      await upsertProfile({
+        full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+        avatar_url: publicUrl,
+      });
+
+      await refreshMembers();
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+      setAvatarError(err.message || 'Error al subir');
+      setTimeout(() => setAvatarError(null), 4000);
+    } finally {
+      setUploadingAvatar(false);
+      // Limpiar input para permitir re-seleccionar el mismo archivo
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="px-4 py-5 space-y-5 max-w-lg mx-auto">
       {/* User card */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-4 flex items-center gap-4" style={glassCard}>
-        <div
-          className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold"
-          style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(99,102,241,0.12))',
-            border: '1.5px solid rgba(99,102,241,0.45)',
-            color: '#4338ca',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.2)',
-          }}
+        <button
+          onClick={handleAvatarClick}
+          disabled={uploadingAvatar}
+          className="relative group flex-shrink-0"
+          style={{ cursor: uploadingAvatar ? 'default' : 'pointer' }}
         >
-          {initials}
-        </div>
-        <div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={userName}
+              className="w-14 h-14 rounded-xl object-cover"
+              style={{ border: '1.5px solid rgba(99,102,241,0.45)', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}
+            />
+          ) : (
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold"
+              style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(99,102,241,0.12))',
+                border: '1.5px solid rgba(99,102,241,0.45)',
+                color: '#2a1a11',
+                boxShadow: '0 2px 12px rgba(99,102,241,0.2)',
+              }}
+            >
+              {initials}
+            </div>
+          )}
+          {/* Camera badge overlay */}
+          <div
+            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+            style={{
+              background: '#2a1a11',
+              border: '2px solid rgba(245,237,224,0.95)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            }}
+          >
+            {uploadingAvatar ? (
+              <Loader2 className="w-3 h-3 text-white animate-spin" />
+            ) : (
+              <Camera className="w-3 h-3 text-white" />
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            style={{ display: 'none' }}
+          />
+        </button>
+        <div className="flex-1 min-w-0">
           <p className="text-[15px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
-          <p className="text-[13px]" style={{ color: TEXT_SECONDARY }}>{user?.email}</p>
+          <p className="text-[13px] truncate" style={{ color: TEXT_SECONDARY }}>{user?.email}</p>
+          {avatarError && (
+            <p className="text-[11px] mt-1" style={{ color: '#b91c1c' }}>{avatarError}</p>
+          )}
         </div>
       </motion.div>
 

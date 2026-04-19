@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown } from 'lucide-react';
@@ -183,7 +184,9 @@ function MenuItem({ active, dot, label, color, onClick }) {
 export default function Actividad() {
   const { user } = useAuth();
   const { currentMonth } = useMonth();
+  const { myProfile } = useTeamMembers();
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+  const avatarUrl = myProfile?.avatar_url || null;
   const { myActivities, allActivities, createActivity, deleteActivity } = useActivities(currentMonth);
 
   const [showLogDialog, setShowLogDialog] = useState(false);
@@ -489,10 +492,19 @@ export default function Actividad() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-2xl p-4" style={glassCard}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
-              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(99,102,241,0.12))', border: '1.5px solid rgba(99,102,241,0.4)', color: '#4338ca', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}>
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={userName}
+                className="w-11 h-11 rounded-xl object-cover"
+                style={{ border: '1.5px solid rgba(99,102,241,0.4)', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
+                style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(99,102,241,0.12))', border: '1.5px solid rgba(99,102,241,0.4)', color: '#2a1a11', boxShadow: '0 2px 12px rgba(99,102,241,0.2)' }}>
+                {initials}
+              </div>
+            )}
             <div>
               <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
               <p className="text-[12px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>

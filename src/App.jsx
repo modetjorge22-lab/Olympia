@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { MonthProvider } from '@/lib/MonthContext';
@@ -10,16 +10,30 @@ import Mas from '@/pages/Mas';
 import AppLayout from '@/components/AppLayout';
 import LoadingScreen from '@/components/LoadingScreen';
 
+const MIN_SPLASH_MS = 2000;
+
+// Mínimo 2s de splash desde el primer mount
+function useMinSplash() {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(t);
+  }, []);
+  return elapsed;
+}
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  const splashDone = useMinSplash();
+  if (loading || !splashDone) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  const splashDone = useMinSplash();
+  if (loading || !splashDone) return <LoadingScreen />;
   if (user) return <Navigate to="/feed" replace />;
   return children;
 }

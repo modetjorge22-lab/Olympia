@@ -10,6 +10,20 @@ import { TrendingUp } from 'lucide-react';
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+// Escala de verdes por ranking (0 = más verde = más horas, N = más oscuro/negro)
+// Usa la misma familia verde del calendario (#8fa898)
+function rankingGreen(rank, total) {
+  if (total <= 1) return '#8fa898';
+  const t = rank / (total - 1); // 0..1
+  // Interpolamos de verde salvia a marrón vino muy oscuro
+  const from = { r: 143, g: 168, b: 152 }; // #8fa898
+  const to   = { r: 58,  g: 36,  b: 24  }; // #3a2418
+  const r = Math.round(from.r + (to.r - from.r) * t);
+  const g = Math.round(from.g + (to.g - from.g) * t);
+  const b = Math.round(from.b + (to.b - from.b) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
 const glassCard = {
   background: 'rgba(245,237,224,0.92)',
   border: '1px solid rgba(255,255,255,0.35)',
@@ -35,13 +49,65 @@ const CustomTooltip = ({ active, payload, label, memberStats }) => {
               <div className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
               <span style={{ color: 'rgba(245,237,224,0.85)' }}>{m?.name || entry.dataKey}</span>
             </div>
-            <span className="font-bold" style={{ color: entry.color }}>{entry.value}h</span>
+            <span className="font-bold" style={{ color: '#fff' }}>{entry.value}h</span>
           </div>
         );
       })}
     </div>
   );
 };
+
+// Custom dot: muestra burbuja con avatar/iniciales solo cerca del final de cada línea
+function makeMemberDot(member, lastDay, badgeIndex) {
+  return function MemberDot(props) {
+    const { cx, cy, payload } = props;
+    if (cx == null || cy == null) return null;
+    // Solo renderizamos cerca del final — usamos el "badgeIndex" día para escalonar burbujas
+    if (payload.day !== badgeIndex) return null;
+
+    const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    const radius = 11;
+
+    return (
+      <g>
+        {/* Halo para destacarla del fondo */}
+        <circle cx={cx} cy={cy} r={radius + 1.5} fill="rgba(245,237,224,0.95)" stroke={member.color} strokeWidth="1.5" />
+        {member.avatar_url ? (
+          <>
+            <defs>
+              <clipPath id={`clip-${member.email}`}>
+                <circle cx={cx} cy={cy} r={radius} />
+              </clipPath>
+            </defs>
+            <image
+              href={member.avatar_url}
+              x={cx - radius}
+              y={cy - radius}
+              width={radius * 2}
+              height={radius * 2}
+              clipPath={`url(#clip-${member.email})`}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </>
+        ) : (
+          <>
+            <circle cx={cx} cy={cy} r={radius} fill={member.color} fillOpacity="0.25" />
+            <text
+              x={cx} y={cy} dy="0.35em"
+              textAnchor="middle"
+              fontSize="9"
+              fontWeight="700"
+              fill={member.color}
+              style={{ fontFamily: 'DM Sans, sans-serif' }}
+            >
+              {initials}
+            </text>
+          </>
+        )}
+      </g>
+    );
+  };
+}
 
 export default function Feed() {
   const { currentMonth } = useMonth();
@@ -89,6 +155,7 @@ export default function Feed() {
       return {
         email,
         name: member?.full_name || email.split('@')[0],
+        avatar_url: member?.avatar_url || null,
         totalHours: +(totalMins / 60).toFixed(1),
         totalMins,
         sessions: monthActs.length,
@@ -119,6 +186,21 @@ export default function Feed() {
       .slice(0, 12);
   }, [allActivities, year, month]);
 
+  // Distribuir badges escalonados en los últimos N días para evitar solapamiento
+  const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
+  const badgeDays = useMemo(() => {
+    const map = {};
+    const total = memberStats.length;
+    // Usamos los últimos N días dejando el día final para el primero del ranking
+    // El #1 en el día final, #2 un día antes, etc.
+    memberStats.forEach((m, i) => {
+      // Si tenemos muy pocos días, pongo todos en el último
+      const offset = Math.min(i, Math.max(0, chartData.length - 2));
+      map[m.email] = lastDay - offset;
+    });
+    return map;
+  }, [memberStats, lastDay, chartData.length]);
+
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
       {/* Monthly race chart */}
@@ -136,14 +218,26 @@ export default function Feed() {
 
         <div className="h-[200px] -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
               <YAxis tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={28} />
               <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
-              {memberStats.map(m => (
-                <Line key={m.email} type="monotone" dataKey={m.email} stroke={m.color} strokeWidth={2} dot={false} activeDot={{ r: 3, fill: m.color, strokeWidth: 0 }} />
-              ))}
+              {memberStats.map((m, idx) => {
+                const lineColor = rankingGreen(idx, memberStats.length);
+                return (
+                  <Line
+                    key={m.email}
+                    type="monotone"
+                    dataKey={m.email}
+                    stroke={lineColor}
+                    strokeWidth={idx === 0 ? 2.5 : 2}
+                    dot={makeMemberDot({ ...m, color: lineColor }, lastDay, badgeDays[m.email])}
+                    activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
+                    isAnimationActive={false}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -244,24 +338,35 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
   const trailing = [];
   for (let i = startDow - 1; i >= 0; i--) trailing.push(prevLast - i);
 
+  const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-4" style={glassCard}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[12px] flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg, ${member.color}35, ${member.color}18)`,
-              border: `1.5px solid ${member.color}50`,
-              color: member.color,
-              boxShadow: `0 2px 8px ${member.color}20`,
-            }}
-          >
-            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-          </div>
+          {member.avatar_url ? (
+            <img
+              src={member.avatar_url}
+              alt={member.name}
+              className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+              style={{ border: `1.5px solid ${member.color}50` }}
+            />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[12px] flex-shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${member.color}35, ${member.color}18)`,
+                border: `1.5px solid ${member.color}50`,
+                color: '#2a1a11',
+                boxShadow: `0 2px 8px ${member.color}20`,
+              }}
+            >
+              {initials}
+            </div>
+          )}
           <div>
             <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
-            <p className="text-[12px]" style={{ color: member.color }}>{member.totalHours}h este mes</p>
+            <p className="text-[12px]" style={{ color: '#2a1a11' }}>{member.totalHours}h este mes</p>
           </div>
         </div>
       </div>

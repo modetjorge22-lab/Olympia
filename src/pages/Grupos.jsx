@@ -96,6 +96,7 @@ export default function Grupos() {
       return {
         email,
         name: member?.full_name || email.split('@')[0],
+        avatar_url: member?.avatar_url || null,
         totalHours: +(totalMins / 60).toFixed(1),
         totalMins, sessions: monthActs.length,
         color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
@@ -210,10 +211,19 @@ export default function Grupos() {
             <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
               <div className="flex items-center gap-3">
                 <span className="text-[12px] font-bold w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
-                  style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: member.color }}>
-                  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                </div>
+                {member.avatar_url ? (
+                  <img
+                    src={member.avatar_url}
+                    alt={member.name}
+                    className="w-8 h-8 rounded-xl object-cover"
+                    style={{ border: `1.5px solid ${member.color}50` }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
+                    style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: '#2a1a11' }}>
+                    {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-[12px] font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>{isMe ? 'Tú' : member.name}</p>
@@ -287,13 +297,22 @@ function MiniMemberCard({ member, year, month, daysInMonth }) {
       className="rounded-2xl p-4" style={glassCard}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
-            style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: member.color }}>
-            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-          </div>
+          {member.avatar_url ? (
+            <img
+              src={member.avatar_url}
+              alt={member.name}
+              className="w-9 h-9 rounded-xl object-cover"
+              style={{ border: `1.5px solid ${member.color}50` }}
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
+              style={{ background: `${member.color}35`, border: `1.5px solid ${member.color}50`, color: '#2a1a11' }}>
+              {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="text-[13px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
-            <p className="text-[11px]" style={{ color: member.color }}>{member.totalHours}h · {member.sessions} sesiones</p>
+            <p className="text-[11px]" style={{ color: '#2a1a11' }}>{member.totalHours}h · {member.sessions} sesiones</p>
           </div>
         </div>
       </div>
