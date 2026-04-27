@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useMonth } from '@/lib/MonthContext';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import InfinityMark from './InfinityMark';
@@ -78,8 +77,6 @@ export default function AppLayout({ children }) {
               </svg>
             </button>
           </div>
-
-          <div className="w-[60px]" />
         </div>
       </header>
 
@@ -120,11 +117,9 @@ export default function AppLayout({ children }) {
                 style={{ minWidth: 64 }}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="nav-pill"
+                  <div
                     className="absolute inset-0 rounded-xl"
                     style={{ background: 'rgba(245,237,224,0.1)' }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
                 <Icon
