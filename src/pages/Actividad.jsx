@@ -4,8 +4,10 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tool
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
+import WeeklyPlanner from '@/components/WeeklyPlanner';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown, Flame } from 'lucide-react';
 
 const glassCard = {
@@ -44,23 +46,41 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
  if (!active || !payload?.length) return null;
  const items = payload.filter(p => p.value != null && p.value > 0);
  if (items.length === 0) return null;
+ const intervalLabel = payload[0]?.payload?.intervalLabel;
+ const headerText = intervalLabel || `${labelPrefix || ''}${label}`;
+
+ // Total acumulado (suma de todas las series del payload)
+ const total = items.reduce((s, e) => s + (e.value || 0), 0);
+ const totalH = Math.floor(total);
+ const totalM = Math.round((total - totalH) * 60);
+ const totalText = totalM === 0 ? `${totalH}h` : `${totalH}h ${totalM}min`;
+
+ // Si solo hay 1 serie no mostramos breakdown — el total ya es esa serie
+ const showBreakdown = items.length > 1;
+
  return (
  <div style={{
  background: '#281811',
  border: '1px solid rgba(245,237,224,0.15)',
- borderRadius: 10, padding: '8px 12px', fontSize: 11,
- boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
+ borderRadius: 10, padding: '10px 14px', fontSize: 11,
+ boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 150,
  }}>
- <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 10, marginBottom: 4 }}>
- {labelPrefix || ''}{label}
+ <p style={{ color: 'rgba(245,237,224,0.6)', fontSize: 10, marginBottom: 6, fontWeight: 500 }}>
+ {headerText}
  </p>
- {items.map((entry, i) => (
- <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
+ <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>
+ {totalText}
+ </div>
+ <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 9, marginBottom: showBreakdown ? 6 : 0 }}>
+ de ejercicio
+ </p>
+ {showBreakdown && items.map((entry, i) => (
+ <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 4 : 3 }}>
  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
  <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
- <span style={{ color: 'rgba(245,237,224,0.85)' }}>{entry.tooltipName || entry.name}</span>
+ <span style={{ color: 'rgba(245,237,224,0.8)' }}>{entry.tooltipName || entry.name}</span>
  </div>
- <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}h</span>
+ <span style={{ color: 'rgba(245,237,224,0.95)', fontWeight: 600 }}>{entry.value}h</span>
  </div>
  ))}
  </div>
@@ -185,6 +205,7 @@ export default function Actividad() {
  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
  const avatarUrl = myProfile?.avatar_url || null;
  const { myActivities, allActivities, createActivity, deleteActivity } = useActivities(currentMonth);
+ const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
 
  const [showLogDialog, setShowLogDialog] = useState(false);
  const [selectedDate, setSelectedDate] = useState(new Date());
@@ -229,7 +250,8 @@ export default function Actividad() {
 
  function buildBuckets(count, getBounds) {
  return Array.from({ length: count }, (_, i) => {
- const { start, end, label } = getBounds(i);
+ const bounds = getBounds(i);
+ const { start, end, label } = bounds;
  const startStr = toDateStr(start);
  const endStr = toDateStr(end);
  const acts = myAllActivities.filter(a => {
@@ -237,7 +259,11 @@ export default function Actividad() {
  return ds >= startStr && ds <= endStr;
  });
 
- const point = { label };
+ const point = {
+ label,
+ monthLabel: bounds.monthLabel,
+ intervalLabel: bounds.intervalLabel,
+ };
 
  if (actFilter === 'all') {
  const minsByType = {};
@@ -263,27 +289,49 @@ export default function Actividad() {
  });
  }
 
+ const MONTH_LABELS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+ const MONTH_NAMES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
  const weeklyData = useMemo(() => {
  const refDate = new Date(year, month + 1, 0);
+ let lastMonth = -1;
  return buildBuckets(16, i => {
  const w = 15 - i;
  const end = new Date(refDate);
  end.setDate(refDate.getDate() - w * 7);
  const start = new Date(end);
  start.setDate(end.getDate() - 6);
- return { start, end, label: `${start.getDate()}/${start.getMonth() + 1}` };
+ // Solo mostramos la inicial cuando cambia el mes (en el primer día visible de ese mes)
+ const showMonth = start.getMonth() !== lastMonth;
+ lastMonth = start.getMonth();
+ return {
+ start,
+ end,
+ label: `${start.getDate()}/${start.getMonth() + 1}`,
+ monthLabel: showMonth ? MONTH_LABELS_SHORT[start.getMonth()] : '',
+ intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
+ };
  });
  }, [myAllActivities, year, month, actFilter]);
 
  const dailyData = useMemo(() => {
  const today = new Date();
+ let lastMonth = -1;
  return buildBuckets(60, i => {
  const d = 59 - i;
  const date = new Date(today);
  date.setDate(today.getDate() - d);
  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
- return { start, end, label: `${date.getDate()}/${date.getMonth() + 1}` };
+ const showMonth = date.getMonth() !== lastMonth;
+ lastMonth = date.getMonth();
+ return {
+ start,
+ end,
+ label: `${date.getDate()}/${date.getMonth() + 1}`,
+ monthLabel: showMonth ? MONTH_LABELS_SHORT[date.getMonth()] : '',
+ intervalLabel: `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`,
+ };
  });
  }, [myAllActivities, actFilter]);
 
@@ -397,6 +445,31 @@ export default function Actividad() {
  ? 'Todas las actividades'
  : `${ACTIVITY_TYPES[actFilter]?.emoji} ${ACTIVITY_TYPES[actFilter]?.label}`;
 
+ // Mapas para calendar/planner
+ // Día del mes mostrado → planes
+ const plansByDayOfMonth = useMemo(() => {
+ const map = {};
+ weeklyPlans.forEach(p => {
+ const d = new Date(p.date + 'T00:00:00');
+ if (d.getFullYear() === year && d.getMonth() === month) {
+ const day = d.getDate();
+ if (!map[day]) map[day] = [];
+ map[day].push(p);
+ }
+ });
+ return map;
+ }, [weeklyPlans, year, month]);
+
+ // Fecha YYYY-MM-DD → boolean (si tiene actividad real registrada)
+ const completedByDate = useMemo(() => {
+ const map = {};
+ myAllActivities.forEach(a => {
+ const ds = a.date?.slice(0, 10);
+ if (ds) map[ds] = true;
+ });
+ return map;
+ }, [myAllActivities]);
+
  return (
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
@@ -453,6 +526,28 @@ export default function Actividad() {
  </div>
  </div>
 
+ {/* ── Planificador semanal ── */}
+ <WeeklyPlanner
+ plans={weeklyPlans}
+ onAddPlan={addPlan}
+ onRemovePlan={removePlan}
+ onCompletePlan={async (plan, formData) => {
+ await createActivity({
+ type: plan.activity_type,
+ title: ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type,
+ training_type: formData.training_type || null,
+ duration_minutes: formData.duration_minutes,
+ date: plan.date.slice(0, 10),
+ description: formData.description || null,
+ progress_note: formData.progress_note || null,
+ source: 'planned',
+ completed: true,
+ });
+ await removePlan(plan.id);
+ }}
+ completedByDate={completedByDate}
+ />
+
  {/* Carga de ejercicio */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between mb-3">
@@ -506,8 +601,24 @@ export default function Actividad() {
  ))}
  </defs>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" vertical={false} />
- <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={xInterval} />
- <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} domain={[0, (dataMax) => Math.ceil(dataMax * 1.15) || 1]} />
+ <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={0} />
+ <YAxis
+ tick={{ fontSize: 9, fill: TEXT_MUTED }}
+ axisLine={false}
+ tickLine={false}
+ width={26}
+ domain={[0, (dataMax) => {
+ const max = Math.ceil((dataMax || 1) * 1.15);
+ // Redondear a múltiplo "limpio" para tener saltos regulares
+ if (max <= 5) return Math.ceil(max);
+ if (max <= 10) return Math.ceil(max / 2) * 2;
+ if (max <= 25) return Math.ceil(max / 5) * 5;
+ return Math.ceil(max / 10) * 10;
+ }]}
+ tickCount={5}
+ allowDecimals={false}
+ tickFormatter={(v) => `${v}h`}
+ />
  <Tooltip
  cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
@@ -624,7 +735,7 @@ export default function Actividad() {
  </div>
  </div>
 
- <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} onDayClick={handleDayClick} expandedDay={expandedDay} />
+ <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} onDayClick={handleDayClick} expandedDay={expandedDay} />
 
  <AnimatePresence>
  {expandedDay && activitiesByDate[expandedDay] && (
@@ -696,7 +807,7 @@ function StatBox({ icon, value, label }) {
  );
 }
 
-function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }) {
+function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, onDayClick, expandedDay }) {
  const now = new Date();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
  let startDow = new Date(year, month, 1).getDay() - 1;
@@ -713,8 +824,12 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
  const acts = activitiesByDate[day] || [];
  const has = acts.length > 0;
+ const planned = plansByDayOfMonth[day] || [];
+ const hasPlan = !has && planned.length > 0;
  const isExp = expandedDay === day;
- const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
+ const emoji = has
+ ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
+ : (hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null);
  return (
  <button key={day} onClick={() => onDayClick(day)}
  className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
@@ -722,12 +837,14 @@ function CalendarGrid({ year, month, activitiesByDate, onDayClick, expandedDay }
  ? isExp
  ? { background: '#7a9583', boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
  : { background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)' }
+ : hasPlan
+ ? { background: 'rgba(143,168,152,0.18)', border: '1.5px dashed #8fa898' }
  : isToday
  ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }
  }>
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: has ? '#1c2620' : hasPlan ? '#1c5838' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
