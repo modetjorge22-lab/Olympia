@@ -49,38 +49,33 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
  const intervalLabel = payload[0]?.payload?.intervalLabel;
  const headerText = intervalLabel || `${labelPrefix || ''}${label}`;
 
- // Total acumulado (suma de todas las series del payload)
  const total = items.reduce((s, e) => s + (e.value || 0), 0);
  const totalH = Math.floor(total);
  const totalM = Math.round((total - totalH) * 60);
  const totalText = totalM === 0 ? `${totalH}h` : `${totalH}h ${totalM}min`;
 
- // Si solo hay 1 serie no mostramos breakdown — el total ya es esa serie
  const showBreakdown = items.length > 1;
 
  return (
  <div style={{
  background: '#281811',
  border: '1px solid rgba(245,237,224,0.15)',
- borderRadius: 10, padding: '10px 14px', fontSize: 11,
- boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 150,
+ borderRadius: 8, padding: '6px 9px', fontSize: 10,
+ boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
  }}>
- <p style={{ color: 'rgba(245,237,224,0.6)', fontSize: 10, marginBottom: 6, fontWeight: 500 }}>
+ <p style={{ color: 'rgba(245,237,224,0.55)', fontSize: 9, marginBottom: 2 }}>
  {headerText}
  </p>
- <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>
+ <p style={{ color: '#ffffff', fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>
  {totalText}
- </div>
- <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 9, marginBottom: showBreakdown ? 6 : 0 }}>
- de ejercicio
  </p>
  {showBreakdown && items.map((entry, i) => (
- <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 4 : 3 }}>
- <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
- <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
- <span style={{ color: 'rgba(245,237,224,0.8)' }}>{entry.tooltipName || entry.name}</span>
+ <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: i === 0 ? 3 : 1 }}>
+ <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+ <div style={{ width: 5, height: 5, borderRadius: 1, background: entry.color || entry.fill }} />
+ <span style={{ color: 'rgba(245,237,224,0.7)', fontSize: 9 }}>{entry.tooltipName || entry.name}</span>
  </div>
- <span style={{ color: 'rgba(245,237,224,0.95)', fontWeight: 600 }}>{entry.value}h</span>
+ <span style={{ color: 'rgba(245,237,224,0.85)', fontWeight: 500, fontSize: 9 }}>{entry.value}h</span>
  </div>
  ))}
  </div>
@@ -338,6 +333,18 @@ export default function Actividad() {
  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
  const maxHours = Math.max(...chartData.map(d => d.hours || 0), 0.5);
  const xInterval = loadTF === 'weeks' ? 3 : 9;
+
+ // Eje Y con saltos limpios y regulares — siempre 4 intervalos (5 ticks)
+ const { yDomain, yTicks } = useMemo(() => {
+ const target = maxHours * 1.15;
+ // Pasos preferidos: 1, 2, 5, 10, 20, 25, 50, 100
+ const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100];
+ const idealStep = target / 4;
+ const step = niceSteps.find(s => s >= idealStep) || 100;
+ const max = step * 4;
+ const ticks = [0, step, step * 2, step * 3, max];
+ return { yDomain: [0, max], yTicks: ticks };
+ }, [maxHours]);
 
  const visibleTypes = useMemo(() => {
  const keys = new Set();
@@ -607,16 +614,8 @@ export default function Actividad() {
  axisLine={false}
  tickLine={false}
  width={26}
- domain={[0, (dataMax) => {
- const max = Math.ceil((dataMax || 1) * 1.15);
- // Redondear a múltiplo "limpio" para tener saltos regulares
- if (max <= 5) return Math.ceil(max);
- if (max <= 10) return Math.ceil(max / 2) * 2;
- if (max <= 25) return Math.ceil(max / 5) * 5;
- return Math.ceil(max / 10) * 10;
- }]}
- tickCount={5}
- allowDecimals={false}
+ domain={yDomain}
+ ticks={yTicks}
  tickFormatter={(v) => `${v}h`}
  />
  <Tooltip

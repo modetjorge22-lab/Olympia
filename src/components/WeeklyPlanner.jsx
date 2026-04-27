@@ -182,20 +182,24 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  Pulsa un día para planificar
  </p>
 
- {/* Day picker sheet — COMPACT */}
+ {/* Day picker — modal fixed para escapar del stacking context */}
  {selectedDay && !completing && (
  <div
+ className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+ style={{ background: 'rgba(40,24,17,0.55)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+ onClick={() => setSelectedDay(null)}
+ >
+ <div
  ref={sheetRef}
- className="absolute left-3 right-3 rounded-xl p-3 z-20"
+ className="rounded-2xl p-3 w-full max-w-sm"
  style={{
- top: '100%',
- marginTop: 8,
  background: 'rgba(245,237,224,0.98)',
  border: '1px solid rgba(255,255,255,0.4)',
- boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.7)',
+ boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7)',
  backdropFilter: 'blur(20px)',
  WebkitBackdropFilter: 'blur(20px)',
  }}
+ onClick={(e) => e.stopPropagation()}
  >
  <div className="flex items-center justify-between mb-2">
  <p className="text-[12px] font-semibold capitalize" style={{ color: TEXT_PRIMARY }}>
@@ -258,6 +262,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <span className="text-[10px] whitespace-nowrap" style={{ color: TEXT_PRIMARY }}>{label}</span>
  </button>
  ))}
+ </div>
  </div>
  </div>
  )}
