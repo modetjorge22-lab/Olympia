@@ -143,8 +143,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  background: '#8fa898',
  boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
  } : hasPlan ? {
- background: 'rgba(143,168,152,0.18)',
- border: '1.5px dashed #8fa898',
+ background: 'rgba(168,158,198,0.18)',
+ border: '1.5px dashed #a89ec6',
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)',
  border: '1px solid rgba(42,26,17,0.22)',
@@ -158,7 +158,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <span className="text-[11px] font-semibold leading-none"
  style={{
  color: isCompleted ? '#1c2620'
- : hasPlan ? '#1c5838'
+ : hasPlan ? '#4a3a73'
  : isToday ? TEXT_PRIMARY
  : isPast ? 'rgba(42,26,17,0.35)'
  : 'rgba(42,26,17,0.55)'
@@ -185,14 +185,24 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {/* Day picker — modal fixed para escapar del stacking context */}
  {selectedDay && !completing && (
  <div
- className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
- style={{ background: 'rgba(40,24,17,0.55)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+ className="fixed inset-0 z-[100] flex items-center justify-center"
+ style={{
+ background: 'rgba(40,24,17,0.55)',
+ backdropFilter: 'blur(4px)',
+ WebkitBackdropFilter: 'blur(4px)',
+ paddingTop: 'max(16px, env(safe-area-inset-top))',
+ paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
+ paddingLeft: 12,
+ paddingRight: 12,
+ }}
  onClick={() => setSelectedDay(null)}
  >
  <div
  ref={sheetRef}
  className="rounded-2xl p-3 w-full max-w-sm"
  style={{
+ maxHeight: '100%',
+ overflowY: 'auto',
  background: 'rgba(245,237,224,0.98)',
  border: '1px solid rgba(255,255,255,0.4)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7)',
@@ -311,16 +321,25 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
 
  return (
  <div
- className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
- style={{ background: 'rgba(40,24,17,0.65)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+ className="fixed inset-0 z-[100] flex items-center justify-center"
+ style={{
+ background: 'rgba(40,24,17,0.65)',
+ backdropFilter: 'blur(6px)',
+ WebkitBackdropFilter: 'blur(6px)',
+ paddingTop: 'max(16px, env(safe-area-inset-top))',
+ paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
+ paddingLeft: 12,
+ paddingRight: 12,
+ }}
  onClick={onCancel}
  >
  <div
- className="rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
+ className="rounded-2xl w-full max-w-sm flex flex-col"
  style={{
+ maxHeight: '100%',
  background: 'rgba(245,237,224,0.96)',
  border: '1px solid rgba(255,255,255,0.35)',
- boxShadow: '0 -4px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6)',
+ boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6)',
  backdropFilter: 'blur(20px)',
  WebkitBackdropFilter: 'blur(20px)',
  }}

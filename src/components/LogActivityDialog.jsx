@@ -65,16 +65,25 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-3 sm:pb-0"
-      style={{ background: 'rgba(40,24,17,0.55)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      style={{
+        background: 'rgba(40,24,17,0.55)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        paddingTop: 'max(16px, env(safe-area-inset-top))',
+        paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
+        paddingLeft: 12,
+        paddingRight: 12,
+      }}
       onClick={onClose}
     >
       <div
-        className="rounded-2xl w-full max-w-sm max-h-[78vh] flex flex-col"
+        className="rounded-2xl w-full max-w-sm flex flex-col"
         style={{
+          maxHeight: '100%',
           background: 'rgba(245,237,224,0.98)',
           border: '1px solid rgba(255,255,255,0.4)',
-          boxShadow: '0 -4px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
         }}

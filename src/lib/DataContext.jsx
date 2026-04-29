@@ -5,7 +5,6 @@ import { useMonth } from './MonthContext';
 
 const DataContext = createContext(null);
 
-// Convierte Date → "YYYY-MM" para cache key estable
 function monthKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -14,11 +13,11 @@ export function DataProvider({ children }) {
   const { user } = useAuth();
   const { currentMonth } = useMonth();
 
-  // Caché en memoria (se mantiene mientras la app esté montada)
-  const monthCache = useRef({}); // { 'YYYY-MM': activities[] }
+  // Caché en memoria
+  const monthCache = useRef({});
   const allActsCache = useRef(null);
   const teamMembersCache = useRef(null);
-  const plansCache = useRef({}); // { 'YYYY-MM': plans[] }
+  const plansLoaded = useRef(false);
 
   const [activities, setActivities] = useState([]);
   const [allActivities, setAllActivities] = useState([]);
@@ -38,21 +37,19 @@ export function DataProvider({ children }) {
     const month = currentMonth.getMonth();
     const startDate = new Date(year, month, 1).toISOString().split('T')[0];
     const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
-
     const { data, error } = await supabase
       .from('activities')
       .select('*')
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date', { ascending: false });
-
     if (!error && data) {
       monthCache.current[mKey] = data;
       setActivities(data);
     }
   }, [currentMonth, mKey]);
 
-  // ─── ALL ACTIVITIES (para histórico de gráficas) ───
+  // ─── ALL ACTIVITIES (histórico para gráficas) ───
   const fetchAllActivities = useCallback(async (force = false) => {
     if (!force && allActsCache.current) {
       setAllActivities(allActsCache.current);
@@ -84,33 +81,24 @@ export function DataProvider({ children }) {
     }
   }, []);
 
-  // ─── WEEKLY PLANS (rango ±1 mes desde currentMonth) ───
+  // ─── WEEKLY PLANS — todos del usuario, sin segmentar por mes ───
   const fetchWeeklyPlans = useCallback(async (force = false) => {
     if (!user?.email) return;
-    if (!force && plansCache.current[mKey]) {
-      setWeeklyPlans(plansCache.current[mKey]);
-      return;
-    }
-    const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-    const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 2, 0);
-    const startStr = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
-
+    if (!force && plansLoaded.current) return;
     const { data, error } = await supabase
       .from('weekly_plans')
       .select('*')
       .eq('user_email', user.email)
-      .gte('date', startStr)
-      .lte('date', endStr)
       .order('date');
-
     if (!error && data) {
-      plansCache.current[mKey] = data;
+      plansLoaded.current = true;
       setWeeklyPlans(data);
+    } else if (error) {
+      console.error('fetchWeeklyPlans error:', error);
     }
-  }, [user?.email, currentMonth, mKey]);
+  }, [user?.email]);
 
-  // Carga inicial — sólo cuando cambia el usuario o el mes
+  // Carga inicial — una vez por usuario y al cambiar de mes (sólo activities mensuales se refrescan)
   useEffect(() => {
     if (!user) return;
     setLoading(true);
@@ -123,15 +111,16 @@ export function DataProvider({ children }) {
   }, [user, mKey, fetchMonthActivities, fetchAllActivities, fetchTeamMembers, fetchWeeklyPlans]);
 
   // ─── MUTATIONS ───
-  const createActivity = async (activityData) => {
+  const createActivity = useCallback(async (activityData) => {
     const { data, error } = await supabase
       .from('activities')
       .insert({ ...activityData, user_id: user.id, user_email: user.email })
       .select()
       .single();
-    if (error) throw error;
-
-    // Optimistic update + invalidación
+    if (error) {
+      console.error('createActivity error:', error);
+      throw error;
+    }
     if (data) {
       monthCache.current[mKey] = [data, ...(monthCache.current[mKey] || [])];
       allActsCache.current = [data, ...(allActsCache.current || [])];
@@ -139,12 +128,14 @@ export function DataProvider({ children }) {
       setAllActivities(allActsCache.current);
     }
     return data;
-  };
+  }, [user, mKey]);
 
-  const deleteActivity = async (id) => {
+  const deleteActivity = useCallback(async (id) => {
     const { error } = await supabase.from('activities').delete().eq('id', id);
-    if (error) throw error;
-    // Update cache
+    if (error) {
+      console.error('deleteActivity error:', error);
+      throw error;
+    }
     if (monthCache.current[mKey]) {
       monthCache.current[mKey] = monthCache.current[mKey].filter(a => a.id !== id);
       setActivities(monthCache.current[mKey]);
@@ -153,46 +144,52 @@ export function DataProvider({ children }) {
       allActsCache.current = allActsCache.current.filter(a => a.id !== id);
       setAllActivities(allActsCache.current);
     }
-  };
+  }, [mKey]);
 
-  const upsertProfile = async (profileData) => {
+  const upsertProfile = useCallback(async (profileData) => {
     const { data, error } = await supabase
       .from('team_members')
       .upsert({ email: user.email, ...profileData }, { onConflict: 'email' })
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('upsertProfile error:', error);
+      throw error;
+    }
     if (data) {
       const updated = (teamMembersCache.current || []).filter(m => m.email !== user.email);
       teamMembersCache.current = [...updated, data].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
       setTeamMembers(teamMembersCache.current);
     }
     return data;
-  };
+  }, [user]);
 
-  const addPlan = async ({ date, activity_type, notes }) => {
+  const addPlan = useCallback(async ({ date, activity_type, notes }) => {
     if (!user?.email) return null;
     const { data, error } = await supabase
       .from('weekly_plans')
       .insert([{ user_email: user.email, date, activity_type, notes: notes || null }])
       .select()
       .single();
-    if (!error && data) {
-      const updated = [...(plansCache.current[mKey] || []), data].sort((a, b) => a.date.localeCompare(b.date));
-      plansCache.current[mKey] = updated;
-      setWeeklyPlans(updated);
+    if (error) {
+      console.error('addPlan error:', error);
+      return null;
     }
-    return error ? null : data;
-  };
+    if (data) {
+      setWeeklyPlans(prev => [...prev, data].sort((a, b) => a.date.localeCompare(b.date)));
+    }
+    return data;
+  }, [user?.email]);
 
-  const removePlan = async (id) => {
+  const removePlan = useCallback(async (id) => {
     const { error } = await supabase.from('weekly_plans').delete().eq('id', id);
-    if (!error && plansCache.current[mKey]) {
-      plansCache.current[mKey] = plansCache.current[mKey].filter(p => p.id !== id);
-      setWeeklyPlans(plansCache.current[mKey]);
+    if (error) {
+      console.error('removePlan error:', error);
+      return false;
     }
-    return !error;
-  };
+    setWeeklyPlans(prev => prev.filter(p => p.id !== id));
+    return true;
+  }, []);
 
   // Derivados
   const myActivities = useMemo(
@@ -204,15 +201,15 @@ export function DataProvider({ children }) {
     [teamMembers, user?.email]
   );
 
-  const value = useMemo(() => ({
+  const value = {
     activities,
     allActivities,
     myActivities,
     teamMembers,
-    members: teamMembers, // alias
+    members: teamMembers,
     myProfile,
     weeklyPlans,
-    plans: weeklyPlans, // alias
+    plans: weeklyPlans,
     loading,
     createActivity,
     deleteActivity,
@@ -225,7 +222,7 @@ export function DataProvider({ children }) {
       fetchTeamMembers(true);
       fetchWeeklyPlans(true);
     },
-  }), [activities, allActivities, myActivities, teamMembers, myProfile, weeklyPlans, loading]);
+  };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
