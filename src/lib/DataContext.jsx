@@ -164,11 +164,17 @@ export function DataProvider({ children }) {
     return data;
   }, [user]);
 
-  const addPlan = useCallback(async ({ date, activity_type, notes }) => {
+  const addPlan = useCallback(async ({ date, activity_type, notes, duration_minutes }) => {
     if (!user?.email) return null;
     const { data, error } = await supabase
       .from('weekly_plans')
-      .insert([{ user_email: user.email, date, activity_type, notes: notes || null }])
+      .insert([{
+        user_email: user.email,
+        date,
+        activity_type,
+        notes: notes || null,
+        duration_minutes: duration_minutes || null,
+      }])
       .select()
       .single();
     if (error) {

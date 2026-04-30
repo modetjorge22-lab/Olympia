@@ -9,6 +9,7 @@ import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import WeeklyPlanner from '@/components/WeeklyPlanner';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown, Flame } from 'lucide-react';
+import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
  background: 'rgba(245,237,224,0.92)',
@@ -402,18 +403,22 @@ export default function Actividad() {
  d.setDate(today.getDate() - i);
  const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
  const acts = myAllActivities.filter(a => a.date?.slice(0,10) === ds);
+ const dayPlans = weeklyPlans.filter(p => p.date?.slice(0,10) === ds);
+ const hasActivity = acts.length > 0;
  days.push({
  date: d,
  dayNum: d.getDate(),
  dayName: ['D','L','M','X','J','V','S'][d.getDay()],
  isToday: i === 0,
  acts,
- hasActivity: acts.length > 0,
+ plans: dayPlans,
+ hasActivity,
+ hasPlan: !hasActivity && dayPlans.length > 0,
  minutes: acts.reduce((s, a) => s + (a.duration_minutes || 0), 0),
  });
  }
  return days;
- }, [myAllActivities]);
+ }, [myAllActivities, weeklyPlans]);
 
  // ── Carga: comparar horas de los últimos 7 días vs media de semanas previas ──
  const loadLevel = useMemo(() => {
@@ -467,12 +472,14 @@ export default function Actividad() {
  return map;
  }, [weeklyPlans, year, month]);
 
- // Fecha YYYY-MM-DD → boolean (si tiene actividad real registrada)
- const completedByDate = useMemo(() => {
+ // Fecha YYYY-MM-DD → actividades reales registradas (rico, para mostrar resumen)
+ const activitiesByDateStr = useMemo(() => {
  const map = {};
  myAllActivities.forEach(a => {
  const ds = a.date?.slice(0, 10);
- if (ds) map[ds] = true;
+ if (!ds) return;
+ if (!map[ds]) map[ds] = [];
+ map[ds].push(a);
  });
  return map;
  }, [myAllActivities]);
@@ -492,7 +499,12 @@ export default function Actividad() {
  <div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Últimos 7 días</h2>
  <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
- {last7Days.filter(d => d.hasActivity).length}/7 días activos
+ {last7Days.filter(d => d.hasActivity).length}/7 activos
+ {last7Days.some(d => d.hasPlan) && (
+ <> · <span style={{ color: DAY_PALETTE.planned.textOnSummary, fontWeight: 600 }}>
+ {last7Days.filter(d => d.hasPlan).length} planificado{last7Days.filter(d => d.hasPlan).length !== 1 ? 's' : ''}
+ </span></>
+ )}
  </p>
  </div>
  </div>
@@ -505,15 +517,35 @@ export default function Actividad() {
  {/* Barra de 7 días */}
  <div className="grid grid-cols-7 gap-[5px]">
  {last7Days.map((d, i) => {
- const emoji = d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅') : null;
+ const palette = d.hasActivity
+ ? DAY_PALETTE.completed
+ : d.hasPlan
+ ? DAY_PALETTE.planned
+ : null;
+ const emoji = d.hasActivity
+ ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
+ : d.hasPlan
+ ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅')
+ : null;
+ const summary = d.hasActivity
+ ? getActivitySummary(d.acts[0], ACTIVITY_TYPES)
+ : d.hasPlan
+ ? getPlanSummary(d.plans[0], ACTIVITY_TYPES)
+ : null;
+ const totalCount = d.hasActivity ? d.acts.length : d.hasPlan ? d.plans.length : 0;
+
  return (
  <div key={i} className="flex flex-col items-center gap-1">
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
  <div
  className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative"
  style={d.hasActivity ? {
- background: '#8fa898',
- boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+ background: DAY_PALETTE.completed.bg,
+ boxShadow: DAY_PALETTE.completed.glow,
+ } : d.hasPlan ? {
+ background: DAY_PALETTE.planned.bg,
+ border: DAY_PALETTE.planned.border,
+ boxShadow: DAY_PALETTE.planned.glow,
  } : d.isToday ? {
  background: 'rgba(42,26,17,0.14)',
  border: '1px solid rgba(42,26,17,0.22)',
@@ -522,11 +554,27 @@ export default function Actividad() {
  }}
  >
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.hasActivity ? '#1c2620' : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{
+ color: d.hasActivity ? DAY_PALETTE.completed.text
+ : d.hasPlan ? DAY_PALETTE.planned.text
+ : d.isToday ? TEXT_PRIMARY
+ : 'rgba(42,26,17,0.45)'
+ }}>
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ {totalCount > 1 && (
+ <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+ style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.15)' }}>
+ <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{totalCount}</span>
  </div>
+ )}
+ </div>
+
+ {/* Resumen colgante con barras discontinuas */}
+ {summary && palette && (
+ <DaySummaryDrop summary={summary} palette={palette} extraCount={totalCount - 1} />
+ )}
  </div>
  );
  })}
@@ -552,7 +600,7 @@ export default function Actividad() {
  });
  await removePlan(plan.id);
  }}
- completedByDate={completedByDate}
+ activitiesByDate={activitiesByDateStr}
  />
 
  {/* Carga de ejercicio */}
@@ -806,6 +854,55 @@ function StatBox({ icon, value, label }) {
  );
 }
 
+function DaySummaryDrop({ summary, palette, extraCount = 0 }) {
+ if (!summary?.name) return null;
+ const lineStyle = {
+ width: 1,
+ borderLeft: `1px dashed ${palette.line}`,
+ alignSelf: 'stretch',
+ };
+ return (
+ <div className="flex w-full" style={{ marginTop: 3 }}>
+ <div style={lineStyle} />
+ <div
+ className="flex-1 flex flex-col justify-center"
+ style={{ paddingTop: 3, paddingBottom: 3, paddingLeft: 2, paddingRight: 2, textAlign: 'center', lineHeight: 1.15, minWidth: 0 }}
+ >
+ <p style={{
+ fontSize: 8.5,
+ fontWeight: 600,
+ color: palette.textOnSummary,
+ overflow: 'hidden',
+ textOverflow: 'ellipsis',
+ whiteSpace: 'nowrap',
+ }}>
+ {summary.name}
+ </p>
+ {summary.duration && (
+ <p style={{
+ fontSize: 8,
+ fontWeight: 500,
+ color: palette.textOnSummary,
+ opacity: 0.78,
+ }}>
+ {summary.duration}
+ </p>
+ )}
+ {extraCount > 0 && (
+ <p style={{
+ fontSize: 7.5,
+ color: palette.textOnSummary,
+ opacity: 0.6,
+ }}>
+ +{extraCount}
+ </p>
+ )}
+ </div>
+ <div style={lineStyle} />
+ </div>
+ );
+}
+
 function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, onDayClick, expandedDay }) {
  const now = new Date();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -834,16 +931,16 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, o
  className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
  style={has
  ? isExp
- ? { background: '#7a9583', boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
- : { background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)' }
+ ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
+ : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : hasPlan
- ? { background: 'rgba(143,168,152,0.18)', border: '1.5px dashed #8fa898' }
+ ? { background: DAY_PALETTE.planned.bg, border: DAY_PALETTE.planned.border, boxShadow: DAY_PALETTE.planned.glow }
  : isToday
  ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }
  }>
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : hasPlan ? '#1c5838' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: has ? DAY_PALETTE.completed.text : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
@@ -851,6 +948,12 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, o
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.1)' }}>
  <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{acts.length}</span>
+ </div>
+ )}
+ {!has && planned.length > 1 && (
+ <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+ style={{ background: '#fff', border: '1px solid rgba(125,107,167,0.4)' }}>
+ <span className="text-[7px] font-bold" style={{ color: DAY_PALETTE.planned.text }}>{planned.length}</span>
  </div>
  )}
  </button>

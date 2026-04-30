@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, Plus, X, Trash2, Check, Clock, TrendingUp } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
+import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const TEXT_PRIMARY = '#2a1a11';
 const TEXT_SECONDARY = '#6e5647';
@@ -32,10 +33,11 @@ function getMondayOfWeek(date) {
  return monday;
 }
 
-export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onCompletePlan, completedByDate = {} }) {
+export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onCompletePlan, activitiesByDate = {} }) {
  const [selectedDay, setSelectedDay] = useState(null);
  const [weekOffset, setWeekOffset] = useState(0);
  const [completing, setCompleting] = useState(null); // plan que se está completando
+ const [planDuration, setPlanDuration] = useState(60); // minutos por defecto al planificar
  const sheetRef = useRef(null);
 
  const weekDays = useMemo(() => {
@@ -75,7 +77,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
 
  const handleSelectActivity = async (type) => {
  if (!selectedDay) return;
- await onAddPlan({ date: toDateStr(selectedDay), activity_type: type });
+ await onAddPlan({ date: toDateStr(selectedDay), activity_type: type, duration_minutes: planDuration });
  // Cerramos tras añadir para que no haya tanto "scroll"
  setSelectedDay(null);
  };
@@ -125,11 +127,25 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {weekDays.map((d, i) => {
  const ds = toDateStr(d);
  const dayPlans = plansByDate[ds] || [];
- const isCompleted = completedByDate[ds];
+ const completedActs = activitiesByDate[ds] || [];
+ const isCompleted = completedActs.length > 0;
  const isToday = d.getTime() === today.getTime();
  const isPast = d < today;
- const hasPlan = dayPlans.length > 0;
- const firstEmoji = hasPlan ? (ACTIVITY_TYPES[dayPlans[0].activity_type]?.emoji || '🏅') : null;
+ const hasPlan = !isCompleted && dayPlans.length > 0;
+ const firstEmoji = isCompleted
+ ? (ACTIVITY_TYPES[completedActs[0].type]?.emoji || '🏅')
+ : hasPlan
+ ? (ACTIVITY_TYPES[dayPlans[0].activity_type]?.emoji || '🏅')
+ : null;
+
+ // Resumen para colgar bajo el día
+ const summary = isCompleted
+ ? getActivitySummary(completedActs[0], ACTIVITY_TYPES)
+ : hasPlan
+ ? getPlanSummary(dayPlans[0], ACTIVITY_TYPES)
+ : null;
+ const palette = isCompleted ? DAY_PALETTE.completed : hasPlan ? DAY_PALETTE.planned : null;
+ const totalCount = isCompleted ? completedActs.length : dayPlans.length;
 
  return (
  <div key={i} className="flex flex-col items-center gap-1">
@@ -141,11 +157,12 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all"
  style={
  isCompleted ? {
- background: '#8fa898',
- boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+ background: DAY_PALETTE.completed.bg,
+ boxShadow: DAY_PALETTE.completed.glow,
  } : hasPlan ? {
- background: 'rgba(168,158,198,0.18)',
- border: '1.5px dashed #a89ec6',
+ background: DAY_PALETTE.planned.bg,
+ border: DAY_PALETTE.planned.border,
+ boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)',
  border: '1px solid rgba(42,26,17,0.22)',
@@ -158,8 +175,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  >
  <span className="text-[11px] font-semibold leading-none"
  style={{
- color: isCompleted ? '#1c2620'
- : hasPlan ? '#4a3a73'
+ color: isCompleted ? DAY_PALETTE.completed.text
+ : hasPlan ? DAY_PALETTE.planned.text
  : isToday ? TEXT_PRIMARY
  : isPast ? 'rgba(42,26,17,0.35)'
  : 'rgba(42,26,17,0.55)'
@@ -167,13 +184,18 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {d.getDate()}
  </span>
  {firstEmoji && <span className="text-[10px] leading-none mt-0.5">{firstEmoji}</span>}
- {dayPlans.length > 1 && (
+ {totalCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.15)' }}>
- <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{dayPlans.length}</span>
+ <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{totalCount}</span>
  </div>
  )}
  </button>
+
+ {/* Resumen colgante con barras discontinuas */}
+ {summary && palette && (
+ <DaySummary summary={summary} palette={palette} extraCount={totalCount - 1} />
+ )}
  </div>
  );
  })}
@@ -223,13 +245,19 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <div className="space-y-1 mb-2">
  {plansByDate[toDateStr(selectedDay)].map(p => {
  const info = ACTIVITY_TYPES[p.activity_type] || { emoji: '🏅', label: p.activity_type };
- const canComplete = selectedDay <= today && !completedByDate[toDateStr(selectedDay)];
+ const canComplete = selectedDay <= today && !(activitiesByDate[toDateStr(selectedDay)] || []).length;
  return (
  <div key={p.id} className="flex items-center justify-between rounded-lg px-2 py-1.5"
  style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.08)' }}>
  <div className="flex items-center gap-2">
  <span className="text-[12px]">{info.emoji}</span>
  <span className="text-[11px]" style={{ color: TEXT_PRIMARY }}>{info.label}</span>
+ {p.duration_minutes ? (
+ <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+ style={{ background: 'rgba(168,158,198,0.32)', color: '#4a3a73' }}>
+ {p.duration_minutes < 60 ? `${p.duration_minutes}min` : `${Math.floor(p.duration_minutes/60)}h${p.duration_minutes%60 ? p.duration_minutes%60 : ''}`}
+ </span>
+ ) : null}
  </div>
  <div className="flex items-center gap-1">
  {canComplete && (
@@ -251,6 +279,29 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  })}
  </div>
  )}
+
+ {/* Duration picker */}
+ <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Duración planificada</p>
+ <div className="flex gap-1 mb-3">
+ {[30, 45, 60, 90, 120].map(mins => (
+ <button
+ key={mins}
+ onClick={() => setPlanDuration(mins)}
+ className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
+ style={planDuration === mins ? {
+ background: '#b9a9d7',
+ color: '#2d2350',
+ border: '1px solid #7d6ba7',
+ } : {
+ background: 'rgba(42,26,17,0.06)',
+ color: TEXT_MUTED,
+ border: '1px solid rgba(42,26,17,0.1)',
+ }}
+ >
+ {mins < 60 ? `${mins}m` : mins === 60 ? '1h' : mins === 120 ? '2h' : `${mins}m`}
+ </button>
+ ))}
+ </div>
 
  {/* Add — single horizontal scroll row, compact */}
  <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Añadir actividad</p>
@@ -291,8 +342,57 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  );
 }
 
+function DaySummary({ summary, palette, extraCount = 0 }) {
+ if (!summary?.name) return null;
+ const lineStyle = {
+ width: 1,
+ borderLeft: `1px dashed ${palette.line}`,
+ alignSelf: 'stretch',
+ };
+ return (
+ <div className="flex w-full" style={{ marginTop: 3 }}>
+ <div style={lineStyle} />
+ <div
+ className="flex-1 flex flex-col justify-center"
+ style={{ paddingTop: 3, paddingBottom: 3, paddingLeft: 2, paddingRight: 2, textAlign: 'center', lineHeight: 1.15, minWidth: 0 }}
+ >
+ <p style={{
+ fontSize: 8.5,
+ fontWeight: 600,
+ color: palette.textOnSummary,
+ overflow: 'hidden',
+ textOverflow: 'ellipsis',
+ whiteSpace: 'nowrap',
+ }}>
+ {summary.name}
+ </p>
+ {summary.duration && (
+ <p style={{
+ fontSize: 8,
+ fontWeight: 500,
+ color: palette.textOnSummary,
+ opacity: 0.78,
+ }}>
+ {summary.duration}
+ </p>
+ )}
+ {extraCount > 0 && (
+ <p style={{
+ fontSize: 7.5,
+ color: palette.textOnSummary,
+ opacity: 0.6,
+ }}>
+ +{extraCount}
+ </p>
+ )}
+ </div>
+ <div style={lineStyle} />
+ </div>
+ );
+}
+
 function CompletePlanDialog({ plan, onCancel, onConfirm }) {
- const [duration, setDuration] = useState('60');
+ const [duration, setDuration] = useState(plan.duration_minutes ? String(plan.duration_minutes) : '60');
  const [trainingType, setTrainingType] = useState('');
  const [notes, setNotes] = useState('');
  const [progressNote, setProgressNote] = useState('');
