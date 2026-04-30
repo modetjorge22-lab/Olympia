@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, TrendingUp, ChevronDown } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 
@@ -63,13 +64,11 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{
-        background: 'rgba(40,24,17,0.55)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        background: 'rgba(40,24,17,0.65)',
         paddingTop: 'max(16px, env(safe-area-inset-top))',
         paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
         paddingLeft: 12,
@@ -81,11 +80,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
         className="rounded-2xl w-full max-w-sm flex flex-col"
         style={{
           maxHeight: '100%',
-          background: 'rgba(245,237,224,0.98)',
+          background: '#f5ede0',
           border: '1px solid rgba(255,255,255,0.4)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.7)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -285,6 +282,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
