@@ -38,6 +38,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  const [weekOffset, setWeekOffset] = useState(0);
  const [completing, setCompleting] = useState(null); // plan que se está completando
  const [planDuration, setPlanDuration] = useState(60); // minutos por defecto al planificar
+ const [addError, setAddError] = useState(''); // error visible en el modal
+ const [adding, setAdding] = useState(false); // evita doble-click mientras guarda
  const sheetRef = useRef(null);
 
  const weekDays = useMemo(() => {
@@ -76,11 +78,34 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  }, [selectedDay, completing]);
 
  const handleSelectActivity = async (type) => {
- if (!selectedDay) return;
- await onAddPlan({ date: toDateStr(selectedDay), activity_type: type, duration_minutes: planDuration });
- // Cerramos tras añadir para que no haya tanto "scroll"
+ if (!selectedDay || adding) return;
+ setAddError('');
+ setAdding(true);
+ try {
+ const result = await onAddPlan({
+ date: toDateStr(selectedDay),
+ activity_type: type,
+ duration_minutes: planDuration,
+ });
+ if (!result) {
+ // El insert falló (RLS, red, etc.) — no cerramos el modal y mostramos el error
+ setAddError('No se pudo guardar el plan. Comprueba la consola del navegador.');
+ return;
+ }
+ // Éxito → cerramos
  setSelectedDay(null);
+ } catch (e) {
+ console.error('handleSelectActivity error:', e);
+ setAddError('Error inesperado al guardar el plan.');
+ } finally {
+ setAdding(false);
+ }
  };
+
+ // Limpia el error cuando se abre/cambia el día
+ useEffect(() => {
+ setAddError('');
+ }, [selectedDay]);
 
  const weekLabel = weekOffset === 0 ? 'Esta semana' : weekOffset === 1 ? 'Próxima' : `Semana +${weekOffset}`;
  const totalPlanned = weekDays.reduce((sum, d) => sum + (plansByDate[toDateStr(d)]?.length || 0), 0);
@@ -310,10 +335,13 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <button
  key={key}
  onClick={() => handleSelectActivity(key)}
+ disabled={adding}
  className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
  style={{
  background: 'rgba(42,26,17,0.06)',
  border: '1px solid rgba(42,26,17,0.1)',
+ opacity: adding ? 0.5 : 1,
+ cursor: adding ? 'wait' : 'pointer',
  }}
  >
  <span className="text-[13px]">{emoji}</span>
@@ -321,6 +349,14 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  </button>
  ))}
  </div>
+
+ {/* Error banner */}
+ {addError && (
+ <div className="mt-3 rounded-lg px-3 py-2 text-[11px]"
+ style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', color: '#991b1b' }}>
+ {addError}
+ </div>
+ )}
  </div>
  </div>,
  document.body

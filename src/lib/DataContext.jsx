@@ -165,22 +165,49 @@ export function DataProvider({ children }) {
   }, [user]);
 
   const addPlan = useCallback(async ({ date, activity_type, notes, duration_minutes }) => {
-    if (!user?.email) return null;
-    const { data, error } = await supabase
+    if (!user?.email) {
+      console.error('addPlan: usuario no autenticado');
+      return null;
+    }
+
+    const basePayload = {
+      user_email: user.email,
+      date,
+      activity_type,
+      notes: notes || null,
+    };
+
+    // Intento 1: con duration_minutes (si la columna existe en weekly_plans)
+    const payload = (duration_minutes != null && duration_minutes > 0)
+      ? { ...basePayload, duration_minutes }
+      : basePayload;
+
+    let { data, error } = await supabase
       .from('weekly_plans')
-      .insert([{
-        user_email: user.email,
-        date,
-        activity_type,
-        notes: notes || null,
-        duration_minutes: duration_minutes || null,
-      }])
+      .insert([payload])
       .select()
       .single();
+
+    // Fallback: si la columna duration_minutes no existe aún (migración SQL pendiente),
+    // reintentamos sin ella para no bloquear la creación del plan.
+    if (error && /duration_minutes/i.test(error.message || '')) {
+      console.warn(
+        '[Olympia] weekly_plans.duration_minutes no existe — ejecuta la migración SQL. Guardando plan sin duración.'
+      );
+      const retry = await supabase
+        .from('weekly_plans')
+        .insert([basePayload])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       console.error('addPlan error:', error);
       return null;
     }
+
     if (data) {
       setWeeklyPlans(prev => [...prev, data].sort((a, b) => a.date.localeCompare(b.date)));
     }
