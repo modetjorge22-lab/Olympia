@@ -748,13 +748,13 @@ export default function Actividad() {
  const payload = (props.payload || []).map(p => ({ ...p, tooltipName: p.name }));
  return <ChartTooltip {...props} payload={payload} labelPrefix="Sem " />;
  }} />
- <Bar dataKey="progreso" name="Progreso" stackId="a" fill="rgba(139,92,246,0.85)" radius={[0,0,0,0]} />
- <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="rgba(16,185,129,0.85)" radius={[3,3,0,0]} />
+ <Bar dataKey="progreso" name="Progreso" stackId="a" fill="#b9a9d7" radius={[0,0,0,0]} />
+ <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="#8fa898" radius={[3,3,0,0]} />
  </BarChart>
  </ResponsiveContainer>
  </div>
  <div className="flex items-center gap-4 mt-2 justify-center">
- {[['rgba(139,92,246,0.85)', 'Progreso'], ['rgba(16,185,129,0.85)', 'Consolidación']].map(([c, l]) => (
+ {[['#b9a9d7', 'Progreso'], ['#8fa898', 'Consolidación']].map(([c, l]) => (
  <div key={l} className="flex items-center gap-1.5">
  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{l}</span>
