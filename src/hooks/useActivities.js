@@ -24,7 +24,7 @@ export const TRAINING_TYPES = {
 // pero ya no provoca refetch. El monthDate se ignora porque DataContext ya
 // observa el currentMonth global.
 export function useActivities() {
-  const { activities, allActivities, myActivities, loading, createActivity, deleteActivity, refresh } = useData();
+  const { activities, allActivities, myActivities, loading, createActivity, deleteActivity, updateActivity, refresh } = useData();
   return {
     activities,
     allActivities,
@@ -32,6 +32,7 @@ export function useActivities() {
     loading,
     createActivity,
     deleteActivity,
+    updateActivity,
     getUserMonthActivities: (email, monthDate) => {
       const y = monthDate.getFullYear();
       const m = monthDate.getMonth();

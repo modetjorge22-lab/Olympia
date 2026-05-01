@@ -200,7 +200,7 @@ export default function Actividad() {
  const { myProfile } = useTeamMembers();
  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
  const avatarUrl = myProfile?.avatar_url || null;
- const { myActivities, allActivities, createActivity, deleteActivity } = useActivities(currentMonth);
+ const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
  const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
 
  const [showLogDialog, setShowLogDialog] = useState(false);
@@ -792,21 +792,60 @@ export default function Actividad() {
  <AnimatePresence>
  {expandedDay && activitiesByDate[expandedDay] && (
  <div exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
- {activitiesByDate[expandedDay].map(act => (
- <div key={act.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between"
+ {activitiesByDate[expandedDay].map(act => {
+ const isStrength = act.type === 'strength_training';
+ const tt = act.training_type;
+ return (
+ <div key={act.id} className="rounded-xl px-3 py-2.5"
  style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
- <div className="flex items-center gap-2.5">
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
  <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
- <div>
- <p className="text-[13px] font-medium" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
+ <div className="min-w-0">
+ <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
  <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
  </div>
  </div>
- <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
+ <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
  <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
  </button>
  </div>
- ))}
+ {/* Toggle Progreso/Consolidación sólo para fuerza */}
+ {isStrength && (
+ <div className="flex gap-1 mt-2">
+ <button
+ onClick={(e) => { e.stopPropagation(); updateActivity(act.id, { training_type: tt === 'progress' ? null : 'progress' }); }}
+ className="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all"
+ style={tt === 'progress' ? {
+ background: '#b9a9d7',
+ color: '#2d2350',
+ } : {
+ background: 'rgba(42,26,17,0.05)',
+ border: '1px solid rgba(42,26,17,0.1)',
+ color: TEXT_MUTED,
+ }}
+ >
+ Progreso
+ </button>
+ <button
+ onClick={(e) => { e.stopPropagation(); updateActivity(act.id, { training_type: tt === 'consolidation' ? null : 'consolidation' }); }}
+ className="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all"
+ style={tt === 'consolidation' ? {
+ background: '#8fa898',
+ color: '#1c2620',
+ } : {
+ background: 'rgba(42,26,17,0.05)',
+ border: '1px solid rgba(42,26,17,0.1)',
+ color: TEXT_MUTED,
+ }}
+ >
+ Consolidación
+ </button>
+ </div>
+ )}
+ </div>
+ );
+ })}
  <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
  className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
  style={{ background: 'rgba(42,26,17,0.04)', border: '1px dashed rgba(42,26,17,0.18)', color: TEXT_MUTED }}>

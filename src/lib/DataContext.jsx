@@ -146,6 +146,32 @@ export function DataProvider({ children }) {
     }
   }, [mKey]);
 
+  // Actualiza campos de una actividad existente (típicamente training_type)
+  const updateActivity = useCallback(async (id, patch) => {
+    const { data, error } = await supabase
+      .from('activities')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('updateActivity error:', error);
+      return null;
+    }
+    if (data) {
+      // Actualiza la fila en ambos cachés
+      if (monthCache.current[mKey]) {
+        monthCache.current[mKey] = monthCache.current[mKey].map(a => a.id === id ? data : a);
+        setActivities([...monthCache.current[mKey]]);
+      }
+      if (allActsCache.current) {
+        allActsCache.current = allActsCache.current.map(a => a.id === id ? data : a);
+        setAllActivities([...allActsCache.current]);
+      }
+    }
+    return data;
+  }, [mKey]);
+
   const upsertProfile = useCallback(async (profileData) => {
     const { data, error } = await supabase
       .from('team_members')
@@ -246,6 +272,7 @@ export function DataProvider({ children }) {
     loading,
     createActivity,
     deleteActivity,
+    updateActivity,
     upsertProfile,
     addPlan,
     removePlan,
