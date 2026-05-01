@@ -18,19 +18,10 @@ const glassCard = {
  WebkitBackdropFilter: 'blur(20px)',
 };
 
-const DAY_NAMES = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const DAY_INITIAL = ['D', 'L', 'M', 'X', 'J', 'V', 'S']; // Domingo … Sábado
 
 function toDateStr(d) {
  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function getMondayOfWeek(date) {
- const d = new Date(date);
- const day = d.getDay();
- const diff = d.getDate() - day + (day === 0 ? -6 : 1);
- const monday = new Date(d.setDate(diff));
- monday.setHours(0, 0, 0, 0);
- return monday;
 }
 
 export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onCompletePlan, activitiesByDate = {} }) {
@@ -38,6 +29,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  const [weekOffset, setWeekOffset] = useState(0);
  const [completing, setCompleting] = useState(null); // plan que se está completando
  const [planDuration, setPlanDuration] = useState(60); // minutos por defecto al planificar
+ const [planNote, setPlanNote] = useState(''); // descripción opcional del entreno
  const [addError, setAddError] = useState(''); // error visible en el modal
  const [adding, setAdding] = useState(false); // evita doble-click mientras guarda
  const sheetRef = useRef(null);
@@ -45,11 +37,11 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  const weekDays = useMemo(() => {
  const today = new Date();
  today.setHours(0, 0, 0, 0);
- const monday = getMondayOfWeek(today);
- monday.setDate(monday.getDate() + weekOffset * 7);
+ const start = new Date(today);
+ start.setDate(today.getDate() + weekOffset * 7);
  return Array.from({ length: 7 }, (_, i) => {
- const d = new Date(monday);
- d.setDate(monday.getDate() + i);
+ const d = new Date(start);
+ d.setDate(start.getDate() + i);
  return d;
  });
  }, [weekOffset]);
@@ -86,14 +78,15 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  date: toDateStr(selectedDay),
  activity_type: type,
  duration_minutes: planDuration,
+ notes: planNote.trim() || null,
  });
  if (!result) {
- // El insert falló (RLS, red, etc.) — no cerramos el modal y mostramos el error
  setAddError('No se pudo guardar el plan. Comprueba la consola del navegador.');
  return;
  }
- // Éxito → cerramos
+ // Éxito → cerramos y reseteamos
  setSelectedDay(null);
+ setPlanNote('');
  } catch (e) {
  console.error('handleSelectActivity error:', e);
  setAddError('Error inesperado al guardar el plan.');
@@ -102,12 +95,13 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  }
  };
 
- // Limpia el error cuando se abre/cambia el día
+ // Limpia el error y la nota cuando se abre/cambia el día
  useEffect(() => {
  setAddError('');
+ setPlanNote('');
  }, [selectedDay]);
 
- const weekLabel = weekOffset === 0 ? 'Esta semana' : weekOffset === 1 ? 'Próxima' : `Semana +${weekOffset}`;
+ const weekLabel = weekOffset === 0 ? 'Próximos 7 días' : weekOffset === 1 ? 'Días 8–14' : `+${weekOffset * 7} días`;
  const totalPlanned = weekDays.reduce((sum, d) => sum + (plansByDate[toDateStr(d)]?.length || 0), 0);
 
  return (
@@ -129,14 +123,17 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
 
  <div className="flex items-center gap-1 rounded-lg p-0.5"
  style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
- <button onClick={() => setWeekOffset(w => w - 1)}
- className="w-6 h-6 rounded flex items-center justify-center" style={{ color: TEXT_SECONDARY }}>
+ <button
+ onClick={() => setWeekOffset(w => Math.max(0, w - 1))}
+ disabled={weekOffset === 0}
+ className="w-6 h-6 rounded flex items-center justify-center"
+ style={{ color: TEXT_SECONDARY, opacity: weekOffset === 0 ? 0.3 : 1, cursor: weekOffset === 0 ? 'default' : 'pointer' }}>
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
  </svg>
  </button>
  <span className="text-[10px] font-semibold px-1.5 min-w-[14px] text-center" style={{ color: TEXT_PRIMARY }}>
- {weekOffset === 0 ? '·' : weekOffset > 0 ? `+${weekOffset}` : weekOffset}
+ {weekOffset === 0 ? '·' : `+${weekOffset}`}
  </span>
  <button onClick={() => setWeekOffset(w => w + 1)}
  className="w-6 h-6 rounded flex items-center justify-center" style={{ color: TEXT_SECONDARY }}>
@@ -175,7 +172,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  return (
  <div key={i} className="flex flex-col items-center gap-1">
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>
- {DAY_NAMES[i]}
+ {DAY_INITIAL[d.getDay()]}
  </span>
  <button
  onClick={() => setSelectedDay(d)}
@@ -186,7 +183,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  boxShadow: DAY_PALETTE.completed.glow,
  } : hasPlan ? {
  background: DAY_PALETTE.planned.bg,
- border: DAY_PALETTE.planned.border,
+
  boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)',
@@ -274,17 +271,26 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  return (
  <div key={p.id} className="flex items-center justify-between rounded-lg px-2 py-1.5"
  style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.08)' }}>
- <div className="flex items-center gap-2">
+ <div className="flex items-center gap-2 min-w-0 flex-1">
  <span className="text-[12px]">{info.emoji}</span>
- <span className="text-[11px]" style={{ color: TEXT_PRIMARY }}>{info.label}</span>
+ <div className="min-w-0 flex-1">
+ <div className="flex items-center gap-1.5">
+ <span className="text-[11px] truncate" style={{ color: TEXT_PRIMARY }}>
+ {p.notes ? p.notes : info.label}
+ </span>
  {p.duration_minutes ? (
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+ <span className="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
  style={{ background: 'rgba(168,158,198,0.32)', color: '#4a3a73' }}>
  {p.duration_minutes < 60 ? `${p.duration_minutes}min` : `${Math.floor(p.duration_minutes/60)}h${p.duration_minutes%60 ? p.duration_minutes%60 : ''}`}
  </span>
  ) : null}
  </div>
- <div className="flex items-center gap-1">
+ {p.notes && (
+ <span className="text-[9px]" style={{ color: TEXT_MUTED }}>{info.label}</span>
+ )}
+ </div>
+ </div>
+ <div className="flex items-center gap-1 flex-shrink-0">
  {canComplete && (
  <button
  onClick={() => setCompleting(p)}
@@ -304,6 +310,22 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  })}
  </div>
  )}
+
+ {/* Note input */}
+ <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Nota (opcional)</p>
+ <input
+ type="text"
+ value={planNote}
+ onChange={(e) => setPlanNote(e.target.value)}
+ placeholder="Ej: Push, Legs, intervalos 5x1km…"
+ maxLength={40}
+ className="w-full mb-3 px-2.5 py-1.5 rounded-lg text-[11px] outline-none"
+ style={{
+ background: 'rgba(42,26,17,0.06)',
+ border: '1px solid rgba(42,26,17,0.12)',
+ color: TEXT_PRIMARY,
+ }}
+ />
 
  {/* Duration picker */}
  <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Duración planificada</p>

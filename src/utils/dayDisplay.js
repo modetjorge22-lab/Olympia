@@ -43,7 +43,6 @@ export const DAY_PALETTE = {
     text: '#2d2350',
     textOnSummary: '#4a3a73',
     line: 'rgba(125,107,167,0.7)',
-    border: '1.5px dashed #7d6ba7',
     glow: '0 1px 4px rgba(168,158,198,0.3)',
   },
 };

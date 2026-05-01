@@ -289,12 +289,15 @@ export default function Actividad() {
  const MONTH_NAMES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
  const weeklyData = useMemo(() => {
- const refDate = new Date(year, month + 1, 0);
+ // Referencia siempre HOY: la última semana mostrada es la actual,
+ // independientemente del mes que esté navegado en el calendario.
+ const today = new Date();
+ today.setHours(23, 59, 59, 999);
  let lastMonth = -1;
  return buildBuckets(16, i => {
  const w = 15 - i;
- const end = new Date(refDate);
- end.setDate(refDate.getDate() - w * 7);
+ const end = new Date(today);
+ end.setDate(today.getDate() - w * 7);
  const start = new Date(end);
  start.setDate(end.getDate() - 6);
  // Solo mostramos la inicial cuando cambia el mes (en el primer día visible de ese mes)
@@ -308,7 +311,7 @@ export default function Actividad() {
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
  };
  });
- }, [myAllActivities, year, month, actFilter]);
+ }, [myAllActivities, actFilter]);
 
  const dailyData = useMemo(() => {
  const today = new Date();
@@ -358,11 +361,13 @@ export default function Actividad() {
  }, [chartData]);
 
  const strengthData = useMemo(() => {
- const refDate = new Date(year, month + 1, 0);
+ // Referencia siempre HOY (igual que weeklyData)
+ const today = new Date();
+ today.setHours(23, 59, 59, 999);
  return Array.from({ length: 16 }, (_, i) => {
  const w = 15 - i;
- const end = new Date(refDate);
- end.setDate(refDate.getDate() - w * 7);
+ const end = new Date(today);
+ end.setDate(today.getDate() - w * 7);
  const start = new Date(end);
  start.setDate(end.getDate() - 6);
  const acts = myAllActivities.filter(a => {
@@ -375,7 +380,7 @@ export default function Actividad() {
  consolidacion: +(acts.filter(a => a.training_type !== 'progress').reduce((s, a) => s + (a.duration_minutes || 0), 0) / 60).toFixed(1),
  };
  });
- }, [myAllActivities, year, month]);
+ }, [myAllActivities]);
 
  const activitiesByDate = useMemo(() => {
  const map = {};
@@ -544,7 +549,7 @@ export default function Actividad() {
  boxShadow: DAY_PALETTE.completed.glow,
  } : d.hasPlan ? {
  background: DAY_PALETTE.planned.bg,
- border: DAY_PALETTE.planned.border,
+
  boxShadow: DAY_PALETTE.planned.glow,
  } : d.isToday ? {
  background: 'rgba(42,26,17,0.14)',
@@ -934,7 +939,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, o
  ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
  : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : hasPlan
- ? { background: DAY_PALETTE.planned.bg, border: DAY_PALETTE.planned.border, boxShadow: DAY_PALETTE.planned.glow }
+ ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday
  ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }

@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
 import { TrendingUp } from 'lucide-react';
+import { DAY_PALETTE } from '@/utils/dayDisplay';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -114,10 +116,26 @@ export default function Feed() {
  const { user } = useAuth();
  const { allActivities } = useActivities(currentMonth);
  const { members } = useTeamMembers();
+ const { plans: weeklyPlans } = useWeeklyPlans();
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+ // Día del mes navegado → planes propios (sólo el usuario actual; los planes de otros son privados)
+ const myPlansByDayOfMonth = useMemo(() => {
+ const map = {};
+ if (!user?.email) return map;
+ weeklyPlans.forEach(p => {
+ const d = new Date(p.date + 'T00:00:00');
+ if (d.getFullYear() === year && d.getMonth() === month) {
+ const day = d.getDate();
+ if (!map[day]) map[day] = [];
+ map[day].push(p);
+ }
+ });
+ return map;
+ }, [weeklyPlans, year, month, user?.email]);
 
  const { chartData, memberStats } = useMemo(() => {
  const emails = members.length > 0
@@ -275,6 +293,7 @@ export default function Feed() {
  member={member}
  isTop={idx === 0 && member.totalHours > 0}
  year={year} month={month} daysInMonth={daysInMonth}
+ plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
  />
  ))}
  </div>
@@ -349,7 +368,7 @@ export default function Feed() {
  );
 }
 
-function MemberCard({ member, isTop, year, month, daysInMonth }) {
+function MemberCard({ member, isTop, year, month, daysInMonth, plansByDay }) {
  const now = new Date();
  let startDow = new Date(year, month, 1).getDay() - 1;
  if (startDow < 0) startDow = 6;
@@ -396,8 +415,14 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
  const has = acts.length > 0;
+ const planned = (plansByDay && plansByDay[day]) || [];
+ const hasPlan = !has && planned.length > 0;
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
+ const emoji = has
+ ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
+ : hasPlan
+ ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
+ : null;
 
  return (
  <div
@@ -406,6 +431,9 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
  style={has ? {
  background: '#8fa898',
  boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+ } : hasPlan ? {
+ background: DAY_PALETTE.planned.bg,
+ boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)',
  border: '1px solid rgba(42,26,17,0.22)',
@@ -415,7 +443,7 @@ function MemberCard({ member, isTop, year, month, daysInMonth }) {
  >
  <span
  className="text-[9px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}
+ style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}
  >
  {day}
  </span>
