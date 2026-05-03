@@ -38,11 +38,11 @@ export const DAY_PALETTE = {
     glow: '0 1px 4px rgba(143,168,152,0.25)',
   },
   planned: {
-    bg: '#b9a9d7',
-    bgExpanded: '#a394c4',
-    text: '#2d2350',
-    textOnSummary: '#4a3a73',
-    line: 'rgba(125,107,167,0.7)',
-    glow: '0 1px 4px rgba(168,158,198,0.3)',
+    bg: '#9c8bbf',
+    bgExpanded: '#8576a8',
+    text: '#1f1840',
+    textOnSummary: '#3d2d6d',
+    line: 'rgba(110,90,152,0.7)',
+    glow: '0 1px 4px rgba(140,121,180,0.35)',
   },
 };

@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Users, TrendingUp, Zap } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
+import { DAY_PALETTE } from '@/utils/dayDisplay';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -72,7 +74,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
- background: '#281811',
+ background: '#3a1820',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 10, padding: '8px 12px', fontSize: 11,
  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
@@ -101,10 +103,26 @@ export default function Grupos() {
  const { user } = useAuth();
  const { allActivities } = useActivities(currentMonth);
  const { members } = useTeamMembers();
+ const { plans: weeklyPlans } = useWeeklyPlans();
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+ // Día del mes navegado → planes propios (sólo del usuario actual; los planes de otros son privados)
+ const myPlansByDayOfMonth = useMemo(() => {
+ const map = {};
+ if (!user?.email) return map;
+ weeklyPlans.forEach(p => {
+ const d = new Date(p.date + 'T00:00:00');
+ if (d.getFullYear() === year && d.getMonth() === month) {
+ const day = d.getDate();
+ if (!map[day]) map[day] = [];
+ map[day].push(p);
+ }
+ });
+ return map;
+ }, [weeklyPlans, year, month, user?.email]);
 
  const { chartData, memberStats } = useMemo(() => {
  const emails = members.length > 0
@@ -368,7 +386,12 @@ export default function Grupos() {
  <p className="text-[11px] font-semibold uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(245,237,224,0.5)' }}>Miembros</p>
  <div className="space-y-3">
  {memberStats.map((member, idx) => (
- <MiniMemberCard key={member.email} member={member} year={year} month={month} daysInMonth={daysInMonth} />
+ <MiniMemberCard
+ key={member.email}
+ member={member}
+ year={year} month={month} daysInMonth={daysInMonth}
+ plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
+ />
  ))}
  </div>
  </div>
@@ -376,7 +399,7 @@ export default function Grupos() {
  );
 }
 
-function MiniMemberCard({ member, year, month, daysInMonth }) {
+function MiniMemberCard({ member, year, month, daysInMonth, plansByDay }) {
  const now = new Date();
  let startDow = new Date(year, month, 1).getDay() - 1;
  if (startDow < 0) startDow = 6;
@@ -413,20 +436,29 @@ function MiniMemberCard({ member, year, month, daysInMonth }) {
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
  const has = acts.length > 0;
+ const planned = (plansByDay && plansByDay[day]) || [];
+ const hasPlan = !has && planned.length > 0;
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const emoji = has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅') : null;
+ const emoji = has
+ ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
+ : hasPlan
+ ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
+ : null;
  return (
  <div key={day} className="aspect-square rounded-md flex flex-col items-center justify-center"
  style={has ? {
  background: '#8fa898',
  boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+ } : hasPlan ? {
+ background: DAY_PALETTE.planned.bg,
+ boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)',
  } : {
  background: 'rgba(42,26,17,0.07)',
  }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>{day}</span>
+ style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>{day}</span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
  </div>
  );

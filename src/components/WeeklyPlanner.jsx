@@ -280,7 +280,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  </span>
  {p.duration_minutes ? (
  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
- style={{ background: 'rgba(168,158,198,0.32)', color: '#4a3a73' }}>
+ style={{ background: 'rgba(140,121,180,0.35)', color: '#3d2d6d' }}>
  {p.duration_minutes < 60 ? `${p.duration_minutes}min` : `${Math.floor(p.duration_minutes/60)}h${p.duration_minutes%60 ? p.duration_minutes%60 : ''}`}
  </span>
  ) : null}
@@ -336,9 +336,9 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  onClick={() => setPlanDuration(mins)}
  className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
  style={planDuration === mins ? {
- background: '#b9a9d7',
- color: '#2d2350',
- border: '1px solid #7d6ba7',
+ background: '#9c8bbf',
+ color: '#1f1840',
+ border: '1px solid #6e5a98',
  } : {
  background: 'rgba(42,26,17,0.06)',
  color: TEXT_MUTED,

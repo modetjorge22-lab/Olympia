@@ -32,7 +32,7 @@ export default function AppLayout({ children }) {
         className="fixed top-0 left-0 right-0 z-50"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          background: 'rgba(40,24,17,0.85)',
+          background: 'rgba(58,24,32,0.85)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(245,237,224,0.08)',
@@ -95,7 +95,7 @@ export default function AppLayout({ children }) {
         className="fixed bottom-0 left-0 right-0 z-50"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          background: 'rgba(40,24,17,0.85)',
+          background: 'rgba(58,24,32,0.85)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderTop: '1px solid rgba(245,237,224,0.08)',
@@ -107,7 +107,7 @@ export default function AppLayout({ children }) {
         >
           {navItems.map(({ path, label, icon: Icon }) => {
             const isActive = location.pathname === path ||
-              (path === '/feed' && location.pathname === '/');
+              (path === '/actividad' && location.pathname === '/');
 
             return (
               <NavLink

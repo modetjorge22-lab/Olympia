@@ -1,457 +1,174 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
-import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { TrendingUp } from 'lucide-react';
-import { DAY_PALETTE } from '@/utils/dayDisplay';
-
-const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-
-// Escala de verdes por ranking (0 = más verde = más horas, N = más oscuro/negro)
-// Usa la misma familia verde del calendario (#8fa898)
-function rankingGreen(rank, total) {
- if (total <= 1) return '#8fa898';
- const t = rank / (total - 1); // 0..1
- // Interpolamos de verde salvia a marrón vino muy oscuro
- const from = { r: 143, g: 168, b: 152 }; // #8fa898
- const to = { r: 58, g: 36, b: 24 }; // #3a2418
- const r = Math.round(from.r + (to.r - from.r) * t);
- const g = Math.round(from.g + (to.g - from.g) * t);
- const b = Math.round(from.b + (to.b - from.b) * t);
- return `rgb(${r},${g},${b})`;
-}
+import { Newspaper } from 'lucide-react';
 
 const glassCard = {
- background: 'rgba(245,237,224,0.92)',
- border: '1px solid rgba(255,255,255,0.35)',
- boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
+  background: 'rgba(245,237,224,0.92)',
+  border: '1px solid rgba(255,255,255,0.35)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
 };
 
 const TEXT_PRIMARY = '#2a1a11';
 const TEXT_SECONDARY = '#6e5647';
 const TEXT_MUTED = '#8c7364';
 
-const CustomTooltip = ({ active, payload, label, memberStats }) => {
- if (!active || !payload?.length) return null;
- return (
- <div style={{ background: '#281811', border: '1px solid rgba(245,237,224,0.15)', borderRadius: 12, padding: '10px 14px', fontSize: 12, minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
- <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 11, marginBottom: 6 }}>Día {label}</p>
- {payload.map(entry => {
- const m = memberStats.find(s => s.email === entry.dataKey);
- return (
- <div key={entry.dataKey} className="flex items-center justify-between gap-3 mb-1">
- <div className="flex items-center gap-1.5">
- <div className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
- <span style={{ color: 'rgba(245,237,224,0.85)' }}>{m?.name || entry.dataKey}</span>
- </div>
- <span className="font-bold" style={{ color: '#fff' }}>{entry.value}h</span>
- </div>
- );
- })}
- </div>
- );
-};
+const MONTHS_ES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-// Custom dot: muestra burbuja con avatar/iniciales solo cerca del final de cada línea
-function makeMemberDot(member, lastDay, badgeIndex) {
- return function MemberDot(props) {
- const { cx, cy, payload } = props;
- if (cx == null || cy == null) return null;
- // Solo renderizamos cerca del final — usamos el "badgeIndex" día para escalonar burbujas
- if (payload.day !== badgeIndex) return null;
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
 
- const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
- const radius = 11;
+  const sameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
- return (
- <g>
- {/* Halo para destacarla del fondo */}
- <circle cx={cx} cy={cy} r={radius + 1.5} fill="rgba(245,237,224,0.95)" stroke={member.color} strokeWidth="1.5" />
- {member.avatar_url ? (
- <>
- <defs>
- <clipPath id={`clip-${member.email}`}>
- <circle cx={cx} cy={cy} r={radius} />
- </clipPath>
- </defs>
- <image
- href={member.avatar_url}
- x={cx - radius}
- y={cy - radius}
- width={radius * 2}
- height={radius * 2}
- clipPath={`url(#clip-${member.email})`}
- preserveAspectRatio="xMidYMid slice"
- />
- </>
- ) : (
- <>
- <circle cx={cx} cy={cy} r={radius} fill={member.color} fillOpacity="0.25" />
- <text
- x={cx} y={cy} dy="0.35em"
- textAnchor="middle"
- fontSize="9"
- fontWeight="700"
- fill={member.color}
- style={{ fontFamily: 'DM Sans, sans-serif' }}
- >
- {initials}
- </text>
- </>
- )}
- </g>
- );
- };
+  if (sameDay(d, today)) return 'Hoy';
+  if (sameDay(d, yesterday)) return 'Ayer';
+  return `${d.getDate()} ${MONTHS_ES_SHORT[d.getMonth()]}`;
+}
+
+function formatDuration(min) {
+  if (!min || min <= 0) return '';
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}min`;
 }
 
 export default function Feed() {
- const { currentMonth } = useMonth();
- const { user } = useAuth();
- const { allActivities } = useActivities(currentMonth);
- const { members } = useTeamMembers();
- const { plans: weeklyPlans } = useWeeklyPlans();
+  const { currentMonth } = useMonth();
+  const { user } = useAuth();
+  const { allActivities } = useActivities(currentMonth);
+  const { members } = useTeamMembers();
 
- const year = currentMonth.getFullYear();
- const month = currentMonth.getMonth();
- const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Últimas 30 actividades (sin restringir al mes navegado, así el feed siempre tiene contenido)
+  const recentActivities = useMemo(() => {
+    return [...allActivities]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 30);
+  }, [allActivities]);
 
- // Día del mes navegado → planes propios (sólo el usuario actual; los planes de otros son privados)
- const myPlansByDayOfMonth = useMemo(() => {
- const map = {};
- if (!user?.email) return map;
- weeklyPlans.forEach(p => {
- const d = new Date(p.date + 'T00:00:00');
- if (d.getFullYear() === year && d.getMonth() === month) {
- const day = d.getDate();
- if (!map[day]) map[day] = [];
- map[day].push(p);
- }
- });
- return map;
- }, [weeklyPlans, year, month, user?.email]);
+  // Agrupar por día (Hoy, Ayer, fecha)
+  const grouped = useMemo(() => {
+    const map = new Map();
+    recentActivities.forEach(act => {
+      const key = act.date?.slice(0, 10) || 'unknown';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(act);
+    });
+    return Array.from(map.entries()); // [[dateStr, [acts]], ...]
+  }, [recentActivities]);
 
- const { chartData, memberStats } = useMemo(() => {
- const emails = members.length > 0
- ? members.map(m => m.email)
- : [...new Set(allActivities.map(a => a.user_email))];
+  return (
+    <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
+      <div className="flex items-center gap-2.5">
+        <Newspaper className="w-4 h-4" style={{ color: 'rgba(245,237,224,0.92)' }} />
+        <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Feed</h1>
+      </div>
+      <p className="text-[12px] -mt-2" style={{ color: 'rgba(245,237,224,0.55)' }}>
+        Últimas sesiones del equipo
+      </p>
 
- const stats = emails.map((email, idx) => {
- const member = members.find(m => m.email === email);
- const monthActs = allActivities.filter(a => {
- const d = new Date(a.date);
- return a.user_email === email && d.getFullYear() === year && d.getMonth() === month;
- });
- const totalMins = monthActs.reduce((s, a) => s + (a.duration_minutes || 0), 0);
+      {recentActivities.length === 0 ? (
+        <div className="rounded-2xl p-8 text-center" style={glassCard}>
+          <p className="text-[13px]" style={{ color: TEXT_MUTED }}>Aún no hay actividades registradas</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {grouped.map(([dateStr, acts]) => (
+            <div key={dateStr}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 px-1"
+                 style={{ color: 'rgba(245,237,224,0.55)' }}>
+                {formatDate(dateStr)}
+              </p>
+              <div className="rounded-2xl overflow-hidden" style={glassCard}>
+                {acts.map((act, idx) => {
+                  const memberName = members.find(m => m.email === act.user_email)?.full_name
+                                   || act.user_email?.split('@')[0]
+                                   || 'Anónimo';
+                  const memberAvatar = members.find(m => m.email === act.user_email)?.avatar_url || null;
+                  const initials = memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                  const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
+                  const isMe = act.user_email === user?.email;
 
- const dailyMins = {};
- monthActs.forEach(a => {
- const day = new Date(a.date).getDate();
- dailyMins[day] = (dailyMins[day] || 0) + (a.duration_minutes || 0);
- });
+                  return (
+                    <div key={act.id}
+                         className={`px-4 py-3 ${idx < acts.length - 1 ? 'border-b' : ''}`}
+                         style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        {memberAvatar ? (
+                          <img
+                            src={memberAvatar}
+                            alt={memberName}
+                            className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
+                            style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
+                          />
+                        ) : (
+                          <div
+                            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
+                            style={{
+                              background: 'rgba(42,26,17,0.08)',
+                              border: '1.5px solid rgba(42,26,17,0.18)',
+                              color: TEXT_PRIMARY,
+                            }}
+                          >
+                            {initials}
+                          </div>
+                        )}
 
- let cum = 0;
- const cumByDay = {};
- for (let d = 1; d <= daysInMonth; d++) {
- cum += (dailyMins[d] || 0);
- cumByDay[d] = +(cum / 60).toFixed(1);
- }
+                        {/* Contenido */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-[13px] truncate" style={{ color: TEXT_PRIMARY }}>
+                              <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>
+                                {isMe ? 'Tú' : memberName}
+                              </span>
+                            </p>
+                            {act.duration_minutes ? (
+                              <span className="text-[11px] font-mono whitespace-nowrap flex-shrink-0"
+                                    style={{ color: TEXT_SECONDARY }}>
+                                {formatDuration(act.duration_minutes)}
+                              </span>
+                            ) : null}
+                          </div>
 
- const actByDay = {};
- monthActs.forEach(a => {
- const day = new Date(a.date).getDate();
- if (!actByDay[day]) actByDay[day] = [];
- actByDay[day].push(a);
- });
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[13px]">{info.emoji}</span>
+                            <span className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>
+                              {info.label}
+                            </span>
+                          </div>
 
- return {
- email,
- name: member?.full_name || email.split('@')[0],
- avatar_url: member?.avatar_url || null,
- totalHours: +(totalMins / 60).toFixed(1),
- totalMins,
- sessions: monthActs.length,
- color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
- cumByDay,
- actByDay,
- };
- }).sort((a, b) => b.totalMins - a.totalMins);
+                          {act.description && (
+                            <p className="text-[12px] mt-1.5 leading-snug" style={{ color: TEXT_SECONDARY }}>
+                              {act.description}
+                            </p>
+                          )}
 
- const today = new Date();
- const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
- const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
-
- const data = [];
- for (let d = 1; d <= lastDay; d++) {
- const point = { day: d };
- stats.forEach(m => { point[m.email] = m.cumByDay[d]; });
- data.push(point);
- }
-
- return { chartData: data, memberStats: stats };
- }, [allActivities, members, year, month, daysInMonth]);
-
- const recentActivities = useMemo(() => {
- return allActivities
- .filter(a => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() === month; })
- .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
- .slice(0, 12);
- }, [allActivities, year, month]);
-
- // Distribuir badges escalonados en los últimos N días para evitar solapamiento
- const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
- const badgeDays = useMemo(() => {
- const map = {};
- const total = memberStats.length;
- // Usamos los últimos N días dejando el día final para el primero del ranking
- // El #1 en el día final, #2 un día antes, etc.
- memberStats.forEach((m, i) => {
- // Si tenemos muy pocos días, pongo todos en el último
- const offset = Math.min(i, Math.max(0, chartData.length - 2));
- map[m.email] = lastDay - offset;
- });
- return map;
- }, [memberStats, lastDay, chartData.length]);
-
- // Media del equipo de horas acumuladas en el último punto (para línea de referencia)
- const teamAverage = useMemo(() => {
- if (memberStats.length === 0) return null;
- const avg = memberStats.reduce((s, m) => s + m.totalHours, 0) / memberStats.length;
- return +avg.toFixed(1);
- }, [memberStats]);
-
- return (
- <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
- {/* Monthly race chart */}
- <div className="rounded-2xl p-4 pb-3" style={glassCard}>
- <div className="flex items-center gap-2 mb-4">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
- <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <div>
- <h2 className="text-[14px] font-bold" style={{ color: TEXT_PRIMARY }}>Carrera mensual</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Horas acumuladas · {MONTHS_ES[month]} {year}</p>
- </div>
- </div>
-
- <div className="h-[200px] -mx-1">
- <ResponsiveContainer width="100%" height="100%">
- <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 0, left: 0 }}>
- <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
- <XAxis dataKey="day" tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
- <YAxis tick={{ fontSize: 10, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={28} />
- <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
- {teamAverage !== null && teamAverage > 0 && (
- <ReferenceLine
- y={teamAverage}
- stroke="rgba(42,26,17,0.35)"
- strokeDasharray="4 4"
- strokeWidth={1}
- label={{
- value: `Media ${teamAverage}h`,
- position: 'insideTopLeft',
- fill: 'rgba(42,26,17,0.5)',
- fontSize: 9,
- offset: 6,
- }}
- />
- )}
- {memberStats.map((m, idx) => {
- const lineColor = rankingGreen(idx, memberStats.length);
- return (
- <Line
- key={m.email}
- type="monotone"
- dataKey={m.email}
- stroke={lineColor}
- strokeWidth={idx === 0 ? 2.5 : 2}
- dot={makeMemberDot({ ...m, color: lineColor }, lastDay, badgeDays[m.email])}
- activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
- isAnimationActive={false}
- />
- );
- })}
- </LineChart>
- </ResponsiveContainer>
- </div>
- </div>
-
- {/* Team members */}
- <div>
- <h2 className="text-[16px] font-bold mb-3 px-0.5" style={{ color: 'rgba(245,237,224,0.92)' }}>Miembros del Equipo</h2>
- <div className="space-y-3">
- {memberStats.map((member, idx) => (
- <MemberCard
- key={member.email}
- member={member}
- isTop={idx === 0 && member.totalHours > 0}
- year={year} month={month} daysInMonth={daysInMonth}
- plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
- />
- ))}
- </div>
- </div>
-
- {/* Progress highlights */}
- {(() => {
- const progressActs = recentActivities.filter(a => a.training_type === 'progress' && a.progress_note);
- if (!progressActs.length) return null;
- return (
- <div className="rounded-2xl overflow-hidden" style={glassCard}>
- <div className="px-4 pt-4 pb-2 flex items-center gap-2">
- <span className="text-sm">🔥</span>
- <h2 className="text-[12px] font-semibold uppercase tracking-widest" style={{ color: '#6b3a8a' }}>Progresos del equipo</h2>
- </div>
- {progressActs.slice(0, 5).map((act, idx) => {
- const memberName = members.find(m => m.email === act.user_email)?.full_name || act.user_email.split('@')[0];
- const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
- const isMe = act.user_email === user?.email;
- return (
- <div key={act.id} className={`flex items-start gap-3 px-4 py-3 ${idx < Math.min(progressActs.length, 5) - 1 ? 'border-b' : ''}`}
- style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
- <span className="text-[15px] mt-0.5">{info.emoji}</span>
- <div className="flex-1 min-w-0">
- <p className="text-[13px]" style={{ color: TEXT_PRIMARY }}>
- <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>{isMe ? 'Tú' : memberName}</span>
- {' ha progresado en '}{info.label?.toLowerCase()}
- </p>
- <p className="text-[12px] mt-0.5 italic" style={{ color: '#6b3a8a' }}>"{act.progress_note}"</p>
- <p className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED }}>{new Date(act.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
- </div>
- </div>
- );
- })}
- </div>
- );
- })()}
-
- {/* Activity feed */}
- <div className="rounded-2xl overflow-hidden" style={glassCard}>
- <div className="px-4 pt-4 pb-2">
- <h2 className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Actividad reciente</h2>
- </div>
- {recentActivities.length === 0 ? (
- <div className="px-4 pb-5 text-[13px]" style={{ color: TEXT_MUTED }}>Sin actividades este mes</div>
- ) : (
- recentActivities.map((act, idx) => {
- const memberName = members.find(m => m.email === act.user_email)?.full_name || act.user_email.split('@')[0];
- const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
- const isMe = act.user_email === user?.email;
- return (
- <div key={act.id} className={`flex items-center gap-3 px-4 py-2.5 ${idx < recentActivities.length - 1 ? 'border-b' : ''}`}
- style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
- <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
- style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
- <span className="text-[13px]">{info.emoji}</span>
- </div>
- <div className="flex-1 min-w-0">
- <p className="text-[13px] truncate" style={{ color: TEXT_PRIMARY }}>
- <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>{isMe ? 'Tú' : memberName}</span>
- {' · '}{info.label}{act.description ? ` · ${act.description}` : ''}
- </p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{new Date(act.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
- </div>
- <span className="text-[11px] font-mono whitespace-nowrap" style={{ color: TEXT_SECONDARY }}>{act.duration_minutes}m</span>
- </div>
- );
- })
- )}
- </div>
- </div>
- );
-}
-
-function MemberCard({ member, isTop, year, month, daysInMonth, plansByDay }) {
- const now = new Date();
- let startDow = new Date(year, month, 1).getDay() - 1;
- if (startDow < 0) startDow = 6;
-
- const trailing = [];
- for (let i = 0; i < startDow; i++) trailing.push(i);
-
- const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-
- return (
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center justify-between mb-3">
- <div className="flex items-center gap-3">
- {member.avatar_url ? (
- <img
- src={member.avatar_url}
- alt={member.name}
- className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
- style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
- />
- ) : (
- <div
- className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[12px] flex-shrink-0"
- style={{
- background: 'rgba(42,26,17,0.08)',
- border: '1.5px solid rgba(42,26,17,0.18)',
- color: '#2a1a11',
- }}
- >
- {initials}
- </div>
- )}
- <div>
- <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <p className="text-[12px]" style={{ color: '#2a1a11' }}>{member.totalHours}h este mes</p>
- </div>
- </div>
- </div>
-
- <div className="grid grid-cols-7 gap-[3px]">
- {trailing.map(i => (
- <div key={`t-${i}`} className="aspect-square" aria-hidden="true" />
- ))}
- {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
- const acts = member.actByDay[day] || [];
- const has = acts.length > 0;
- const planned = (plansByDay && plansByDay[day]) || [];
- const hasPlan = !has && planned.length > 0;
- const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const emoji = has
- ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
- : hasPlan
- ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
- : null;
-
- return (
- <div
- key={day}
- className="aspect-square rounded-md flex flex-col items-center justify-center"
- style={has ? {
- background: '#8fa898',
- boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
- } : hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
- } : isToday ? {
- background: 'rgba(42,26,17,0.14)',
- border: '1px solid rgba(42,26,17,0.22)',
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}
- >
- <span
- className="text-[9px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}
- >
- {day}
- </span>
- {emoji && <span className="text-[8px] leading-none mt-0.5">{emoji}</span>}
- </div>
- );
- })}
- </div>
- </div>
- );
+                          {act.progress_note && (
+                            <p className="text-[11px] mt-1 italic leading-snug" style={{ color: '#5d4a85' }}>
+                              "{act.progress_note}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -59,7 +59,7 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
 
  return (
  <div style={{
- background: '#281811',
+ background: '#3a1820',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 8, padding: '6px 9px', fontSize: 10,
  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
@@ -748,13 +748,13 @@ export default function Actividad() {
  const payload = (props.payload || []).map(p => ({ ...p, tooltipName: p.name }));
  return <ChartTooltip {...props} payload={payload} labelPrefix="Sem " />;
  }} />
- <Bar dataKey="progreso" name="Progreso" stackId="a" fill="#b9a9d7" radius={[0,0,0,0]} />
+ <Bar dataKey="progreso" name="Progreso" stackId="a" fill="#9c8bbf" radius={[0,0,0,0]} />
  <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="#8fa898" radius={[3,3,0,0]} />
  </BarChart>
  </ResponsiveContainer>
  </div>
  <div className="flex items-center gap-4 mt-2 justify-center">
- {[['#b9a9d7', 'Progreso'], ['#8fa898', 'Consolidación']].map(([c, l]) => (
+ {[['#9c8bbf', 'Progreso'], ['#8fa898', 'Consolidación']].map(([c, l]) => (
  <div key={l} className="flex items-center gap-1.5">
  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{l}</span>
@@ -817,8 +817,8 @@ export default function Actividad() {
  onClick={(e) => { e.stopPropagation(); updateActivity(act.id, { training_type: tt === 'progress' ? null : 'progress' }); }}
  className="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all"
  style={tt === 'progress' ? {
- background: '#b9a9d7',
- color: '#2d2350',
+ background: '#9c8bbf',
+ color: '#1f1840',
  } : {
  background: 'rgba(42,26,17,0.05)',
  border: '1px solid rgba(42,26,17,0.1)',

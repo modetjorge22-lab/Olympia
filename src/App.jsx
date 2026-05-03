@@ -53,7 +53,7 @@ function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   const splashDone = useMinSplash();
   if (loading || !splashDone) return <LoadingScreen />;
-  if (user) return <Navigate to="/feed" replace />;
+  if (user) return <Navigate to="/actividad" replace />;
   return children;
 }
 
@@ -67,8 +67,8 @@ function AppRoutes() {
         <Route path="/grupos" element={<Grupos />} />
         <Route path="/mas" element={<Mas />} />
       </Route>
-      <Route path="/" element={<Navigate to="/feed" replace />} />
-      <Route path="*" element={<Navigate to="/feed" replace />} />
+      <Route path="/" element={<Navigate to="/actividad" replace />} />
+      <Route path="*" element={<Navigate to="/actividad" replace />} />
     </Routes>
   );
 }
