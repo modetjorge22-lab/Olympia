@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Generar iconos PWA · Olympia</title>
+<style>
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #2a121a;
+    color: #f5ede0;
+    min-height: 100vh;
+    margin: 0;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  h1 { font-size: 18px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.92; margin: 0; }
+  p { opacity: 0.6; font-size: 13px; max-width: 480px; text-align: center; line-height: 1.5; }
+  .preview {
+    display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
+    margin-top: 8px;
+  }
+  .preview-card {
+    background: rgba(245,237,224,0.06);
+    border: 1px solid rgba(245,237,224,0.12);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+  }
+  .preview-card canvas { display: block; border-radius: 12px; margin: 0 auto 10px; }
+  .preview-card span { font-size: 11px; opacity: 0.6; letter-spacing: 0.1em; text-transform: uppercase; }
+  button {
+    margin-top: 16px;
+    background: #f5ede0;
+    color: #2a121a;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+  button:hover { opacity: 0.9; }
+  ol { max-width: 480px; opacity: 0.7; font-size: 12px; line-height: 1.6; }
+  code {
+    background: rgba(245,237,224,0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<h1>Generar iconos Olympia</h1>
+<p>Este helper convierte <code>public/icon.svg</code> en los PNG <code>icon-192.png</code> y <code>icon-512.png</code> que iOS necesita para la pantalla de inicio.</p>
+
+<div class="preview">
+  <div class="preview-card">
+    <canvas id="canvas-192" width="192" height="192"></canvas>
+    <span>192 × 192</span>
+  </div>
+  <div class="preview-card">
+    <canvas id="canvas-512" width="512" height="512"></canvas>
+    <span>512 × 512</span>
+  </div>
+</div>
+
+<button id="download">Descargar los 2 PNG</button>
+
+<ol>
+  <li>Pulsa <b>Descargar los 2 PNG</b>.</li>
+  <li>Mueve los archivos descargados a la carpeta <code>public/</code> del proyecto, sustituyendo los antiguos.</li>
+  <li>En iOS, vuelve a añadir la app a la pantalla de inicio para refrescar el icono.</li>
+</ol>
+
+<script>
+const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#2a121a"/>
+  <svg x="128" y="192" width="256" height="128" viewBox="0 0 88 44">
+    <path d="M44 22 C 34 10, 22 10, 22 22 C 22 34, 34 34, 44 22"
+          stroke="#f5ede0" stroke-opacity="0.55" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M44 22 C 54 10, 66 10, 66 22 C 66 34, 54 34, 44 22"
+          stroke="#f5ede0" stroke-opacity="0.95" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </svg>
+</svg>`;
+
+function renderTo(canvasId) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const blob = new Blob([SVG], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function download(canvas, filename) {
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+  }, 'image/png');
+}
+
+(async () => {
+  await renderTo('canvas-192');
+  await renderTo('canvas-512');
+})();
+
+document.getElementById('download').addEventListener('click', async () => {
+  const c192 = await renderTo('canvas-192');
+  download(c192, 'icon-192.png');
+  setTimeout(async () => {
+    const c512 = await renderTo('canvas-512');
+    download(c512, 'icon-512.png');
+  }, 600);
+});
+</script>
+</body>
+</html>

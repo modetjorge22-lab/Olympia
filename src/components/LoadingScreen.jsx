@@ -4,7 +4,7 @@ import InfinityMark from './InfinityMark';
 export default function LoadingScreen() {
   return (
     <div style={{
-      background: '#281811',
+      background: '#2a121a',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

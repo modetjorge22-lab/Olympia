@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo vino casi negro -->
+  <rect width="512" height="512" fill="#2a121a"/>
+  <!-- Logo Olympia: infinito asimétrico (bucle fino + bucle grueso), centrado -->
+  <svg x="128" y="192" width="256" height="128" viewBox="0 0 88 44">
+    <!-- Bucle izquierdo — fino, sutil -->
+    <path d="M44 22 C 34 10, 22 10, 22 22 C 22 34, 34 34, 44 22"
+          stroke="#f5ede0" stroke-opacity="0.55" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Bucle derecho — grueso, intenso -->
+    <path d="M44 22 C 54 10, 66 10, 66 22 C 66 34, 54 34, 44 22"
+          stroke="#f5ede0" stroke-opacity="0.95" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </svg>
+</svg>
