@@ -9,6 +9,12 @@ const TEXT_MUTED = '#8c7364';
 
 const TRACKABLE_TYPES = ['strength_training', 'running', 'swimming'];
 
+// Formatea Date como YYYY-MM-DD usando hora local (evita el desfase de toISOString
+// cuando estás en una zona con offset positivo como Madrid).
+function formatLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedDate }) {
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -34,7 +40,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
         title: ACTIVITY_TYPES[activityType]?.label || activityType,
         training_type: showTrainingType ? (trainingType || null) : null,
         duration_minutes: parseInt(durationMinutes),
-        date: selectedDate.toISOString().split('T')[0],
+        date: formatLocalDate(selectedDate),
         description: notes || null,
         progress_note: showProgressNote ? (progressNote || null) : null,
         source: 'manual',

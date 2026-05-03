@@ -196,8 +196,9 @@ function MenuItem({ active, dot, label, color, onClick }) {
 
 export default function Actividad() {
  const { user } = useAuth();
- const { currentMonth } = useMonth();
+ const { currentMonth, goToMonth } = useMonth();
  const { myProfile } = useTeamMembers();
+ const calendarRef = useRef(null);
  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
  const avatarUrl = myProfile?.avatar_url || null;
  const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
@@ -397,6 +398,30 @@ export default function Actividad() {
  else { setSelectedDate(new Date(year, month, day)); setShowLogDialog(true); }
  };
 
+ // Sincroniza un día (de cualquier mes) con el calendario principal.
+ // - Si el día tiene actividades reales: cambia mes si necesario, lo expande y hace scroll.
+ // - Si está vacío: abre el diálogo de logging para crear actividad en ese día.
+ const syncDayToCalendar = (date) => {
+ const yr = date.getFullYear();
+ const mo = date.getMonth();
+ const day = date.getDate();
+ const ds = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+ const hasActivities = myAllActivities.some(a => a.date?.slice(0, 10) === ds);
+
+ if (yr !== year || mo !== month) goToMonth(date);
+
+ if (hasActivities) {
+ setExpandedDay(day);
+ // Esperamos al re-render del nuevo mes antes de hacer scroll
+ setTimeout(() => {
+ calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ }, 120);
+ } else {
+ setSelectedDate(date);
+ setShowLogDialog(true);
+ }
+ };
+
  const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
  // ── Últimos 7 días ──
@@ -540,7 +565,11 @@ export default function Actividad() {
  const totalCount = d.hasActivity ? d.acts.length : d.hasPlan ? d.plans.length : 0;
 
  return (
- <div key={i} className="flex flex-col items-center gap-1">
+ <div
+ key={i}
+ className="flex flex-col items-center gap-1 cursor-pointer"
+ onClick={() => syncDayToCalendar(d.date)}
+ >
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
  <div
  className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative"
@@ -591,6 +620,7 @@ export default function Actividad() {
  plans={weeklyPlans}
  onAddPlan={addPlan}
  onRemovePlan={removePlan}
+ onSyncToCalendar={syncDayToCalendar}
  onCompletePlan={async (plan, formData) => {
  await createActivity({
  type: plan.activity_type,
@@ -764,7 +794,7 @@ export default function Actividad() {
  </div>
 
  {/* Perfil + Calendario */}
- <div className="rounded-2xl p-4" style={glassCard}>
+ <div ref={calendarRef} className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-3">
  {avatarUrl ? (

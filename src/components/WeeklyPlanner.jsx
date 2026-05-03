@@ -24,7 +24,7 @@ function toDateStr(d) {
  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onCompletePlan, activitiesByDate = {} }) {
+export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onCompletePlan, onSyncToCalendar, activitiesByDate = {} }) {
  const [selectedDay, setSelectedDay] = useState(null);
  const [weekOffset, setWeekOffset] = useState(0);
  const [completing, setCompleting] = useState(null); // plan que se está completando
@@ -175,7 +175,16 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {DAY_INITIAL[d.getDay()]}
  </span>
  <button
- onClick={() => setSelectedDay(d)}
+ onClick={() => {
+ // Si el día ya tiene actividades reales, sincronizamos con el calendario
+ // principal en lugar de abrir el modal de plan. La planificación
+ // (modal) sólo se abre para días sin actividad.
+ if (isCompleted && onSyncToCalendar) {
+ onSyncToCalendar(d);
+ } else {
+ setSelectedDay(d);
+ }
+ }}
  className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all"
  style={
  isCompleted ? {
@@ -224,7 +233,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  </div>
 
  <p className="text-[9px] mt-3 text-center" style={{ color: TEXT_MUTED }}>
- Pulsa un día para planificar
+ Pulsa un día sin actividad para planificar
  </p>
 
  {/* Day picker — portal al body para escapar de stacking contexts */}

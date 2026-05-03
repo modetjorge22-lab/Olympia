@@ -35,8 +35,12 @@ export function DataProvider({ children }) {
     }
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    // Construimos las fechas como string sin pasar por UTC para evitar desfases
+    // por timezone (Madrid en DST estaba metiendo el 30/abril en el query de mayo).
+    const monthStr = String(month + 1).padStart(2, '0');
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    const startDate = `${year}-${monthStr}-01`;
+    const endDate = `${year}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
     const { data, error } = await supabase
       .from('activities')
       .select('*')

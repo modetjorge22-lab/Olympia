@@ -14,8 +14,13 @@ export function MonthProvider({ children }) {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
+  // Navega a un mes concreto (acepta cualquier Date, ignora el día/hora).
+  const goToMonth = (date) => {
+    setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+  };
+
   return (
-    <MonthContext.Provider value={{ currentMonth, goBack, goForward }}>
+    <MonthContext.Provider value={{ currentMonth, goBack, goForward, goToMonth }}>
       {children}
     </MonthContext.Provider>
   );

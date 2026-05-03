@@ -38,11 +38,12 @@ export const DAY_PALETTE = {
     glow: '0 1px 4px rgba(143,168,152,0.25)',
   },
   planned: {
-    bg: '#9c8bbf',
-    bgExpanded: '#8576a8',
-    text: '#1f1840',
-    textOnSummary: '#3d2d6d',
-    line: 'rgba(110,90,152,0.7)',
-    glow: '0 1px 4px rgba(140,121,180,0.35)',
+    bg: 'transparent',
+    bgExpanded: 'rgba(42,18,26,0.08)',
+    text: '#2a1a11',
+    textOnSummary: '#2a1a11',
+    line: 'rgba(42,18,26,0.55)',
+    // Borde wine sin afectar al layout (box-shadow inset)
+    glow: 'inset 0 0 0 1.5px #2a121a',
   },
 };

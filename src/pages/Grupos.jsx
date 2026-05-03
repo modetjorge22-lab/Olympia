@@ -24,11 +24,11 @@ function rankingGreen(rank, total) {
  return `rgb(${r},${g},${b})`;
 }
 
-function makeMemberDot(member, lastDay, badgeDay) {
+function makeMemberDot(member, lastDay) {
  return function MemberDot(props) {
  const { cx, cy, payload } = props;
  if (cx == null || cy == null) return null;
- if (payload.day !== badgeDay) return null;
+ if (payload.day !== lastDay) return null;
  const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
  const radius = 10;
  return (
@@ -199,19 +199,9 @@ export default function Grupos() {
  return weeks;
  }, [allActivities, year, month]);
 
- const totalTeamHours = memberStats.reduce((s, m) => s + m.totalHours, 0).toFixed(0);
- const totalSessions = memberStats.reduce((s, m) => s + m.sessions, 0);
-
- // Escalonar burbujas cerca del final de la gráfica
+ // Burbuja al final de cada línea (todas en lastDay).
+ // Las distintas alturas de cada miembro las separan visualmente en vertical.
  const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
- const badgeDays = useMemo(() => {
- const map = {};
- memberStats.forEach((m, i) => {
- const offset = Math.min(i, Math.max(0, chartData.length - 2));
- map[m.email] = lastDay - offset;
- });
- return map;
- }, [memberStats, lastDay, chartData.length]);
 
  // Media del equipo para la línea de referencia
  const teamAverage = useMemo(() => {
@@ -236,22 +226,6 @@ export default function Grupos() {
  return (
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Grupos</h1>
-
- {/* Summary stats */}
- <div className="grid grid-cols-3 gap-3">
- {[
- { label: 'Horas equipo', value: `${totalTeamHours}h`, icon: '⏱️' },
- { label: 'Sesiones', value: totalSessions, icon: '🏃' },
- { label: 'Miembros', value: memberStats.length, icon: '👥' },
- ].map((s, i) => (
- <div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
- className="rounded-2xl p-3.5 flex flex-col items-center" style={glassCard}>
- <span className="text-base mb-1">{s.icon}</span>
- <span className="text-[20px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{s.value}</span>
- <span className="text-[9px] mt-0.5 text-center" style={{ color: TEXT_MUTED }}>{s.label}</span>
- </div>
- ))}
- </div>
 
  {/* Monthly race chart */}
  <div className="rounded-2xl p-4" style={glassCard}>
@@ -296,7 +270,7 @@ export default function Grupos() {
  dataKey={m.email}
  stroke={lineColor}
  strokeWidth={idx === 0 ? 2.5 : 2}
- dot={makeMemberDot({ ...m, color: lineColor }, lastDay, badgeDays[m.email])}
+ dot={makeMemberDot({ ...m, color: lineColor }, lastDay)}
  activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }}
  isAnimationActive={false}
  />
