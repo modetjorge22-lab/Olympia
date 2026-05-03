@@ -1,8 +1,8 @@
 // Paleta de la app — glass beige sobre fondo vino
 export const COLORS = {
-  // Fondo — vino tinto profundo
-  bg: '#3a1820',
-  bgHeader: '#3a1820',
+  // Fondo — vino casi negro
+  bg: '#2a121a',
+  bgHeader: '#2a121a',
 
   // Cards beige glass opaco
   cardBg: 'rgba(245,237,224,0.92)',

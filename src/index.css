@@ -10,7 +10,7 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background-color: #3a1820;
+  background-color: #2a121a;
   color: #f4f4f5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -21,7 +21,7 @@ body {
 /* Refined scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #4d2030; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: #3a1626; border-radius: 2px; }
 
 /* Remove tap highlight on mobile */
 * { -webkit-tap-highlight-color: transparent; }

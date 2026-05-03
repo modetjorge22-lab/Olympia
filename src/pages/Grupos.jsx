@@ -74,7 +74,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
- background: '#3a1820',
+ background: '#2a121a',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 10, padding: '8px 12px', fontSize: 11,
  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,

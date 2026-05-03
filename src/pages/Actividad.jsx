@@ -59,7 +59,7 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
 
  return (
  <div style={{
- background: '#3a1820',
+ background: '#2a121a',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 8, padding: '6px 9px', fontSize: 10,
  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
