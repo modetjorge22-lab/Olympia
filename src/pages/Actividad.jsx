@@ -8,7 +8,7 @@ import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import WeeklyPlanner from '@/components/WeeklyPlanner';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, ChevronDown, Flame } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Flame } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
@@ -487,6 +487,36 @@ export default function Actividad() {
  ? 'Todas las actividades'
  : `${ACTIVITY_TYPES[actFilter]?.emoji} ${ACTIVITY_TYPES[actFilter]?.label}`;
 
+ // ── Total del periodo actual y comparativa con el periodo anterior ──
+ const periodTotalHours = useMemo(() => {
+ return +chartData.reduce((s, p) => s + (p.hours || 0), 0).toFixed(1);
+ }, [chartData]);
+
+ const previousPeriodTotalHours = useMemo(() => {
+ const today = new Date();
+ const totalDays = loadTF === 'weeks' ? 16 * 7 : 60;
+ const endPrev = new Date(today);
+ endPrev.setDate(today.getDate() - totalDays);
+ const startPrev = new Date(endPrev);
+ startPrev.setDate(endPrev.getDate() - totalDays + 1);
+ const startStr = toDateStr(startPrev);
+ const endStr = toDateStr(endPrev);
+ const acts = myAllActivities.filter(a => {
+ const ds = a.date?.slice(0, 10);
+ if (!ds) return false;
+ if (ds < startStr || ds > endStr) return false;
+ if (actFilter === 'accumulated' || actFilter === 'all') return true;
+ return a.type === actFilter;
+ });
+ const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
+ return +(totalMins / 60).toFixed(1);
+ }, [myAllActivities, loadTF, actFilter]);
+
+ const periodDelta = +(periodTotalHours - previousPeriodTotalHours).toFixed(1);
+ const deltaPct = previousPeriodTotalHours > 0
+ ? Math.round((periodDelta / previousPeriodTotalHours) * 100)
+ : null;
+
  // Mapas para calendar/planner
  // Día del mes mostrado → planes
  const plansByDayOfMonth = useMemo(() => {
@@ -675,13 +705,41 @@ export default function Actividad() {
  <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
  </div>
 
+ {/* Total destacado + delta vs periodo anterior */}
+ <div className="mb-3 flex items-baseline gap-3 flex-wrap">
+ <div className="flex items-baseline gap-1.5">
+ <span className="text-[28px] font-bold font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
+ {periodTotalHours}h
+ </span>
+ <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ {loadTF === 'weeks' ? 'últimas 16 sem.' : 'últimos 60 días'}
+ </span>
+ </div>
+ {previousPeriodTotalHours > 0 && (
+ <div
+ className="flex items-center gap-1 px-2 py-0.5 rounded-md"
+ style={{
+ background: periodDelta >= 0 ? 'rgba(143,168,152,0.22)' : 'rgba(180,83,9,0.18)',
+ }}
+ >
+ {periodDelta >= 0
+ ? <TrendingUp className="w-3 h-3" style={{ color: '#1c5838' }} />
+ : <TrendingDown className="w-3 h-3" style={{ color: '#b45309' }} />}
+ <span className="text-[10px] font-semibold" style={{ color: periodDelta >= 0 ? '#1c5838' : '#b45309' }}>
+ {periodDelta >= 0 ? '+' : ''}{periodDelta}h
+ {deltaPct !== null && ` (${periodDelta >= 0 ? '+' : ''}${deltaPct}%)`}
+ </span>
+ </div>
+ )}
+ </div>
+
  <div className="h-[160px] -ml-2">
  <ResponsiveContainer width="100%" height="100%">
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#8fa898' : (ACTIVITY_COLORS[actFilter] || '#8fa898')} stopOpacity="0.4" />
- <stop offset="100%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#8fa898' : (ACTIVITY_COLORS[actFilter] || '#8fa898')} stopOpacity="0.02" />
+ <stop offset="0%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
+ <stop offset="100%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
  </linearGradient>
  {actFilter === 'all' && visibleTypes.map(t => (
  <linearGradient key={`g-${t.key}`} id={`gradient-${t.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -732,11 +790,11 @@ export default function Actividad() {
  <Area
  type="monotone"
  dataKey="hours"
- stroke={actFilter === 'accumulated' ? '#8fa898' : (ACTIVITY_COLORS[actFilter] || '#8fa898')}
+ stroke={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')}
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
- dot={{ r: 2.5, fill: actFilter === 'accumulated' ? '#8fa898' : (ACTIVITY_COLORS[actFilter] || '#8fa898'), strokeWidth: 0 }}
- activeDot={{ r: 4.5, fill: actFilter === 'accumulated' ? '#8fa898' : (ACTIVITY_COLORS[actFilter] || '#8fa898'), strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
+ dot={{ r: 2.5, fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'), strokeWidth: 0 }}
+ activeDot={{ r: 4.5, fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'), strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
  isAnimationActive={false}
  />
  )}
@@ -905,15 +963,25 @@ export default function Actividad() {
  <StatBox icon={<Target className="w-4 h-4" style={{ color: '#10b981' }} />} value={`${ritmo}%`} label="Ritmo" />
  </div>
 
- {/* FAB */}
+ {/* FAB — usa el color del fondo de la app */}
  <button
  onClick={() => { setSelectedDate(new Date()); setShowLogDialog(true); }}
  className="fixed bottom-24 right-5 w-[52px] h-[52px] rounded-full flex items-center justify-center z-40"
- style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 20px rgba(99,102,241,0.4)', border: '1px solid rgba(99,102,241,0.5)' }}>
- <Plus className="w-5 h-5 text-white" />
+ style={{
+ background: '#2a121a',
+ boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+ border: '1px solid rgba(245,237,224,0.18)',
+ }}>
+ <Plus className="w-5 h-5" style={{ color: 'rgba(245,237,224,0.95)' }} />
  </button>
 
- <LogActivityDialog isOpen={showLogDialog} onClose={() => setShowLogDialog(false)} onSubmit={createActivity} selectedDate={selectedDate} />
+ <LogActivityDialog
+ isOpen={showLogDialog}
+ onClose={() => setShowLogDialog(false)}
+ onSubmit={createActivity}
+ onSubmitPlan={addPlan}
+ selectedDate={selectedDate}
+ />
  </div>
  );
 }

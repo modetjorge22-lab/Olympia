@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Clock, TrendingUp, ChevronDown } from 'lucide-react';
+import { X, Clock, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 
 const TEXT_PRIMARY = '#2a1a11';
@@ -15,46 +15,74 @@ function formatLocalDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedDate }) {
+// Reconstruye una Date local a partir de un string YYYY-MM-DD (sin desplazar
+// por timezone como haría new Date('2026-04-30') que se interpreta como UTC).
+function parseLocalDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate }) {
+  const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [notes, setNotes] = useState('');
   const [progressNote, setProgressNote] = useState('');
-  const [showNotes, setShowNotes] = useState(false);
+  const [dateInput, setDateInput] = useState(selectedDate ? formatLocalDate(selectedDate) : '');
   const [loading, setLoading] = useState(false);
 
-  const dateStr = selectedDate
-    ? selectedDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
-    : '';
+  // Sincroniza dateInput cuando se abre el modal con una nueva selectedDate
+  useEffect(() => {
+    if (isOpen && selectedDate) setDateInput(formatLocalDate(selectedDate));
+  }, [isOpen, selectedDate]);
 
-  const showTrainingType = TRACKABLE_TYPES.includes(activityType);
-  const showProgressNote = trainingType === 'progress';
+  const showTrainingType = mode === 'realized' && TRACKABLE_TYPES.includes(activityType);
+  const showProgressNote = mode === 'realized' && trainingType === 'progress';
+
+  const resetForm = () => {
+    setActivityType('');
+    setTrainingType('');
+    setDurationMinutes('');
+    setNotes('');
+    setProgressNote('');
+    setMode('realized');
+  };
 
   const handleSubmit = async () => {
-    if (!activityType || !durationMinutes) return;
+    if (!activityType || !durationMinutes || !dateInput) return;
     setLoading(true);
     try {
-      await onSubmit({
-        type: activityType,
-        title: ACTIVITY_TYPES[activityType]?.label || activityType,
-        training_type: showTrainingType ? (trainingType || null) : null,
-        duration_minutes: parseInt(durationMinutes),
-        date: formatLocalDate(selectedDate),
-        description: notes || null,
-        progress_note: showProgressNote ? (progressNote || null) : null,
-        source: 'manual',
-        completed: true,
-      });
-      setActivityType('');
-      setTrainingType('');
-      setDurationMinutes('');
-      setNotes('');
-      setProgressNote('');
-      setShowNotes(false);
+      if (mode === 'planned') {
+        // Crear plan
+        if (!onSubmitPlan) {
+          console.error('LogActivityDialog: falta onSubmitPlan para modo planificado');
+          return;
+        }
+        await onSubmitPlan({
+          date: dateInput,
+          activity_type: activityType,
+          duration_minutes: parseInt(durationMinutes),
+          notes: notes || null,
+        });
+      } else {
+        // Crear actividad realizada
+        await onSubmit({
+          type: activityType,
+          title: ACTIVITY_TYPES[activityType]?.label || activityType,
+          training_type: showTrainingType ? (trainingType || null) : null,
+          duration_minutes: parseInt(durationMinutes),
+          date: dateInput,
+          description: notes || null,
+          progress_note: showProgressNote ? (progressNote || null) : null,
+          source: 'manual',
+          completed: true,
+        });
+      }
+      resetForm();
       onClose();
     } catch (err) {
-      console.error('Error creating activity:', err);
+      console.error('Error al guardar:', err);
     } finally {
       setLoading(false);
     }
@@ -94,10 +122,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
       >
         {/* Header compacto */}
         <div className="flex items-center justify-between px-3.5 pt-3 pb-2 flex-shrink-0">
-          <div>
-            <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Nueva actividad</h2>
-            <p className="text-[10px] capitalize" style={{ color: TEXT_MUTED }}>{dateStr}</p>
-          </div>
+          <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>
+            {mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad'}
+          </h2>
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-full flex items-center justify-center"
@@ -108,7 +135,65 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
         </div>
 
         <div className="overflow-y-auto flex-1 px-3.5 pb-3.5 space-y-3">
-          {/* Activity type — más compacto */}
+          {/* Toggle Realizada / Planificada */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => setMode('realized')}
+              className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
+              style={mode === 'realized' ? {
+                background: '#8fa898',
+                color: '#1c2620',
+                boxShadow: '0 1px 4px rgba(143,168,152,0.4)',
+              } : {
+                background: 'transparent',
+                color: TEXT_MUTED,
+                border: '1px solid rgba(42,26,17,0.12)',
+              }}
+            >
+              Realizada
+            </button>
+            <button
+              onClick={() => setMode('planned')}
+              className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
+              style={mode === 'planned' ? {
+                background: 'transparent',
+                color: TEXT_PRIMARY,
+                boxShadow: 'inset 0 0 0 1.5px #2a121a',
+              } : {
+                background: 'transparent',
+                color: TEXT_MUTED,
+                border: '1px solid rgba(42,26,17,0.12)',
+              }}
+            >
+              Planificada
+            </button>
+          </div>
+
+          {/* Date picker */}
+          <div>
+            <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Fecha</label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: TEXT_MUTED }} />
+              <input
+                type="date"
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
+                className="w-full rounded-lg pl-8 pr-3 py-2 text-[12px] focus:outline-none"
+                style={{
+                  background: 'rgba(42,26,17,0.06)',
+                  border: '1px solid rgba(42,26,17,0.1)',
+                  color: TEXT_PRIMARY,
+                }}
+              />
+            </div>
+            {dateInput && (
+              <p className="text-[10px] mt-1 capitalize" style={{ color: TEXT_MUTED }}>
+                {parseLocalDate(dateInput).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+            )}
+          </div>
+
+          {/* Activity type */}
           <div>
             <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Actividad</label>
             <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
@@ -134,7 +219,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
             </div>
           </div>
 
-          {/* Duration — input + chips en una sola fila */}
+          {/* Duration */}
           <div>
             <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Duración</label>
             <div className="flex gap-1.5 items-center">
@@ -175,7 +260,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
             </div>
           </div>
 
-          {/* Training type — solo si aplica */}
+          {/* Training type — solo si aplica y es Realizada */}
           {showTrainingType && (
             <div>
               <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>
@@ -186,9 +271,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
                   onClick={() => setTrainingType('progress')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'progress' ? {
-                    background: 'rgba(139,92,246,0.15)',
-                    border: '1px solid rgba(139,92,246,0.35)',
-                    color: '#6d28d9',
+                    background: '#9c8bbf',
+                    border: '1px solid #6e5a98',
+                    color: '#1f1840',
                   } : {
                     background: 'rgba(42,26,17,0.06)',
                     border: '1px solid rgba(42,26,17,0.1)',
@@ -227,50 +312,37 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
               <textarea
                 value={progressNote}
                 onChange={(e) => setProgressNote(e.target.value)}
-                placeholder="100kg en press banca..."
                 rows={1}
                 className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
                 style={{
                   background: 'rgba(42,26,17,0.06)',
-                  border: '1px solid rgba(139,92,246,0.25)',
+                  border: '1px solid rgba(156,139,191,0.45)',
                   color: TEXT_PRIMARY,
                 }}
               />
             </div>
           )}
 
-          {/* Notes — colapsado por defecto */}
-          {!showNotes ? (
-            <button
-              onClick={() => setShowNotes(true)}
-              className="text-[10px] flex items-center gap-1 transition-colors"
-              style={{ color: TEXT_MUTED }}
-            >
-              <ChevronDown className="w-3 h-3" />
-              Añadir notas
-            </button>
-          ) : (
-            <div>
-              <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Notas</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Cómo te sentiste..."
-                rows={2}
-                className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-                style={{
-                  background: 'rgba(42,26,17,0.06)',
-                  border: '1px solid rgba(42,26,17,0.1)',
-                  color: TEXT_PRIMARY,
-                }}
-              />
-            </div>
-          )}
+          {/* Notas — siempre visibles, sin placeholder */}
+          <div>
+            <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Notas</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
+              style={{
+                background: 'rgba(42,26,17,0.06)',
+                border: '1px solid rgba(42,26,17,0.1)',
+                color: TEXT_PRIMARY,
+              }}
+            />
+          </div>
 
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            disabled={!activityType || !durationMinutes || loading}
+            disabled={!activityType || !durationMinutes || !dateInput || loading}
             className="w-full font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-[13px] disabled:opacity-40 disabled:cursor-not-allowed mt-1"
             style={{
               background: TEXT_PRIMARY,
@@ -282,7 +354,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, selectedD
             ) : (
               <>
                 {activityType && ACTIVITY_TYPES[activityType]?.emoji}
-                Guardar
+                {mode === 'planned' ? 'Planificar' : 'Guardar'}
               </>
             )}
           </button>
