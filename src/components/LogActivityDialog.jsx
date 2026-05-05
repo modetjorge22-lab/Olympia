@@ -271,9 +271,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => setTrainingType('progress')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'progress' ? {
-                    background: '#9c8bbf',
-                    border: '1px solid #6e5a98',
-                    color: '#1f1840',
+                    background: '#6b1f2c',
+                    border: '1px solid #6b1f2c',
+                    color: 'rgba(245,237,224,0.95)',
                   } : {
                     background: 'rgba(42,26,17,0.06)',
                     border: '1px solid rgba(42,26,17,0.1)',
@@ -287,9 +287,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => setTrainingType('consolidation')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'consolidation' ? {
-                    background: 'rgba(143,168,152,0.25)',
-                    border: '1px solid rgba(143,168,152,0.5)',
-                    color: '#1c5838',
+                    background: '#2a121a',
+                    border: '1px solid #2a121a',
+                    color: 'rgba(245,237,224,0.95)',
                   } : {
                     background: 'rgba(42,26,17,0.06)',
                     border: '1px solid rgba(42,26,17,0.1)',

@@ -107,12 +107,12 @@ function ActivityDropdown({ value, onChange, types }) {
  return () => document.removeEventListener('mousedown', handleClick);
  }, []);
 
- const selected = value === 'all'
- ? { label: 'Todas' }
+ const selected = value === 'accumulated'
+ ? { label: 'Acumulado' }
  : { ...ACTIVITY_TYPES[value] };
 
- const isGeneral = value === 'all';
- const selColor = isGeneral ? 'rgba(42,26,17,0.5)' : ACTIVITY_COLORS[value];
+ const isGeneral = value === 'accumulated';
+ const selColor = isGeneral ? 'rgba(42,18,26,0.7)' : ACTIVITY_COLORS[value];
 
  return (
  <div ref={ref} style={{ position: 'relative' }}>
@@ -150,8 +150,8 @@ function ActivityDropdown({ value, onChange, types }) {
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
  >
- <MenuItem active={value === 'all'} dot="rgba(42,26,17,0.5)" label="Todas las actividades"
- onClick={() => { onChange('all'); setOpen(false); }} />
+ <MenuItem active={value === 'accumulated'} dot="rgba(42,18,26,0.7)" label="Acumulado"
+ onClick={() => { onChange('accumulated'); setOpen(false); }} />
 
  {types.length > 0 && (
  <>
@@ -203,7 +203,7 @@ export default function Actividad() {
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const [loadTF, setLoadTF] = useState('weeks');
- const [actFilter, setActFilter] = useState('all');
+ const [actFilter, setActFilter] = useState('accumulated');
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
@@ -257,16 +257,8 @@ export default function Actividad() {
  intervalLabel: bounds.intervalLabel,
  };
 
- if (actFilter === 'all') {
- const minsByType = {};
- let totalMins = 0;
- acts.forEach(a => {
- minsByType[a.type] = (minsByType[a.type] || 0) + (a.duration_minutes || 0);
- totalMins += (a.duration_minutes || 0);
- });
- Object.entries(minsByType).forEach(([type, mins]) => {
- point[type] = +(mins / 60).toFixed(2);
- });
+ if (actFilter === 'accumulated') {
+ const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
  point.hours = +(totalMins / 60).toFixed(1);
  } else {
  const mins = acts
@@ -344,16 +336,6 @@ export default function Actividad() {
  const ticks = Array.from({ length: numTicks }, (_, i) => +(i * step).toFixed(1));
  return { yDomain: [0, max], yTicks: ticks };
  }, [maxHours]);
-
- const visibleTypes = useMemo(() => {
- const keys = new Set();
- chartData.forEach(p => Object.keys(p).forEach(k => {
- if (k !== 'label' && k !== 'hours' && (p[k] || 0) > 0) keys.add(k);
- }));
- return Object.entries(ACTIVITY_TYPES)
- .filter(([k]) => keys.has(k))
- .map(([key, val]) => ({ key, ...val }));
- }, [chartData]);
 
  const strengthData = useMemo(() => {
  // Referencia siempre HOY (igual que weeklyData)
@@ -475,8 +457,8 @@ export default function Actividad() {
  return { label: 'Media', color: '#6e5647', hours: last7Hours, avg };
  }, [last7Days, myAllActivities]);
 
- const chartSubtitle = actFilter === 'all'
- ? 'Todas las actividades'
+ const chartSubtitle = actFilter === 'accumulated'
+ ? 'Total acumulado'
  : `${ACTIVITY_TYPES[actFilter]?.emoji} ${ACTIVITY_TYPES[actFilter]?.label}`;
 
  // ── Horas última semana + media del periodo + media para línea referencia ──
@@ -491,7 +473,7 @@ export default function Actividad() {
  const acts = myAllActivities.filter(a => {
  const ds = a.date?.slice(0, 10);
  if (!ds || ds < startStr || ds > endStr) return false;
- if (actFilter === 'all') return true;
+ if (actFilter === 'accumulated') return true;
  return a.type === actFilter;
  });
  const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
@@ -514,7 +496,7 @@ export default function Actividad() {
  const acts = myAllActivities.filter(a => {
  const ds = a.date?.slice(0, 10);
  if (!ds || ds < startStr || ds > endStr) return false;
- if (actFilter === 'all') return true;
+ if (actFilter === 'accumulated') return true;
  return a.type === actFilter;
  });
  const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
@@ -760,15 +742,9 @@ export default function Actividad() {
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
- <stop offset="100%" stopColor={actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
+ <stop offset="0%" stopColor={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
+ <stop offset="100%" stopColor={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
  </linearGradient>
- {actFilter === 'all' && visibleTypes.map(t => (
- <linearGradient key={`g-${t.key}`} id={`gradient-${t.key}`} x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={ACTIVITY_COLORS[t.key]} stopOpacity="0.5" />
- <stop offset="100%" stopColor={ACTIVITY_COLORS[t.key]} stopOpacity="0.05" />
- </linearGradient>
- ))}
  </defs>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" vertical={false} />
  <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={0} />
@@ -784,11 +760,7 @@ export default function Actividad() {
  <Tooltip
  cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
- const payload = (props.payload || []).map(p => {
- if (p.dataKey === 'hours') return { ...p, tooltipName: 'Horas' };
- const t = ACTIVITY_TYPES[p.dataKey];
- return { ...p, tooltipName: t ? `${t.emoji} ${t.label}` : p.name };
- });
+ const payload = (props.payload || []).map(p => ({ ...p, tooltipName: 'Horas' }));
  return <ChartTooltip {...props} payload={payload} />;
  }}
  />
@@ -810,47 +782,30 @@ export default function Actividad() {
  />
  )}
 
- {actFilter === 'all' && visibleTypes.length > 0 ? (
- visibleTypes.map((t) => (
- <Area
- key={t.key}
- type="monotone"
- dataKey={t.key}
- stackId="a"
- stroke={ACTIVITY_COLORS[t.key]}
- strokeWidth={2}
- fill={`url(#gradient-${t.key})`}
- dot={false}
- activeDot={{ r: 3, fill: ACTIVITY_COLORS[t.key], strokeWidth: 0 }}
- isAnimationActive={false}
- />
- ))
- ) : (
+ {/* Área única que une los puntos. Dots prominentes en cada bucket. */}
  <Area
  type="monotone"
  dataKey="hours"
- stroke={ACTIVITY_COLORS[actFilter] || '#2a121a'}
+ stroke={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')}
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
- dot={{ r: 2.5, fill: ACTIVITY_COLORS[actFilter] || '#2a121a', strokeWidth: 0 }}
- activeDot={{ r: 4.5, fill: ACTIVITY_COLORS[actFilter] || '#2a121a', strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
+ dot={{
+ r: 3.5,
+ fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
+ stroke: 'rgba(245,237,224,0.95)',
+ strokeWidth: 1.5,
+ }}
+ activeDot={{
+ r: 5.5,
+ fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
+ stroke: 'rgba(245,237,224,0.95)',
+ strokeWidth: 2,
+ }}
  isAnimationActive={false}
  />
- )}
  </AreaChart>
  </ResponsiveContainer>
  </div>
-
- {actFilter === 'all' && visibleTypes.length > 0 && (
- <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
- {visibleTypes.map(t => (
- <div key={t.key} className="flex items-center gap-1">
- <div className="w-2 h-2 rounded-sm" style={{ background: ACTIVITY_COLORS[t.key], opacity: 0.85 }} />
- <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{t.label}</span>
- </div>
- ))}
- </div>
- )}
  </div>
 
  {/* Progreso en fuerza */}
@@ -875,13 +830,13 @@ export default function Actividad() {
  const payload = (props.payload || []).map(p => ({ ...p, tooltipName: p.name }));
  return <ChartTooltip {...props} payload={payload} labelPrefix="Sem " />;
  }} />
- <Bar dataKey="progreso" name="Progreso" stackId="a" fill="#9c8bbf" radius={[0,0,0,0]} />
- <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="#8fa898" radius={[3,3,0,0]} />
+ <Bar dataKey="progreso" name="Progreso" stackId="a" fill="#6b1f2c" radius={[0,0,0,0]} />
+ <Bar dataKey="consolidacion" name="Consolidación" stackId="a" fill="#2a121a" radius={[3,3,0,0]} />
  </BarChart>
  </ResponsiveContainer>
  </div>
  <div className="flex items-center gap-4 mt-2 justify-center">
- {[['#9c8bbf', 'Progreso'], ['#8fa898', 'Consolidación']].map(([c, l]) => (
+ {[['#6b1f2c', 'Progreso'], ['#2a121a', 'Consolidación']].map(([c, l]) => (
  <div key={l} className="flex items-center gap-1.5">
  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{l}</span>
@@ -944,8 +899,8 @@ export default function Actividad() {
  onClick={(e) => { e.stopPropagation(); updateActivity(act.id, { training_type: tt === 'progress' ? null : 'progress' }); }}
  className="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all"
  style={tt === 'progress' ? {
- background: '#9c8bbf',
- color: '#1f1840',
+ background: '#6b1f2c',
+ color: 'rgba(245,237,224,0.95)',
  } : {
  background: 'rgba(42,26,17,0.05)',
  border: '1px solid rgba(42,26,17,0.1)',
@@ -958,8 +913,8 @@ export default function Actividad() {
  onClick={(e) => { e.stopPropagation(); updateActivity(act.id, { training_type: tt === 'consolidation' ? null : 'consolidation' }); }}
  className="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all"
  style={tt === 'consolidation' ? {
- background: '#8fa898',
- color: '#1c2620',
+ background: '#2a121a',
+ color: 'rgba(245,237,224,0.95)',
  } : {
  background: 'rgba(42,26,17,0.05)',
  border: '1px solid rgba(42,26,17,0.1)',
