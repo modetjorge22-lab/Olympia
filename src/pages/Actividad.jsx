@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid, ReferenceLine } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -107,13 +107,11 @@ function ActivityDropdown({ value, onChange, types }) {
  return () => document.removeEventListener('mousedown', handleClick);
  }, []);
 
- const selected = value === 'accumulated'
- ? { label: 'Acumulado' }
- : value === 'all'
+ const selected = value === 'all'
  ? { label: 'Todas' }
  : { ...ACTIVITY_TYPES[value] };
 
- const isGeneral = value === 'accumulated' || value === 'all';
+ const isGeneral = value === 'all';
  const selColor = isGeneral ? 'rgba(42,26,17,0.5)' : ACTIVITY_COLORS[value];
 
  return (
@@ -152,10 +150,7 @@ function ActivityDropdown({ value, onChange, types }) {
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
  >
- <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>General</p>
- <MenuItem active={value === 'accumulated'} dot="rgba(42,26,17,0.5)" label="Acumulado"
- onClick={() => { onChange('accumulated'); setOpen(false); }} />
- <MenuItem active={value === 'all'} dot="rgba(42,26,17,0.5)" label="Todas"
+ <MenuItem active={value === 'all'} dot="rgba(42,26,17,0.5)" label="Todas las actividades"
  onClick={() => { onChange('all'); setOpen(false); }} />
 
  {types.length > 0 && (
@@ -208,7 +203,7 @@ export default function Actividad() {
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const [loadTF, setLoadTF] = useState('weeks');
- const [actFilter, setActFilter] = useState('accumulated');
+ const [actFilter, setActFilter] = useState('all');
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
@@ -273,9 +268,6 @@ export default function Actividad() {
  point[type] = +(mins / 60).toFixed(2);
  });
  point.hours = +(totalMins / 60).toFixed(1);
- } else if (actFilter === 'accumulated') {
- const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
- point.hours = +(totalMins / 60).toFixed(1);
  } else {
  const mins = acts
  .filter(a => a.type === actFilter)
@@ -339,15 +331,17 @@ export default function Actividad() {
  const maxHours = Math.max(...chartData.map(d => d.hours || 0), 0.5);
  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
- // Eje Y con saltos limpios y regulares — siempre 4 intervalos (5 ticks)
+ // Eje Y: max = pico real (sin headroom). Tope en la barra/punto más alto.
  const { yDomain, yTicks } = useMemo(() => {
- const target = maxHours * 1.15;
- // Pasos preferidos: 1, 2, 5, 10, 20, 25, 50, 100
- const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100];
- const idealStep = target / 4;
+ if (maxHours <= 0) return { yDomain: [0, 1], yTicks: [0, 1] };
+ // Pasos preferidos para los ticks intermedios
+ const niceSteps = [0.5, 1, 2, 5, 10, 20, 25, 50, 100];
+ const idealStep = maxHours / 4;
  const step = niceSteps.find(s => s >= idealStep) || 100;
- const max = step * 4;
- const ticks = [0, step, step * 2, step * 3, max];
+ // Redondeo al siguiente múltiplo de step para que el pico quede dentro
+ const max = Math.ceil(maxHours / step) * step;
+ const numTicks = Math.round(max / step) + 1;
+ const ticks = Array.from({ length: numTicks }, (_, i) => +(i * step).toFixed(1));
  return { yDomain: [0, max], yTicks: ticks };
  }, [maxHours]);
 
@@ -481,40 +475,62 @@ export default function Actividad() {
  return { label: 'Media', color: '#6e5647', hours: last7Hours, avg };
  }, [last7Days, myAllActivities]);
 
- const chartSubtitle = actFilter === 'accumulated'
- ? 'Total acumulado'
- : actFilter === 'all'
+ const chartSubtitle = actFilter === 'all'
  ? 'Todas las actividades'
  : `${ACTIVITY_TYPES[actFilter]?.emoji} ${ACTIVITY_TYPES[actFilter]?.label}`;
 
- // ── Total del periodo actual y comparativa con el periodo anterior ──
- const periodTotalHours = useMemo(() => {
- return +chartData.reduce((s, p) => s + (p.hours || 0), 0).toFixed(1);
- }, [chartData]);
-
- const previousPeriodTotalHours = useMemo(() => {
+ // ── Horas última semana + media del periodo + media para línea referencia ──
+ const lastWeekHours = useMemo(() => {
  const today = new Date();
- const totalDays = loadTF === 'weeks' ? 16 * 7 : 60;
- const endPrev = new Date(today);
- endPrev.setDate(today.getDate() - totalDays);
- const startPrev = new Date(endPrev);
- startPrev.setDate(endPrev.getDate() - totalDays + 1);
- const startStr = toDateStr(startPrev);
- const endStr = toDateStr(endPrev);
+ today.setHours(23, 59, 59, 999);
+ const start = new Date(today);
+ start.setDate(today.getDate() - 6);
+ start.setHours(0, 0, 0, 0);
+ const startStr = toDateStr(start);
+ const endStr = toDateStr(today);
  const acts = myAllActivities.filter(a => {
  const ds = a.date?.slice(0, 10);
- if (!ds) return false;
- if (ds < startStr || ds > endStr) return false;
- if (actFilter === 'accumulated' || actFilter === 'all') return true;
+ if (!ds || ds < startStr || ds > endStr) return false;
+ if (actFilter === 'all') return true;
  return a.type === actFilter;
  });
  const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
  return +(totalMins / 60).toFixed(1);
+ }, [myAllActivities, actFilter]);
+
+ // Media semanal del periodo (sin contar la última semana actual, es decir,
+ // tu "media habitual" antes de esta semana).
+ const avgWeeklyHours = useMemo(() => {
+ const today = new Date();
+ today.setHours(23, 59, 59, 999);
+ const endRef = new Date(today);
+ endRef.setDate(today.getDate() - 7); // hasta hace 7 días
+ const totalDays = (loadTF === 'weeks' ? 16 * 7 : 60) - 7;
+ const startRef = new Date(endRef);
+ startRef.setDate(endRef.getDate() - totalDays + 1);
+ startRef.setHours(0, 0, 0, 0);
+ const startStr = toDateStr(startRef);
+ const endStr = toDateStr(endRef);
+ const acts = myAllActivities.filter(a => {
+ const ds = a.date?.slice(0, 10);
+ if (!ds || ds < startStr || ds > endStr) return false;
+ if (actFilter === 'all') return true;
+ return a.type === actFilter;
+ });
+ const totalMins = acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
+ const numWeeks = totalDays / 7;
+ return numWeeks > 0 ? +((totalMins / 60) / numWeeks).toFixed(1) : 0;
  }, [myAllActivities, loadTF, actFilter]);
 
- const periodDelta = +(periodTotalHours - previousPeriodTotalHours).toFixed(1);
- const deltaPct = previousPeriodTotalHours > 0
- ? Math.round((periodDelta / previousPeriodTotalHours) * 100)
+ // Línea media para el chart: en weeks usamos la media semanal directa;
+ // en days la dividimos entre 7 para una "media diaria".
+ const referenceLineValue = loadTF === 'weeks'
+ ? avgWeeklyHours
+ : +(avgWeeklyHours / 7).toFixed(2);
+
+ // % de la última semana respecto a la media (positivo = por encima).
+ const lastWeekVsAvgPct = avgWeeklyHours > 0
+ ? Math.round(((lastWeekHours - avgWeeklyHours) / avgWeeklyHours) * 100)
  : null;
 
  // Mapas para calendar/planner
@@ -652,15 +668,17 @@ export default function Actividad() {
  onRemovePlan={removePlan}
  onSyncToCalendar={syncDayToCalendar}
  onCompletePlan={async (plan, formData) => {
+ // Si el usuario no escribió descripción al completar, usamos el `notes`
+ // del plan original (que es el nombre que él le había puesto).
  await createActivity({
  type: plan.activity_type,
  title: ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type,
  training_type: formData.training_type || null,
  duration_minutes: formData.duration_minutes,
  date: plan.date.slice(0, 10),
- description: formData.description || null,
+ description: formData.description || plan.notes || null,
  progress_note: formData.progress_note || null,
- source: 'planned',
+ source: 'manual',
  completed: true,
  });
  await removePlan(plan.id);
@@ -705,31 +723,35 @@ export default function Actividad() {
  <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
  </div>
 
- {/* Total destacado + delta vs periodo anterior */}
+ {/* Última semana + comparativa con la media habitual */}
  <div className="mb-3 flex items-baseline gap-3 flex-wrap">
  <div className="flex items-baseline gap-1.5">
  <span className="text-[28px] font-bold font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
- {periodTotalHours}h
+ {lastWeekHours}h
  </span>
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
- {loadTF === 'weeks' ? 'últimas 16 sem.' : 'últimos 60 días'}
+ esta semana
  </span>
  </div>
- {previousPeriodTotalHours > 0 && (
+ {lastWeekVsAvgPct !== null && (
  <div
  className="flex items-center gap-1 px-2 py-0.5 rounded-md"
  style={{
- background: periodDelta >= 0 ? 'rgba(143,168,152,0.22)' : 'rgba(180,83,9,0.18)',
+ background: lastWeekVsAvgPct >= 0 ? 'rgba(143,168,152,0.22)' : 'rgba(180,83,9,0.18)',
  }}
  >
- {periodDelta >= 0
+ {lastWeekVsAvgPct >= 0
  ? <TrendingUp className="w-3 h-3" style={{ color: '#1c5838' }} />
  : <TrendingDown className="w-3 h-3" style={{ color: '#b45309' }} />}
- <span className="text-[10px] font-semibold" style={{ color: periodDelta >= 0 ? '#1c5838' : '#b45309' }}>
- {periodDelta >= 0 ? '+' : ''}{periodDelta}h
- {deltaPct !== null && ` (${periodDelta >= 0 ? '+' : ''}${deltaPct}%)`}
+ <span className="text-[10px] font-semibold" style={{ color: lastWeekVsAvgPct >= 0 ? '#1c5838' : '#b45309' }}>
+ {lastWeekVsAvgPct >= 0 ? '+' : ''}{lastWeekVsAvgPct}% vs media
  </span>
  </div>
+ )}
+ {avgWeeklyHours > 0 && (
+ <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ (media: {avgWeeklyHours}h/sem)
+ </span>
  )}
  </div>
 
@@ -738,8 +760,8 @@ export default function Actividad() {
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
- <stop offset="100%" stopColor={actFilter === 'accumulated' || actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
+ <stop offset="0%" stopColor={actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
+ <stop offset="100%" stopColor={actFilter === 'all' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
  </linearGradient>
  {actFilter === 'all' && visibleTypes.map(t => (
  <linearGradient key={`g-${t.key}`} id={`gradient-${t.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -771,6 +793,23 @@ export default function Actividad() {
  }}
  />
 
+ {/* Línea horizontal discontinua: media habitual */}
+ {referenceLineValue > 0 && (
+ <ReferenceLine
+ y={referenceLineValue}
+ stroke="rgba(42,18,26,0.5)"
+ strokeDasharray="4 4"
+ strokeWidth={1}
+ label={{
+ value: `Media ${loadTF === 'weeks' ? referenceLineValue + 'h' : referenceLineValue + 'h/d'}`,
+ position: 'insideTopRight',
+ fill: 'rgba(42,18,26,0.65)',
+ fontSize: 9,
+ offset: 4,
+ }}
+ />
+ )}
+
  {actFilter === 'all' && visibleTypes.length > 0 ? (
  visibleTypes.map((t) => (
  <Area
@@ -790,11 +829,11 @@ export default function Actividad() {
  <Area
  type="monotone"
  dataKey="hours"
- stroke={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')}
+ stroke={ACTIVITY_COLORS[actFilter] || '#2a121a'}
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
- dot={{ r: 2.5, fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'), strokeWidth: 0 }}
- activeDot={{ r: 4.5, fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'), strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
+ dot={{ r: 2.5, fill: ACTIVITY_COLORS[actFilter] || '#2a121a', strokeWidth: 0 }}
+ activeDot={{ r: 4.5, fill: ACTIVITY_COLORS[actFilter] || '#2a121a', strokeWidth: 2, stroke: 'rgba(245,237,224,0.95)' }}
  isAnimationActive={false}
  />
  )}

@@ -106,9 +106,30 @@ export default async function handler(req, res) {
 
     const existing = existingActivities || [];
 
+    // Get ALL weekly plans for this user — usados para auto-match con actividades
+    // recién sincronizadas. La prioridad de "description" la lleva el plan.notes
+    // (el nombre que el usuario apuntó en la app), no el sa.name de Strava.
+    const { data: existingPlans } = await supabase
+      .from('weekly_plans')
+      .select('*')
+      .eq('user_email', email);
+
+    const plans = existingPlans || [];
+    const consumedPlanIds = new Set();
+
+    // Devuelve un plan no-consumido para el día y tipo dados, o null.
+    const findPlan = (date, type) => {
+      return plans.find(p =>
+        !consumedPlanIds.has(p.id) &&
+        p.date === date &&
+        p.activity_type === type
+      );
+    };
+
     let imported = 0;
     let updated = 0;
     let skipped = 0;
+    let plansConsumed = 0;
 
     for (const sa of stravaActivities) {
       const stravaId = String(sa.id);
@@ -124,6 +145,12 @@ export default async function handler(req, res) {
         continue;
       }
 
+      // Reglas de prioridad para "description" (nombre de la actividad):
+      // 1º — la que ya tenga el usuario apuntada en una activity manual existente
+      // 2º — la que tenga apuntada en un plan (plan.notes)
+      // 3º — el nombre que viene de Strava (sa.name)
+      const matchedPlan = findPlan(date, type);
+
       // 2. Check if there's a manual activity on the same date with the same type
       const manualMatch = existing.find(a =>
         a.source === 'manual' &&
@@ -133,7 +160,7 @@ export default async function handler(req, res) {
       );
 
       if (manualMatch) {
-        // Update the manual activity with Strava data (more precise)
+        // Mantenemos el description original del usuario — no lo modificamos.
         await supabase
           .from('activities')
           .update({
@@ -141,11 +168,15 @@ export default async function handler(req, res) {
             distance_km: distanceKm,
             calories_burned: sa.calories || null,
             strava_id: stravaId,
-            description: manualMatch.description
-              ? `${manualMatch.description} (Actualizado desde Strava)`
-              : sa.name,
           })
           .eq('id', manualMatch.id);
+
+        // Si había un plan correspondiente, también lo retiramos (se ha cumplido)
+        if (matchedPlan) {
+          await supabase.from('weekly_plans').delete().eq('id', matchedPlan.id);
+          consumedPlanIds.add(matchedPlan.id);
+          plansConsumed++;
+        }
 
         // Mark as processed so we don't match it again
         manualMatch.strava_id = stravaId;
@@ -161,7 +192,7 @@ export default async function handler(req, res) {
       );
 
       if (similarMatch) {
-        // Update with Strava data
+        // Mantenemos description original; sólo actualizamos datos numéricos.
         await supabase
           .from('activities')
           .update({
@@ -171,18 +202,25 @@ export default async function handler(req, res) {
             distance_km: distanceKm,
             calories_burned: sa.calories || null,
             strava_id: stravaId,
-            description: similarMatch.description
-              ? `${similarMatch.description} (Actualizado desde Strava)`
-              : sa.name,
           })
           .eq('id', similarMatch.id);
+
+        if (matchedPlan) {
+          await supabase.from('weekly_plans').delete().eq('id', matchedPlan.id);
+          consumedPlanIds.add(matchedPlan.id);
+          plansConsumed++;
+        }
 
         similarMatch.strava_id = stravaId;
         updated++;
         continue;
       }
 
-      // 4. No match found — import as new activity
+      // 4. No match found — import as new activity.
+      // Si hay plan para ese día+tipo, su `notes` se convierte en `description`
+      // (prioridad sobre el nombre que viene de Strava).
+      const description = matchedPlan?.notes || sa.name;
+
       const { error: insertError } = await supabase
         .from('activities')
         .insert({
@@ -190,7 +228,7 @@ export default async function handler(req, res) {
           user_email: email,
           type,
           title: TYPE_LABELS[type] || sa.name,
-          description: sa.name,
+          description,
           date,
           duration_minutes: durationMins,
           distance_km: distanceKm,
@@ -200,7 +238,15 @@ export default async function handler(req, res) {
           completed: true,
         });
 
-      if (!insertError) imported++;
+      if (!insertError) {
+        imported++;
+        // El plan se ha cumplido — lo retiramos
+        if (matchedPlan) {
+          await supabase.from('weekly_plans').delete().eq('id', matchedPlan.id);
+          consumedPlanIds.add(matchedPlan.id);
+          plansConsumed++;
+        }
+      }
     }
 
     return res.status(200).json({
@@ -208,6 +254,7 @@ export default async function handler(req, res) {
       imported,
       updated,
       skipped,
+      plansConsumed,
       total: stravaActivities.length,
     });
   } catch (err) {

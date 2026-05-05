@@ -32,6 +32,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  const [planNote, setPlanNote] = useState(''); // descripción opcional del entreno
  const [addError, setAddError] = useState(''); // error visible en el modal
  const [adding, setAdding] = useState(false); // evita doble-click mientras guarda
+ const [showAddForm, setShowAddForm] = useState(false); // sección "añadir plan" expandida
  const sheetRef = useRef(null);
 
  const weekDays = useMemo(() => {
@@ -95,11 +96,17 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  }
  };
 
- // Limpia el error y la nota cuando se abre/cambia el día
+ // Limpia el error y la nota cuando se abre/cambia el día.
+ // showAddForm: si hay planes existentes, arranca colapsado; si no, expandido.
  useEffect(() => {
  setAddError('');
  setPlanNote('');
- }, [selectedDay]);
+ if (selectedDay) {
+ const ds = toDateStr(selectedDay);
+ const hasPlans = (plans || []).some(p => p.date.slice(0, 10) === ds);
+ setShowAddForm(!hasPlans);
+ }
+ }, [selectedDay, plans]);
 
  const weekLabel = weekOffset === 0 ? 'Próximos 7 días' : weekOffset === 1 ? 'Días 8–14' : `+${weekOffset * 7} días`;
  const totalPlanned = weekDays.reduce((sum, d) => sum + (plansByDate[toDateStr(d)]?.length || 0), 0);
@@ -261,72 +268,125 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  }}
  onClick={(e) => e.stopPropagation()}
  >
- <div className="flex items-center justify-between mb-2">
- <p className="text-[12px] font-semibold capitalize" style={{ color: TEXT_PRIMARY }}>
+ <div className="flex items-center justify-between mb-3">
+ <div>
+ <p className="text-[13px] font-bold capitalize leading-none" style={{ color: TEXT_PRIMARY }}>
  {selectedDay.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}
  </p>
- <button onClick={() => setSelectedDay(null)} className="w-6 h-6 rounded-full flex items-center justify-center"
+ {(plansByDate[toDateStr(selectedDay)] || []).length > 0 && (
+ <p className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>
+ {(plansByDate[toDateStr(selectedDay)] || []).length === 1 ? 'Plan para este día' : `${(plansByDate[toDateStr(selectedDay)] || []).length} planes para este día`}
+ </p>
+ )}
+ </div>
+ <button onClick={() => setSelectedDay(null)} className="w-7 h-7 rounded-full flex items-center justify-center"
  style={{ background: 'rgba(42,26,17,0.08)' }}>
- <X className="w-3 h-3" style={{ color: TEXT_SECONDARY }} />
+ <X className="w-3.5 h-3.5" style={{ color: TEXT_SECONDARY }} />
  </button>
  </div>
 
- {/* Existing plans */}
+ {/* Existing plans — cards prominentes con acción principal "Marcar hecha" */}
  {(plansByDate[toDateStr(selectedDay)] || []).length > 0 && (
- <div className="space-y-1 mb-2">
+ <div className="space-y-2 mb-3">
  {plansByDate[toDateStr(selectedDay)].map(p => {
  const info = ACTIVITY_TYPES[p.activity_type] || { emoji: '🏅', label: p.activity_type };
  const canComplete = selectedDay <= today && !(activitiesByDate[toDateStr(selectedDay)] || []).length;
  return (
- <div key={p.id} className="flex items-center justify-between rounded-lg px-2 py-1.5"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.08)' }}>
- <div className="flex items-center gap-2 min-w-0 flex-1">
- <span className="text-[12px]">{info.emoji}</span>
- <div className="min-w-0 flex-1">
- <div className="flex items-center gap-1.5">
- <span className="text-[11px] truncate" style={{ color: TEXT_PRIMARY }}>
- {p.notes ? p.notes : info.label}
- </span>
- {p.duration_minutes ? (
- <span className="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
- style={{ background: 'rgba(140,121,180,0.35)', color: '#3d2d6d' }}>
- {p.duration_minutes < 60 ? `${p.duration_minutes}min` : `${Math.floor(p.duration_minutes/60)}h${p.duration_minutes%60 ? p.duration_minutes%60 : ''}`}
- </span>
- ) : null}
- </div>
+ <div
+ key={p.id}
+ className="rounded-xl p-3"
+ style={{
+ background: 'transparent',
+ boxShadow: 'inset 0 0 0 1.5px #2a121a',
+ }}
+ >
+ {/* Línea 1: emoji + nombre/tipo + duración + delete */}
+ <div className="flex items-start gap-2.5 mb-2">
+ <span className="text-[18px] flex-shrink-0">{info.emoji}</span>
+ <div className="flex-1 min-w-0">
+ <p className="text-[13px] font-semibold leading-tight" style={{ color: TEXT_PRIMARY }}>
+ {p.notes || info.label}
+ </p>
+ <div className="flex items-center gap-2 mt-0.5">
  {p.notes && (
- <span className="text-[9px]" style={{ color: TEXT_MUTED }}>{info.label}</span>
+ <span className="text-[10px]" style={{ color: TEXT_MUTED }}>{info.label}</span>
+ )}
+ {p.duration_minutes && (
+ <span className="text-[10px] font-medium" style={{ color: TEXT_SECONDARY }}>
+ · {p.duration_minutes < 60 ? `${p.duration_minutes} min` : `${Math.floor(p.duration_minutes/60)}h${p.duration_minutes%60 ? ' ' + (p.duration_minutes%60) + 'min' : ''}`}
+ </span>
  )}
  </div>
  </div>
- <div className="flex items-center gap-1 flex-shrink-0">
+ <button
+ onClick={() => onRemovePlan(p.id)}
+ className="p-1.5 rounded-md flex-shrink-0 transition-colors"
+ style={{ background: 'rgba(42,26,17,0.05)' }}
+ aria-label="Eliminar plan"
+ >
+ <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+
+ {/* Línea 2: acción principal "Marcar como hecha" — grande y verde */}
  {canComplete && (
  <button
  onClick={() => setCompleting(p)}
- className="px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1"
- style={{ background: '#8fa898', color: '#1c2620' }}
+ className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all"
+ style={{
+ background: '#8fa898',
+ color: '#1c2620',
+ boxShadow: '0 1px 4px rgba(143,168,152,0.4)',
+ }}
  >
- <Check className="w-2.5 h-2.5" />
- Completar
+ <Check className="w-3.5 h-3.5" />
+ Marcar como hecha
  </button>
  )}
- <button onClick={() => onRemovePlan(p.id)} className="p-1 rounded hover:bg-red-500/10">
- <Trash2 className="w-3 h-3" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
+ {!canComplete && selectedDay > today && (
+ <p className="text-[10px] text-center pt-0.5" style={{ color: TEXT_MUTED }}>
+ Programado para el futuro
+ </p>
+ )}
  </div>
  );
  })}
  </div>
  )}
 
+ {/* Toggle "Añadir otro plan" — solo si ya hay planes */}
+ {(plansByDate[toDateStr(selectedDay)] || []).length > 0 && !showAddForm && (
+ <button
+ onClick={() => setShowAddForm(true)}
+ className="w-full py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+ style={{
+ background: 'rgba(42,26,17,0.05)',
+ border: '1px dashed rgba(42,26,17,0.2)',
+ color: TEXT_MUTED,
+ }}
+ >
+ <Plus className="w-3 h-3" />
+ Añadir otro plan
+ </button>
+ )}
+
+ {/* Sección de añadir plan — visible si NO hay planes O si el user expandió */}
+ {showAddForm && (
+ <div>
+ {(plansByDate[toDateStr(selectedDay)] || []).length > 0 && (
+ <div className="border-t mb-3 pt-3" style={{ borderColor: 'rgba(42,26,17,0.1)' }}>
+ <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: TEXT_MUTED }}>
+ Añadir otro plan
+ </p>
+ </div>
+ )}
+
  {/* Note input */}
- <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Nota (opcional)</p>
+ <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Nombre / nota</p>
  <input
  type="text"
  value={planNote}
  onChange={(e) => setPlanNote(e.target.value)}
- placeholder="Ej: Push, Legs, intervalos 5x1km…"
  maxLength={40}
  className="w-full mb-3 px-2.5 py-1.5 rounded-lg text-[11px] outline-none"
  style={{
@@ -337,7 +397,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  />
 
  {/* Duration picker */}
- <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Duración planificada</p>
+ <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Duración</p>
  <div className="flex gap-1 mb-3">
  {[30, 45, 60, 90, 120].map(mins => (
  <button
@@ -345,9 +405,9 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  onClick={() => setPlanDuration(mins)}
  className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
  style={planDuration === mins ? {
- background: '#9c8bbf',
- color: '#1f1840',
- border: '1px solid #6e5a98',
+ background: 'transparent',
+ color: TEXT_PRIMARY,
+ boxShadow: 'inset 0 0 0 1.5px #2a121a',
  } : {
  background: 'rgba(42,26,17,0.06)',
  color: TEXT_MUTED,
@@ -359,8 +419,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  ))}
  </div>
 
- {/* Add — single horizontal scroll row, compact */}
- <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Añadir actividad</p>
+ {/* Activity type picker */}
+ <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: TEXT_MUTED }}>Tipo de actividad</p>
  <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
  {Object.entries(ACTIVITY_TYPES).map(([key, { emoji, label }]) => (
  <button
@@ -380,6 +440,11 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  </button>
  ))}
  </div>
+ <p className="text-[9px] mt-1.5 text-center" style={{ color: TEXT_MUTED }}>
+ Pulsa un tipo para guardar el plan
+ </p>
+ </div>
+ )}
 
  {/* Error banner */}
  {addError && (
