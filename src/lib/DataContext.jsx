@@ -179,7 +179,7 @@ export function DataProvider({ children }) {
   const upsertProfile = useCallback(async (profileData) => {
     const { data, error } = await supabase
       .from('team_members')
-      .upsert({ email: user.email, ...profileData }, { onConflict: 'email' })
+      .upsert({ email: user.email, user_id: user.id, ...profileData }, { onConflict: 'email' })
       .select()
       .single();
     if (error) {
