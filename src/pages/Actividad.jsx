@@ -861,7 +861,7 @@ export default function Actividad() {
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
  style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
- <Trophy className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ <Trophy className="w-3 h-3" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Metas</h2>
  </div>

@@ -26,7 +26,6 @@ export function useGoals() {
   // para que funcione aunque la migración SQL aún no se haya ejecutado.
   const createGoal = useCallback(async ({ title, unit, current_value, activity_type }) => {
     if (!user) return null;
-    const today = new Date().toISOString().slice(0, 10);
     const hasValue = current_value != null && current_value !== '';
 
     // Payload base (siempre existe en el schema original)
