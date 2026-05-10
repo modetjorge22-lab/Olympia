@@ -7,7 +7,7 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
@@ -466,12 +466,14 @@ export default function Actividad() {
  // ── Horas última semana + media del periodo + media para línea referencia ──
  const lastWeekHours = useMemo(() => {
  const today = new Date();
- today.setHours(23, 59, 59, 999);
+ const end = new Date(today);
+ end.setDate(today.getDate() - 1);
+ end.setHours(23, 59, 59, 999);
  const start = new Date(today);
- start.setDate(today.getDate() - 6);
+ start.setDate(today.getDate() - 7);
  start.setHours(0, 0, 0, 0);
  const startStr = toDateStr(start);
- const endStr = toDateStr(today);
+ const endStr = toDateStr(end);
  const acts = myAllActivities.filter(a => {
  const ds = a.date?.slice(0, 10);
  if (!ds || ds < startStr || ds > endStr) return false;
@@ -548,8 +550,17 @@ export default function Actividad() {
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
 
- {/* ── Últimos 7 días + Planificación ── */}
+ {/* ── Planificador ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
+
+ {/* Cabecera del card */}
+ <div className="flex items-center gap-2.5 mb-4">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </div>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Planificador</h2>
+ </div>
 
  {/* — Últimos 7 días — */}
  <div className="flex items-center justify-between mb-2">
@@ -560,21 +571,16 @@ export default function Actividad() {
  </div>
  </div>
 
- <div className="grid grid-cols-7 gap-[5px]">
+ <div className="grid grid-cols-7 gap-2">
  {last7Days.map((d, i) => {
- const palette = d.hasActivity ? DAY_PALETTE.completed : d.hasPlan ? DAY_PALETTE.planned : null;
  const emoji = d.hasActivity
  ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
  : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
- const summary = d.hasActivity
- ? getActivitySummary(d.acts[0], ACTIVITY_TYPES)
- : d.hasPlan ? getPlanSummary(d.plans[0], ACTIVITY_TYPES) : null;
- const totalCount = d.hasActivity ? d.acts.length : d.hasPlan ? d.plans.length : 0;
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
  <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative"
+ className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
  style={d.hasActivity ? {
  background: DAY_PALETTE.completed.bg,
  boxShadow: DAY_PALETTE.completed.glow,
@@ -593,16 +599,18 @@ export default function Actividad() {
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- {totalCount > 1 && (
- <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.15)' }}>
- <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{totalCount}</span>
  </div>
- )}
- </div>
- {summary && palette && (
- <DaySummaryDrop summary={summary} palette={palette} extraCount={totalCount - 1} />
- )}
+ {d.hasActivity
+ ? d.acts.map((act, idx) => {
+ const s = getActivitySummary(act, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
+ })
+ : d.hasPlan
+ ? d.plans.map((plan, idx) => {
+ const s = getPlanSummary(plan, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
+ })
+ : null}
  </div>
  );
  })}
@@ -611,24 +619,19 @@ export default function Actividad() {
  {/* Separador */}
  <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '14px 0 12px' }} />
 
- {/* — Planificación — */}
- <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: TEXT_MUTED }}>Planificación</p>
+ {/* — Próximos 7 días — */}
+ <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
 
- <div className="grid grid-cols-7 gap-[5px]">
+ <div className="grid grid-cols-7 gap-2">
  {next7Days.map((d, i) => {
- const palette = d.hasActivity ? DAY_PALETTE.completed : d.hasPlan ? DAY_PALETTE.planned : null;
  const emoji = d.hasActivity
  ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
  : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
- const summary = d.hasActivity
- ? getActivitySummary(d.acts[0], ACTIVITY_TYPES)
- : d.hasPlan ? getPlanSummary(d.plans[0], ACTIVITY_TYPES) : null;
- const totalCount = d.hasActivity ? d.acts.length : d.hasPlan ? d.plans.length : 0;
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
  <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative"
+ className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
  style={d.hasActivity ? {
  background: DAY_PALETTE.completed.bg,
  boxShadow: DAY_PALETTE.completed.glow,
@@ -644,16 +647,18 @@ export default function Actividad() {
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- {totalCount > 1 && (
- <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.15)' }}>
- <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{totalCount}</span>
  </div>
- )}
- </div>
- {summary && palette && (
- <DaySummaryDrop summary={summary} palette={palette} extraCount={totalCount - 1} />
- )}
+ {d.hasActivity
+ ? d.acts.map((act, idx) => {
+ const s = getActivitySummary(act, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
+ })
+ : d.hasPlan
+ ? d.plans.map((plan, idx) => {
+ const s = getPlanSummary(plan, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
+ })
+ : null}
  </div>
  );
  })}
@@ -705,7 +710,7 @@ export default function Actividad() {
  {lastWeekHours}h
  </span>
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
- esta semana
+ últ. 7 días
  </span>
  </div>
  {lastWeekVsAvgPct !== null && (
@@ -783,16 +788,14 @@ export default function Actividad() {
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
  dot={{
- r: 3.5,
+ r: 3,
  fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
- stroke: 'rgba(245,237,224,0.95)',
- strokeWidth: 1.5,
+ strokeWidth: 0,
  }}
  activeDot={{
- r: 5.5,
+ r: 5,
  fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
- stroke: 'rgba(245,237,224,0.95)',
- strokeWidth: 2,
+ strokeWidth: 0,
  }}
  isAnimationActive={false}
  />

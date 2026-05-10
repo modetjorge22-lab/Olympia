@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'react-router-dom';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useData } from '@/lib/DataContext';
 import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle, Camera } from 'lucide-react';
 
 const glassCard = {
@@ -53,8 +54,10 @@ export default function Mas() {
  try {
  const response = await fetch('/api/strava-sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email }) });
  const data = await response.json();
- if (response.ok) setSyncResult({ type: 'success', message: `${data.imported} actividades importadas` });
- else setSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
+ if (response.ok) {
+ setSyncResult({ type: 'success', message: `${data.imported} actividades importadas` });
+ refreshData();
+ } else setSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
  } catch (err) {
  setSyncResult({ type: 'error', message: 'Error de conexión' });
  } finally {
@@ -62,6 +65,7 @@ export default function Mas() {
  }
  };
 
+ const { refresh: refreshData } = useData();
  const { myProfile, upsertProfile, refresh: refreshMembers } = useTeamMembers();
  const fileInputRef = useRef(null);
  const [uploadingAvatar, setUploadingAvatar] = useState(false);

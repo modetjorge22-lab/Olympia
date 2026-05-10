@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { useData } from '@/lib/DataContext';
 
 const SYNC_MIN_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 const LAST_SYNC_KEY = 'olympia_last_strava_sync';
 
 export function useStravaAutoSync() {
   const { user } = useAuth();
+  const { refresh } = useData();
   const triggered = useRef(false);
 
   useEffect(() => {
@@ -37,6 +39,8 @@ export function useStravaAutoSync() {
         });
         if (response.ok) {
           localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+          // Refrescar datos para que los planes convertidos a actividades se reflejen
+          refresh();
         }
       } catch (err) {
         // Silencioso: no queremos romper la UI si falla
