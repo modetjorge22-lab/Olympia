@@ -48,11 +48,11 @@ export const DAY_PALETTE = {
   },
   // Día en que se batió una marca personal
   pr: {
-    bg: '#7a1a2a',
-    bgExpanded: '#6b1520',
+    bg: '#5c0015',
+    bgExpanded: '#4e0011',
     text: 'rgba(245,237,224,0.95)',
     textOnSummary: '#f5ede0',
-    line: 'rgba(122,26,42,0.7)',
-    glow: '0 2px 10px rgba(122,26,42,0.55)',
+    line: 'rgba(92,0,21,0.7)',
+    glow: '0 2px 12px rgba(92,0,21,0.65)',
   },
 };

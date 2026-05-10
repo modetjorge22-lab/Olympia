@@ -30,6 +30,8 @@ export function useGoals() {
     const hasValue = current_value != null && current_value !== '';
 
     // Payload base (siempre existe en el schema original)
+    // pb_date se deja NULL al crear — solo se establece cuando el usuario
+    // actualiza la marca explícitamente via updateMark.
     const basePayload = {
       user_id: user.id,
       user_email: user.email,
@@ -38,11 +40,11 @@ export function useGoals() {
       current_value: hasValue ? Number(current_value) : null,
     };
 
-    // Intentar con las columnas nuevas primero
+    // Intentar con las columnas nuevas primero (activity_type, pb_date NULL)
     const fullPayload = {
       ...basePayload,
       activity_type: activity_type || null,
-      pb_date: hasValue ? today : null,
+      pb_date: null,
     };
 
     let { data, error } = await supabase
