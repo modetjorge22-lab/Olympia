@@ -4,6 +4,7 @@ import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useMonth } from '@/lib/MonthContext';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import InfinityMark from './InfinityMark';
+import FeatureAnnouncement from './FeatureAnnouncement';
 
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -26,6 +27,8 @@ export default function AppLayout({ children }) {
   const monthLabel = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   return (
+    <>
+    <FeatureAnnouncement />
     <div className="min-h-screen flex flex-col">
       {/* Header — fondo vino con blur sutil */}
       <header
@@ -139,5 +142,6 @@ export default function AppLayout({ children }) {
         </div>
       </nav>
     </div>
+    </>
   );
 }
