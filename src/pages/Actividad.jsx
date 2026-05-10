@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid, ReferenceLine } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
@@ -8,6 +8,7 @@ import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { useGoals } from '@/hooks/useGoals';
+import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
@@ -198,7 +199,20 @@ export default function Actividad() {
  const avatarUrl = myProfile?.avatar_url || null;
  const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
  const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
- const { goals, createGoal, updateMark, deleteGoal } = useGoals();
+ const { goals, createGoal, updateMark, deleteGoal, refresh: refreshGoals } = useGoals();
+
+ // PR achievements — fuente de verdad para colorear días
+ const [prAchievements, setPrAchievements] = useState([]);
+ const fetchPrAchievements = useCallback(async () => {
+ if (!user?.email) return;
+ const { data } = await supabase
+ .from('pr_achievements')
+ .select('*')
+ .eq('user_email', user.email)
+ .order('date', { ascending: false });
+ if (data) setPrAchievements(data);
+ }, [user?.email]);
+ useEffect(() => { fetchPrAchievements(); }, [fetchPrAchievements]);
 
  const [showLogDialog, setShowLogDialog] = useState(false);
  const [selectedDate, setSelectedDate] = useState(new Date());
@@ -222,6 +236,27 @@ export default function Actividad() {
  await updateMark(goalId, Number(newValue), date);
  }
  }
+ // Actualizar la lista de achievements para colorear el día inmediatamente
+ fetchPrAchievements();
+ };
+
+ // Borrar un PR achievement (revierte el color del día y la marca del goal si procede)
+ const deletePrAchievement = async (prId) => {
+ const pr = prAchievements.find(p => p.id === prId);
+ if (!pr) return;
+ await supabase.from('pr_achievements').delete().eq('id', prId);
+ const remaining = prAchievements.filter(p => p.id !== prId);
+ setPrAchievements(remaining);
+ // Revertir el goal: buscar el PR más reciente restante para este goal
+ const goalRemaining = remaining.filter(p => p.goal_id === pr.goal_id);
+ if (goalRemaining.length === 0) {
+ // Sin más PRs → limpiar pb_date y volver a la marca anterior
+ await supabase.from('goals').update({ pb_date: null, current_value: pr.old_value ?? null }).eq('id', pr.goal_id);
+ } else {
+ const latest = [...goalRemaining].sort((a, b) => b.date.localeCompare(a.date))[0];
+ await supabase.from('goals').update({ pb_date: latest.date, current_value: latest.new_value }).eq('id', pr.goal_id);
+ }
+ refreshGoals();
  };
 
  // Crear meta desde el formulario inline
@@ -575,12 +610,22 @@ export default function Actividad() {
  return map;
  }, [weeklyPlans, year, month]);
 
- // Set de fechas en que se batió una marca personal (para colorear el calendario)
+ // Set de fechas PR (fuente: pr_achievements, no goals.pb_date)
  const prDates = useMemo(() => {
  const set = new Set();
- goals.forEach(g => { if (g.pb_date) set.add(g.pb_date); });
+ prAchievements.forEach(pr => { if (pr.date) set.add(pr.date); });
  return set;
- }, [goals]);
+ }, [prAchievements]);
+
+ // Map date → lista de PR achievements (para el día expandido)
+ const prAchievementsByDate = useMemo(() => {
+ const map = {};
+ prAchievements.forEach(pr => {
+ if (!map[pr.date]) map[pr.date] = [];
+ map[pr.date].push(pr);
+ });
+ return map;
+ }, [prAchievements]);
 
  // Fecha YYYY-MM-DD → actividades reales registradas (rico, para mostrar resumen)
  const activitiesByDateStr = useMemo(() => {
@@ -759,29 +804,23 @@ export default function Actividad() {
 
  <div className="grid grid-cols-7 gap-2">
  {last7Days.map((d, i) => {
- const emoji = d.hasActivity
- ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
+ const ds = toDateStr(d.date);
+ const isPR = prDates.has(ds);
+ const emoji = isPR ? '🏆'
+ : d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
  : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
- style={d.hasActivity ? {
- background: DAY_PALETTE.completed.bg,
- boxShadow: DAY_PALETTE.completed.glow,
- } : d.hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
- } : d.isToday ? {
- background: 'rgba(42,26,17,0.14)',
- border: '1px solid rgba(42,26,17,0.22)',
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}
+ <div className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
+ : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
+ : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
+ : d.isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
+ : { background: 'rgba(42,26,17,0.07)' }}
  >
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
@@ -810,26 +849,22 @@ export default function Actividad() {
 
  <div className="grid grid-cols-7 gap-2">
  {next7Days.map((d, i) => {
- const emoji = d.hasActivity
- ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
+ const ds = toDateStr(d.date);
+ const isPR = prDates.has(ds);
+ const emoji = isPR ? '🏆'
+ : d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
  : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
- style={d.hasActivity ? {
- background: DAY_PALETTE.completed.bg,
- boxShadow: DAY_PALETTE.completed.glow,
- } : d.hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}
+ <div className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
+ : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
+ : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
+ : { background: 'rgba(42,26,17,0.07)' }}
  >
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(42,26,17,0.45)' }}>
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
@@ -1071,6 +1106,30 @@ export default function Actividad() {
  </div>
  );
  })}
+ {/* PR achievements del día — borrables */}
+ {(() => {
+ const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
+ return (prAchievementsByDate[ds] || []).map(pr => (
+ <div key={pr.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: 'rgba(61,0,16,0.07)', border: '1px solid rgba(61,0,16,0.18)' }}>
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
+ <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#3d0010' }} />
+ <div className="min-w-0">
+ <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{pr.goal_title}</p>
+ <p className="text-[11px]" style={{ color: '#3d0010' }}>
+ {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
+ </p>
+ </div>
+ </div>
+ <button onClick={e => { e.stopPropagation(); deletePrAchievement(pr.id); }}
+ className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
+ <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+ ));
+ })()}
  <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
  className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
  style={{ background: 'rgba(42,26,17,0.04)', border: '1px dashed rgba(42,26,17,0.18)', color: TEXT_MUTED }}>

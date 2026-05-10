@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, TrendingUp, Zap, Trophy, ChevronDown } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
+import { supabase } from '@/lib/supabase';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -106,6 +107,23 @@ export default function Grupos() {
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
+
+ // PR achievements del equipo para colorear mini calendarios
+ const [teamPrAchievements, setTeamPrAchievements] = useState([]);
+ useEffect(() => {
+ supabase.from('pr_achievements').select('user_email, date')
+ .then(({ data }) => { if (data) setTeamPrAchievements(data); });
+ }, []);
+
+ // Map email → Set de fechas PR
+ const memberPrDates = useMemo(() => {
+ const map = {};
+ teamPrAchievements.forEach(pr => {
+ if (!map[pr.user_email]) map[pr.user_email] = new Set();
+ map[pr.user_email].add(pr.date);
+ });
+ return map;
+ }, [teamPrAchievements]);
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
@@ -368,6 +386,7 @@ export default function Grupos() {
  year={year} month={month} daysInMonth={daysInMonth}
  plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
  memberGoals={teamGoals.filter(g => g.user_email === member.email)}
+ prDates={memberPrDates[member.email] || new Set()}
  />
  ))}
  </div>
@@ -376,7 +395,7 @@ export default function Grupos() {
  );
 }
 
-function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [] }) {
+function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set() }) {
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
  let startDow = new Date(year, month, 1).getDay() - 1;
@@ -417,12 +436,16 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  const planned = (plansByDay && plansByDay[day]) || [];
  const hasPlan = !has && planned.length > 0;
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const emoji = has
- ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
+ const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+ const isPR = prDates.has(dateStr);
+ const emoji = isPR ? '🏆'
+ : has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
  : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
  return (
  <div key={day} className="aspect-square rounded-md flex flex-col items-center justify-center"
- style={has ? {
+ style={isPR ? {
+ background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow,
+ } : has ? {
  background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
  } : hasPlan ? {
  background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow,
@@ -430,7 +453,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)',
  } : { background: 'rgba(42,26,17,0.07)' }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
