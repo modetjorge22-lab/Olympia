@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Newspaper } from 'lucide-react';
+import { Newspaper, Trophy } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const glassCard = {
   background: 'rgba(245,237,224,0.92)',
@@ -49,23 +50,36 @@ export default function Feed() {
   const { allActivities } = useActivities(currentMonth);
   const { members } = useTeamMembers();
 
-  // Últimas 30 actividades (sin restringir al mes navegado, así el feed siempre tiene contenido)
-  const recentActivities = useMemo(() => {
-    return [...allActivities]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 30);
-  }, [allActivities]);
+  // Marcas personales recientes (últimas 30)
+  const [prEvents, setPrEvents] = useState([]);
+  useEffect(() => {
+    supabase
+      .from('pr_achievements')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(30)
+      .then(({ data }) => { if (data) setPrEvents(data); });
+  }, []);
 
-  // Agrupar por día (Hoy, Ayer, fecha)
+  // Mezclar actividades + PR events, ordenar por fecha descendente
+  const feedItems = useMemo(() => {
+    const acts = [...allActivities].map(a => ({ ...a, _kind: 'activity' }));
+    const prs = prEvents.map(p => ({ ...p, _kind: 'pr', date: p.date, created_at: p.created_at }));
+    return [...acts, ...prs]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 40);
+  }, [allActivities, prEvents]);
+
+  // Agrupar por día
   const grouped = useMemo(() => {
     const map = new Map();
-    recentActivities.forEach(act => {
-      const key = act.date?.slice(0, 10) || 'unknown';
+    feedItems.forEach(item => {
+      const key = item.date?.slice(0, 10) || 'unknown';
       if (!map.has(key)) map.set(key, []);
-      map.get(key).push(act);
+      map.get(key).push(item);
     });
-    return Array.from(map.entries()); // [[dateStr, [acts]], ...]
-  }, [recentActivities]);
+    return Array.from(map.entries());
+  }, [feedItems]);
 
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
@@ -77,7 +91,7 @@ export default function Feed() {
         Últimas sesiones del equipo
       </p>
 
-      {recentActivities.length === 0 ? (
+      {feedItems.length === 0 ? (
         <div className="rounded-2xl p-8 text-center" style={glassCard}>
           <p className="text-[13px]" style={{ color: TEXT_MUTED }}>Aún no hay actividades registradas</p>
         </div>
@@ -90,74 +104,92 @@ export default function Feed() {
                 {formatDate(dateStr)}
               </p>
               <div className="rounded-2xl overflow-hidden" style={glassCard}>
-                {acts.map((act, idx) => {
-                  const memberName = members.find(m => m.email === act.user_email)?.full_name
-                                   || act.user_email?.split('@')[0]
+                {acts.map((item, idx) => {
+                  const memberName = members.find(m => m.email === item.user_email)?.full_name
+                                   || item.user_email?.split('@')[0]
                                    || 'Anónimo';
-                  const memberAvatar = members.find(m => m.email === act.user_email)?.avatar_url || null;
+                  const memberAvatar = members.find(m => m.email === item.user_email)?.avatar_url || null;
                   const initials = memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                  const info = ACTIVITY_TYPES[act.type] || { emoji: '🏅', label: act.type };
-                  const isMe = act.user_email === user?.email;
+                  const isMe = item.user_email === user?.email;
+                  const nameLabel = isMe ? 'Tú' : memberName;
 
+                  // ── Tarjeta de marca personal batida ──
+                  if (item._kind === 'pr') {
+                    return (
+                      <div key={`pr-${item.id}`}
+                           className={`px-4 py-3 ${idx < acts.length - 1 ? 'border-b' : ''}`}
+                           style={{ borderColor: 'rgba(42,26,17,0.08)', background: 'rgba(122,26,42,0.05)' }}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: '#7a1a2a' }}>
+                            <Trophy className="w-4 h-4" style={{ color: 'rgba(245,237,224,0.9)' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px]" style={{ color: TEXT_PRIMARY }}>
+                              <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>
+                                {nameLabel}
+                              </span>
+                              {' '}batió su marca en{' '}
+                              <span className="font-semibold" style={{ color: '#7a1a2a' }}>{item.goal_title}</span>
+                            </p>
+                            <div className="flex items-baseline gap-1.5 mt-1">
+                              {item.old_value != null && (
+                                <>
+                                  <span className="text-[12px] line-through" style={{ color: TEXT_MUTED }}>
+                                    {item.old_value} {item.unit}
+                                  </span>
+                                  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>→</span>
+                                </>
+                              )}
+                              <span className="text-[16px] font-bold font-mono" style={{ color: '#7a1a2a' }}>
+                                {item.new_value} {item.unit}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── Tarjeta de actividad normal ──
+                  const info = ACTIVITY_TYPES[item.type] || { emoji: '🏅', label: item.type };
                   return (
-                    <div key={act.id}
+                    <div key={item.id}
                          className={`px-4 py-3 ${idx < acts.length - 1 ? 'border-b' : ''}`}
                          style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
                       <div className="flex items-start gap-3">
-                        {/* Avatar */}
                         {memberAvatar ? (
-                          <img
-                            src={memberAvatar}
-                            alt={memberName}
+                          <img src={memberAvatar} alt={memberName}
                             className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
-                            style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
-                          />
+                            style={{ border: '1.5px solid rgba(42,26,17,0.18)' }} />
                         ) : (
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
-                            style={{
-                              background: 'rgba(42,26,17,0.08)',
-                              border: '1.5px solid rgba(42,26,17,0.18)',
-                              color: TEXT_PRIMARY,
-                            }}
-                          >
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
+                            style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: TEXT_PRIMARY }}>
                             {initials}
                           </div>
                         )}
-
-                        {/* Contenido */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between gap-2">
                             <p className="text-[13px] truncate" style={{ color: TEXT_PRIMARY }}>
                               <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>
-                                {isMe ? 'Tú' : memberName}
+                                {nameLabel}
                               </span>
                             </p>
-                            {act.duration_minutes ? (
-                              <span className="text-[11px] font-mono whitespace-nowrap flex-shrink-0"
-                                    style={{ color: TEXT_SECONDARY }}>
-                                {formatDuration(act.duration_minutes)}
+                            {item.duration_minutes ? (
+                              <span className="text-[11px] font-mono whitespace-nowrap flex-shrink-0" style={{ color: TEXT_SECONDARY }}>
+                                {formatDuration(item.duration_minutes)}
                               </span>
                             ) : null}
                           </div>
-
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[13px]">{info.emoji}</span>
-                            <span className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>
-                              {info.label}
-                            </span>
+                            <span className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>{info.label}</span>
                           </div>
-
-                          {act.description && (
-                            <p className="text-[12px] mt-1.5 leading-snug" style={{ color: TEXT_SECONDARY }}>
-                              {act.description}
-                            </p>
+                          {item.description && (
+                            <p className="text-[12px] mt-1.5 leading-snug" style={{ color: TEXT_SECONDARY }}>{item.description}</p>
                           )}
-
-                          {act.progress_note && (
-                            <p className="text-[11px] mt-1 italic leading-snug" style={{ color: '#5d4a85' }}>
-                              "{act.progress_note}"
-                            </p>
+                          {item.progress_note && (
+                            <p className="text-[11px] mt-1 italic leading-snug" style={{ color: '#5d4a85' }}>"{item.progress_note}"</p>
                           )}
                         </div>
                       </div>

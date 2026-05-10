@@ -46,4 +46,13 @@ export const DAY_PALETTE = {
     // Borde wine sin afectar al layout (box-shadow inset)
     glow: 'inset 0 0 0 1.5px #2a121a',
   },
+  // Día en que se batió una marca personal
+  pr: {
+    bg: '#7a1a2a',
+    bgExpanded: '#6b1520',
+    text: 'rgba(245,237,224,0.95)',
+    textOnSummary: '#f5ede0',
+    line: 'rgba(122,26,42,0.7)',
+    glow: '0 2px 10px rgba(122,26,42,0.55)',
+  },
 };

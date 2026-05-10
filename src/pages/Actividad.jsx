@@ -7,7 +7,8 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar } from 'lucide-react';
+import { useGoals } from '@/hooks/useGoals';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
@@ -197,12 +198,52 @@ export default function Actividad() {
  const avatarUrl = myProfile?.avatar_url || null;
  const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
  const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
+ const { goals, createGoal, updateMark, deleteGoal } = useGoals();
 
  const [showLogDialog, setShowLogDialog] = useState(false);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const [loadTF, setLoadTF] = useState('weeks');
  const [actFilter, setActFilter] = useState('accumulated');
+
+ // ── Metas / Marcas personales ──
+ const [showGoalForm, setShowGoalForm] = useState(false);
+ const [goalTitle, setGoalTitle] = useState('');
+ const [goalUnit, setGoalUnit] = useState('');
+ const [goalValue, setGoalValue] = useState('');
+ const [goalActivityType, setGoalActivityType] = useState('');
+ const [editingMarkId, setEditingMarkId] = useState(null);
+ const [editingMarkValue, setEditingMarkValue] = useState('');
+
+ // Cuando se bate una marca desde el diálogo de actividad
+ const handlePrBeaten = async (prArray, date) => {
+ for (const { goalId, newValue } of prArray) {
+ if (newValue !== '' && newValue != null) {
+ await updateMark(goalId, Number(newValue), date);
+ }
+ }
+ };
+
+ // Crear meta desde el formulario inline
+ const handleCreateGoal = async () => {
+ if (!goalTitle.trim()) return;
+ await createGoal({
+ title: goalTitle,
+ unit: goalUnit,
+ current_value: goalValue !== '' ? Number(goalValue) : null,
+ activity_type: goalActivityType || null,
+ });
+ setGoalTitle(''); setGoalUnit(''); setGoalValue(''); setGoalActivityType('');
+ setShowGoalForm(false);
+ };
+
+ // Guardar actualización manual de marca
+ const handleSaveEditMark = async (goalId) => {
+ if (editingMarkValue === '') return;
+ await updateMark(goalId, Number(editingMarkValue), new Date().toISOString().slice(0, 10));
+ setEditingMarkId(null);
+ setEditingMarkValue('');
+ };
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
@@ -534,6 +575,13 @@ export default function Actividad() {
  return map;
  }, [weeklyPlans, year, month]);
 
+ // Set de fechas en que se batió una marca personal (para colorear el calendario)
+ const prDates = useMemo(() => {
+ const set = new Set();
+ goals.forEach(g => { if (g.pb_date) set.add(g.pb_date); });
+ return set;
+ }, [goals]);
+
  // Fecha YYYY-MM-DD → actividades reales registradas (rico, para mostrar resumen)
  const activitiesByDateStr = useMemo(() => {
  const map = {};
@@ -807,6 +855,174 @@ export default function Actividad() {
  </div>
 
 
+ {/* ── Metas / Marcas personales ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-center justify-between mb-3">
+ <div className="flex items-center gap-2.5">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(122,26,42,0.12)', border: '1px solid rgba(122,26,42,0.2)' }}>
+ <Trophy className="w-3.5 h-3.5" style={{ color: '#7a1a2a' }} />
+ </div>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Metas</h2>
+ </div>
+ <button
+ onClick={() => setShowGoalForm(v => !v)}
+ className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+ style={{ background: 'rgba(122,26,42,0.1)', border: '1px solid rgba(122,26,42,0.2)', color: '#7a1a2a' }}>
+ <Plus className="w-3 h-3" /> Nueva
+ </button>
+ </div>
+
+ {/* Formulario nueva meta */}
+ {showGoalForm && (
+ <div className="rounded-xl p-3 mb-3 space-y-2"
+ style={{ background: 'rgba(122,26,42,0.06)', border: '1px solid rgba(122,26,42,0.15)' }}>
+ <input
+ type="text"
+ placeholder="Nombre de la meta (ej: Press banca 1RM)"
+ value={goalTitle}
+ onChange={e => setGoalTitle(e.target.value)}
+ className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none"
+ style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ />
+ <div className="flex gap-2">
+ <input
+ type="number"
+ placeholder="Marca actual"
+ value={goalValue}
+ onChange={e => setGoalValue(e.target.value)}
+ className="flex-1 rounded-lg px-3 py-2 text-[12px] focus:outline-none"
+ style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ />
+ <input
+ type="text"
+ placeholder="Unidad (kg, min…)"
+ value={goalUnit}
+ onChange={e => setGoalUnit(e.target.value)}
+ className="w-[100px] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
+ style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ />
+ </div>
+ <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+ <button
+ onClick={() => setGoalActivityType('')}
+ className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium"
+ style={goalActivityType === '' ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ General
+ </button>
+ {Object.entries(ACTIVITY_TYPES).map(([key, { emoji, label }]) => (
+ <button
+ key={key}
+ onClick={() => setGoalActivityType(key)}
+ className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium"
+ style={goalActivityType === key ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ <span>{emoji}</span>{label}
+ </button>
+ ))}
+ </div>
+ <div className="flex gap-2">
+ <button
+ onClick={handleCreateGoal}
+ disabled={!goalTitle.trim()}
+ className="flex-1 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-40"
+ style={{ background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' }}>
+ Guardar meta
+ </button>
+ <button
+ onClick={() => setShowGoalForm(false)}
+ className="px-4 py-2 rounded-lg text-[12px]"
+ style={{ background: 'rgba(42,26,17,0.07)', color: TEXT_MUTED }}>
+ Cancelar
+ </button>
+ </div>
+ </div>
+ )}
+
+ {/* Lista de metas */}
+ {goals.length === 0 && !showGoalForm ? (
+ <p className="text-[12px] text-center py-3" style={{ color: TEXT_MUTED }}>
+ Añade tu primera marca personal
+ </p>
+ ) : (
+ <div className="space-y-2">
+ {goals.map(goal => (
+ <div key={goal.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.09)' }}>
+ <div className="flex items-start justify-between gap-2">
+ <div className="min-w-0">
+ <p className="text-[13px] font-semibold truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
+ <div className="flex items-baseline gap-1.5 mt-0.5">
+ {goal.current_value != null ? (
+ <>
+ <span className="text-[20px] font-bold font-mono leading-none" style={{ color: '#7a1a2a' }}>
+ {goal.current_value}
+ </span>
+ <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
+ {goal.pb_date && (
+ <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ · {new Date(goal.pb_date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+ </span>
+ )}
+ </>
+ ) : (
+ <span className="text-[11px]" style={{ color: TEXT_MUTED }}>Sin marca registrada</span>
+ )}
+ </div>
+ {goal.activity_type && (
+ <p className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>
+ {ACTIVITY_TYPES[goal.activity_type]?.emoji} {ACTIVITY_TYPES[goal.activity_type]?.label}
+ </p>
+ )}
+ </div>
+ <div className="flex items-center gap-1 flex-shrink-0">
+ <button
+ onClick={() => { setEditingMarkId(goal.id); setEditingMarkValue(''); }}
+ className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(122,26,42,0.1)', border: '1px solid rgba(122,26,42,0.18)' }}>
+ <Pencil className="w-3 h-3" style={{ color: '#7a1a2a' }} />
+ </button>
+ <button
+ onClick={() => deleteGoal(goal.id)}
+ className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)' }}>
+ <Trash2 className="w-3 h-3" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+
+ {/* Edición inline de marca */}
+ {editingMarkId === goal.id && (
+ <div className="flex gap-2 mt-2 items-center">
+ <input
+ type="number"
+ autoFocus
+ placeholder={`Nueva marca${goal.unit ? ` (${goal.unit})` : ''}`}
+ value={editingMarkValue}
+ onChange={e => setEditingMarkValue(e.target.value)}
+ className="flex-1 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none"
+ style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(122,26,42,0.35)', color: TEXT_PRIMARY }}
+ />
+ <button
+ onClick={() => handleSaveEditMark(goal.id)}
+ disabled={editingMarkValue === ''}
+ className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-40"
+ style={{ background: '#7a1a2a' }}>
+ <Check className="w-3.5 h-3.5" style={{ color: 'rgba(245,237,224,0.95)' }} />
+ </button>
+ <button
+ onClick={() => setEditingMarkId(null)}
+ className="w-8 h-8 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.07)' }}>
+ <X className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+
  {/* Perfil + Calendario */}
  <div ref={calendarRef} className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-center justify-between mb-4">
@@ -831,7 +1047,7 @@ export default function Actividad() {
  </div>
  </div>
 
- <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} onDayClick={handleDayClick} expandedDay={expandedDay} />
+ <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} />
 
  <AnimatePresence>
  {expandedDay && activitiesByDate[expandedDay] && (
@@ -902,6 +1118,8 @@ export default function Actividad() {
  onSubmit={createActivity}
  onSubmitPlan={addPlan}
  selectedDate={selectedDate}
+ goals={goals}
+ onPrBeaten={handlePrBeaten}
  />
  </div>
  );
@@ -966,7 +1184,7 @@ function DaySummaryDrop({ summary, palette, extraCount = 0 }) {
  );
 }
 
-function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, onDayClick, expandedDay }) {
+function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, prDates = new Set(), onDayClick, expandedDay }) {
  const now = new Date();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
  let startDow = new Date(year, month, 1).getDay() - 1;
@@ -986,13 +1204,18 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, o
  const planned = plansByDayOfMonth[day] || [];
  const hasPlan = !has && planned.length > 0;
  const isExp = expandedDay === day;
- const emoji = has
- ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
- : (hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null);
+ const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+ const isPR = prDates.has(dateStr);
+ const emoji = isPR ? '🏆'
+ : has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
+ : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
+ : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
  className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
- style={has
+ style={isPR
+ ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
+ : has
  ? isExp
  ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
  : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
@@ -1003,11 +1226,11 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, o
  : { background: 'rgba(42,26,17,0.07)' }
  }>
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: has ? DAY_PALETTE.completed.text : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : has ? DAY_PALETTE.completed.text : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- {acts.length > 1 && (
+ {has && acts.length > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.1)' }}>
  <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{acts.length}</span>

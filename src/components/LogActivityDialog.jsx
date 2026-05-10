@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Clock, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
+import { X, Clock, TrendingUp, Calendar as CalendarIcon, Trophy } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 
 const TEXT_PRIMARY = '#2a1a11';
@@ -9,20 +9,16 @@ const TEXT_MUTED = '#8c7364';
 
 const TRACKABLE_TYPES = ['strength_training', 'running', 'swimming'];
 
-// Formatea Date como YYYY-MM-DD usando hora local (evita el desfase de toISOString
-// cuando estás en una zona con offset positivo como Madrid).
 function formatLocalDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Reconstruye una Date local a partir de un string YYYY-MM-DD (sin desplazar
-// por timezone como haría new Date('2026-04-30') que se interpreta como UTC).
 function parseLocalDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate }) {
+export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten }) {
   const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -32,13 +28,24 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
   const [dateInput, setDateInput] = useState(selectedDate ? formatLocalDate(selectedDate) : '');
   const [loading, setLoading] = useState(false);
 
-  // Sincroniza dateInput cuando se abre el modal con una nueva selectedDate
+  // Estado para marcas batidas: { [goalId]: newValue (string) }
+  const [prBeaten, setPrBeaten] = useState({});
+
   useEffect(() => {
     if (isOpen && selectedDate) setDateInput(formatLocalDate(selectedDate));
   }, [isOpen, selectedDate]);
 
+  // Resetear prBeaten cuando cambia el tipo de actividad
+  useEffect(() => { setPrBeaten({}); }, [activityType]);
+
   const showTrainingType = mode === 'realized' && TRACKABLE_TYPES.includes(activityType);
   const showProgressNote = mode === 'realized' && trainingType === 'progress';
+
+  // Metas relevantes para el tipo de actividad seleccionado
+  const relevantGoals = goals.filter(g =>
+    !g.activity_type || g.activity_type === activityType
+  );
+  const showPrSection = mode === 'realized' && activityType && relevantGoals.length > 0;
 
   const resetForm = () => {
     setActivityType('');
@@ -47,6 +54,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     setNotes('');
     setProgressNote('');
     setMode('realized');
+    setPrBeaten({});
   };
 
   const handleSubmit = async () => {
@@ -54,11 +62,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     setLoading(true);
     try {
       if (mode === 'planned') {
-        // Crear plan
-        if (!onSubmitPlan) {
-          console.error('LogActivityDialog: falta onSubmitPlan para modo planificado');
-          return;
-        }
+        if (!onSubmitPlan) { console.error('LogActivityDialog: falta onSubmitPlan'); return; }
         await onSubmitPlan({
           date: dateInput,
           activity_type: activityType,
@@ -66,7 +70,6 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           notes: notes || null,
         });
       } else {
-        // Crear actividad realizada
         await onSubmit({
           type: activityType,
           title: ACTIVITY_TYPES[activityType]?.label || activityType,
@@ -78,6 +81,15 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           source: 'manual',
           completed: true,
         });
+
+        // Procesar marcas batidas
+        const beatenEntries = Object.entries(prBeaten).filter(([, v]) => v !== '' && v != null);
+        if (beatenEntries.length > 0 && onPrBeaten) {
+          await onPrBeaten(
+            beatenEntries.map(([goalId, newValue]) => ({ goalId, newValue })),
+            dateInput
+          );
+        }
       }
       resetForm();
       onClose();
@@ -94,6 +106,15 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
       setTrainingType('');
       setProgressNote('');
     }
+  };
+
+  const togglePr = (goalId) => {
+    setPrBeaten(prev => {
+      const next = { ...prev };
+      if (goalId in next) delete next[goalId];
+      else next[goalId] = '';
+      return next;
+    });
   };
 
   if (!isOpen) return null;
@@ -120,7 +141,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header compacto */}
+        {/* Header */}
         <div className="flex items-center justify-between px-3.5 pt-3 pb-2 flex-shrink-0">
           <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>
             {mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad'}
@@ -141,32 +162,24 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               onClick={() => setMode('realized')}
               className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
               style={mode === 'realized' ? {
-                background: '#8fa898',
-                color: '#1c2620',
+                background: '#8fa898', color: '#1c2620',
                 boxShadow: '0 1px 4px rgba(143,168,152,0.4)',
               } : {
-                background: 'transparent',
-                color: TEXT_MUTED,
+                background: 'transparent', color: TEXT_MUTED,
                 border: '1px solid rgba(42,26,17,0.12)',
               }}
-            >
-              Realizada
-            </button>
+            >Realizada</button>
             <button
               onClick={() => setMode('planned')}
               className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
               style={mode === 'planned' ? {
-                background: 'transparent',
-                color: TEXT_PRIMARY,
+                background: 'transparent', color: TEXT_PRIMARY,
                 boxShadow: 'inset 0 0 0 1.5px #2a121a',
               } : {
-                background: 'transparent',
-                color: TEXT_MUTED,
+                background: 'transparent', color: TEXT_MUTED,
                 border: '1px solid rgba(42,26,17,0.12)',
               }}
-            >
-              Planificada
-            </button>
+            >Planificada</button>
           </div>
 
           {/* Date picker */}
@@ -179,11 +192,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 value={dateInput}
                 onChange={(e) => setDateInput(e.target.value)}
                 className="w-full rounded-lg pl-8 pr-3 py-2 text-[12px] focus:outline-none"
-                style={{
-                  background: 'rgba(42,26,17,0.06)',
-                  border: '1px solid rgba(42,26,17,0.1)',
-                  color: TEXT_PRIMARY,
-                }}
+                style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
               />
             </div>
             {dateInput && (
@@ -203,13 +212,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => handleActivityTypeChange(key)}
                   className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
                   style={activityType === key ? {
-                    background: '#8fa898',
-                    border: '1px solid rgba(143,168,152,0.6)',
-                    color: '#1c2620',
+                    background: '#8fa898', border: '1px solid rgba(143,168,152,0.6)', color: '#1c2620',
                   } : {
-                    background: 'rgba(42,26,17,0.06)',
-                    border: '1px solid rgba(42,26,17,0.08)',
-                    color: TEXT_PRIMARY,
+                    background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.08)', color: TEXT_PRIMARY,
                   }}
                 >
                   <span className="text-[13px]">{emoji}</span>
@@ -229,14 +234,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   type="number"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(e.target.value)}
-                  placeholder="60"
-                  min="1"
+                  placeholder="60" min="1"
                   className="w-full rounded-lg pl-8 pr-2 py-2 text-[12px] focus:outline-none"
-                  style={{
-                    background: 'rgba(42,26,17,0.06)',
-                    border: '1px solid rgba(42,26,17,0.1)',
-                    color: TEXT_PRIMARY,
-                  }}
+                  style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
                 />
               </div>
               <div className="flex gap-1 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
@@ -246,15 +246,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                     onClick={() => setDurationMinutes(String(mins))}
                     className="flex-shrink-0 px-2 py-1.5 rounded-lg text-[10px] font-medium"
                     style={durationMinutes === String(mins) ? {
-                      background: '#8fa898',
-                      color: '#1c2620',
-                    } : {
-                      background: 'rgba(42,26,17,0.06)',
-                      color: TEXT_MUTED,
-                    }}
-                  >
-                    {mins}m
-                  </button>
+                      background: '#8fa898', color: '#1c2620',
+                    } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}
+                  >{mins}m</button>
                 ))}
               </div>
             </div>
@@ -263,41 +257,25 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           {/* Training type — solo si aplica y es Realizada */}
           {showTrainingType && (
             <div>
-              <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>
-                ¿Cómo fue?
-              </label>
+              <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>¿Cómo fue?</label>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   onClick={() => setTrainingType('progress')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'progress' ? {
-                    background: '#6b1f2c',
-                    border: '1px solid #6b1f2c',
-                    color: 'rgba(245,237,224,0.95)',
-                  } : {
-                    background: 'rgba(42,26,17,0.06)',
-                    border: '1px solid rgba(42,26,17,0.1)',
-                    color: TEXT_SECONDARY,
-                  }}
+                    background: '#6b1f2c', border: '1px solid #6b1f2c', color: 'rgba(245,237,224,0.95)',
+                  } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_SECONDARY }}
                 >
-                  <TrendingUp className="w-3 h-3" />
-                  Progreso
+                  <TrendingUp className="w-3 h-3" /> Progreso
                 </button>
                 <button
                   onClick={() => setTrainingType('consolidation')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'consolidation' ? {
-                    background: '#2a121a',
-                    border: '1px solid #2a121a',
-                    color: 'rgba(245,237,224,0.95)',
-                  } : {
-                    background: 'rgba(42,26,17,0.06)',
-                    border: '1px solid rgba(42,26,17,0.1)',
-                    color: TEXT_SECONDARY,
-                  }}
+                    background: '#2a121a', border: '1px solid #2a121a', color: 'rgba(245,237,224,0.95)',
+                  } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_SECONDARY }}
                 >
-                  <span className="text-[11px]">🛡️</span>
-                  Consolidación
+                  <span className="text-[11px]">🛡️</span> Consolidación
                 </button>
               </div>
             </div>
@@ -314,16 +292,69 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 onChange={(e) => setProgressNote(e.target.value)}
                 rows={1}
                 className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-                style={{
-                  background: 'rgba(42,26,17,0.06)',
-                  border: '1px solid rgba(156,139,191,0.45)',
-                  color: TEXT_PRIMARY,
-                }}
+                style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(156,139,191,0.45)', color: TEXT_PRIMARY }}
               />
             </div>
           )}
 
-          {/* Notas — siempre visibles, sin placeholder */}
+          {/* ── ¿Superaste una marca? ── */}
+          {showPrSection && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Trophy className="w-3 h-3" style={{ color: '#7a1a2a' }} />
+                <label className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#7a1a2a' }}>
+                  ¿Superaste alguna marca?
+                </label>
+              </div>
+              <div className="space-y-1.5">
+                {relevantGoals.map(goal => {
+                  const isSelected = goal.id in prBeaten;
+                  return (
+                    <div key={goal.id} className="rounded-lg overflow-hidden"
+                      style={{ border: isSelected ? '1px solid rgba(122,26,42,0.4)' : '1px solid rgba(42,26,17,0.1)' }}>
+                      <button
+                        onClick={() => togglePr(goal.id)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-left"
+                        style={{ background: isSelected ? 'rgba(122,26,42,0.08)' : 'rgba(42,26,17,0.04)' }}
+                      >
+                        <div>
+                          <p className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
+                          {goal.current_value != null && (
+                            <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
+                              Marca actual: {goal.current_value} {goal.unit}
+                            </p>
+                          )}
+                        </div>
+                        <div
+                          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={isSelected ? { background: '#7a1a2a' } : { border: '1.5px solid rgba(42,26,17,0.2)' }}
+                        >
+                          {isSelected && <span className="text-[10px] text-white font-bold">✓</span>}
+                        </div>
+                      </button>
+                      {isSelected && (
+                        <div className="px-3 pb-2 pt-1" style={{ background: 'rgba(122,26,42,0.05)' }}>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={prBeaten[goal.id]}
+                              onChange={(e) => setPrBeaten(prev => ({ ...prev, [goal.id]: e.target.value }))}
+                              placeholder="Nueva marca"
+                              className="flex-1 rounded-md px-2 py-1.5 text-[12px] focus:outline-none"
+                              style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(122,26,42,0.3)', color: TEXT_PRIMARY }}
+                            />
+                            <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Notas */}
           <div>
             <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Notas</label>
             <textarea
@@ -331,11 +362,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-              style={{
-                background: 'rgba(42,26,17,0.06)',
-                border: '1px solid rgba(42,26,17,0.1)',
-                color: TEXT_PRIMARY,
-              }}
+              style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
             />
           </div>
 
@@ -344,10 +371,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             onClick={handleSubmit}
             disabled={!activityType || !durationMinutes || !dateInput || loading}
             className="w-full font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-[13px] disabled:opacity-40 disabled:cursor-not-allowed mt-1"
-            style={{
-              background: TEXT_PRIMARY,
-              color: 'rgba(245,237,224,0.95)',
-            }}
+            style={{ background: TEXT_PRIMARY, color: 'rgba(245,237,224,0.95)' }}
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
