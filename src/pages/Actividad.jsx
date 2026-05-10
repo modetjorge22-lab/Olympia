@@ -550,122 +550,6 @@ export default function Actividad() {
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
 
- {/* ── Planificador ── */}
- <div className="rounded-2xl p-4" style={glassCard}>
-
- {/* Cabecera del card */}
- <div className="flex items-center gap-2.5 mb-4">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
- <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Planificador</h2>
- </div>
-
- {/* — Últimos 7 días — */}
- <div className="flex items-center justify-between mb-2">
- <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
- <div className="text-right">
- <p className="text-[10px] uppercase tracking-wider" style={{ color: TEXT_MUTED }}>Carga</p>
- <p className="text-[12px] font-bold" style={{ color: loadLevel.color }}>{loadLevel.label}</p>
- </div>
- </div>
-
- <div className="grid grid-cols-7 gap-2">
- {last7Days.map((d, i) => {
- const emoji = d.hasActivity
- ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
- : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
- return (
- <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
- <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
- style={d.hasActivity ? {
- background: DAY_PALETTE.completed.bg,
- boxShadow: DAY_PALETTE.completed.glow,
- } : d.hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
- } : d.isToday ? {
- background: 'rgba(42,26,17,0.14)',
- border: '1px solid rgba(42,26,17,0.22)',
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}
- >
- <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
- {d.dayNum}
- </span>
- {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- </div>
- {d.hasActivity
- ? d.acts.map((act, idx) => {
- const s = getActivitySummary(act, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
- })
- : d.hasPlan
- ? d.plans.map((plan, idx) => {
- const s = getPlanSummary(plan, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
- })
- : null}
- </div>
- );
- })}
- </div>
-
- {/* Separador */}
- <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '14px 0 12px' }} />
-
- {/* — Próximos 7 días — */}
- <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
-
- <div className="grid grid-cols-7 gap-2">
- {next7Days.map((d, i) => {
- const emoji = d.hasActivity
- ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
- : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
- return (
- <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
- <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
- style={d.hasActivity ? {
- background: DAY_PALETTE.completed.bg,
- boxShadow: DAY_PALETTE.completed.glow,
- } : d.hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}
- >
- <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(42,26,17,0.45)' }}>
- {d.dayNum}
- </span>
- {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- </div>
- {d.hasActivity
- ? d.acts.map((act, idx) => {
- const s = getActivitySummary(act, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
- })
- : d.hasPlan
- ? d.plans.map((plan, idx) => {
- const s = getPlanSummary(plan, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
- })
- : null}
- </div>
- );
- })}
- </div>
-
- </div>
-
  {/* Carga de ejercicio */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between mb-3">
@@ -802,6 +686,124 @@ export default function Actividad() {
  </AreaChart>
  </ResponsiveContainer>
  </div>
+ </div>
+
+ {/* ── Planificador ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+
+ {/* Cabecera del card */}
+ <div className="flex items-center gap-2.5 mb-2">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </div>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Planificador</h2>
+ </div>
+
+ {/* — Últimos 7 días — */}
+ <div className="flex items-center justify-between mb-1">
+ <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
+ <div className="flex items-center gap-1.5">
+ <span className="text-[10px] uppercase tracking-wider" style={{ color: TEXT_MUTED }}>Carga</span>
+ <span className="text-[12px] font-bold" style={{ color: loadLevel.color }}>{loadLevel.label}</span>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-7 gap-2">
+ {last7Days.map((d, i) => {
+ const emoji = d.hasActivity
+ ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
+ : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
+ return (
+ <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
+ <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
+ <div
+ className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ style={d.hasActivity ? {
+ background: DAY_PALETTE.completed.bg,
+ boxShadow: DAY_PALETTE.completed.glow,
+ } : d.hasPlan ? {
+ background: DAY_PALETTE.planned.bg,
+ boxShadow: DAY_PALETTE.planned.glow,
+ } : d.isToday ? {
+ background: 'rgba(42,26,17,0.14)',
+ border: '1px solid rgba(42,26,17,0.22)',
+ } : {
+ background: 'rgba(42,26,17,0.07)',
+ }}
+ >
+ <span className="text-[11px] font-semibold leading-none"
+ style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ {d.dayNum}
+ </span>
+ {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ </div>
+ {d.hasActivity
+ ? d.acts.map((act, idx) => {
+ const s = getActivitySummary(act, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
+ })
+ : d.hasPlan
+ ? d.plans.map((plan, idx) => {
+ const s = getPlanSummary(plan, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
+ })
+ : null}
+ </div>
+ );
+ })}
+ </div>
+
+ {/* Separador */}
+ <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '14px 0 12px' }} />
+
+ {/* — Próximos 7 días — */}
+ <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
+
+ <div className="grid grid-cols-7 gap-2">
+ {next7Days.map((d, i) => {
+ const emoji = d.hasActivity
+ ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
+ : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
+ return (
+ <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
+ <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
+ <div
+ className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ style={d.hasActivity ? {
+ background: DAY_PALETTE.completed.bg,
+ boxShadow: DAY_PALETTE.completed.glow,
+ } : d.hasPlan ? {
+ background: DAY_PALETTE.planned.bg,
+ boxShadow: DAY_PALETTE.planned.glow,
+ } : {
+ background: 'rgba(42,26,17,0.07)',
+ }}
+ >
+ <span className="text-[11px] font-semibold leading-none"
+ style={{ color: d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(42,26,17,0.45)' }}>
+ {d.dayNum}
+ </span>
+ {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ </div>
+ {d.hasActivity
+ ? d.acts.map((act, idx) => {
+ const s = getActivitySummary(act, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
+ })
+ : d.hasPlan
+ ? d.plans.map((plan, idx) => {
+ const s = getPlanSummary(plan, ACTIVITY_TYPES);
+ return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
+ })
+ : null}
+ </div>
+ );
+ })}
+ </div>
+ {/* Buffer para drops de dobles entrenos */}
+ <div style={{ minHeight: 12 }} />
+
  </div>
 
 
