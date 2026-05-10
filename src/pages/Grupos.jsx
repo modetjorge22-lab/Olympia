@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, Zap } from 'lucide-react';
+import { Users, TrendingUp, Zap, Trophy, ChevronDown } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
@@ -8,6 +8,7 @@ import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
+import { useTeamGoals } from '@/hooks/useGoals';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -104,6 +105,7 @@ export default function Grupos() {
  const { allActivities } = useActivities(currentMonth);
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
+ const teamGoals = useTeamGoals();
 
  const year = currentMonth.getFullYear();
  const month = currentMonth.getMonth();
@@ -365,6 +367,7 @@ export default function Grupos() {
  member={member}
  year={year} month={month} daysInMonth={daysInMonth}
  plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
+ memberGoals={teamGoals.filter(g => g.user_email === member.email)}
  />
  ))}
  </div>
@@ -373,8 +376,9 @@ export default function Grupos() {
  );
 }
 
-function MiniMemberCard({ member, year, month, daysInMonth, plansByDay }) {
+function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [] }) {
  const now = new Date();
+ const [goalsOpen, setGoalsOpen] = useState(false);
  let startDow = new Date(year, month, 1).getDay() - 1;
  if (startDow < 0) startDow = 6;
  const trailing = [];
@@ -382,15 +386,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay }) {
 
  return (
  <div className="rounded-2xl p-4" style={glassCard}>
+ {/* Header */}
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
  {member.avatar_url ? (
- <img
- src={member.avatar_url}
- alt={member.name}
+ <img src={member.avatar_url} alt={member.name}
  className="w-9 h-9 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
- />
+ style={{ border: '1.5px solid rgba(42,26,17,0.18)' }} />
  ) : (
  <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
  style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
@@ -399,10 +401,12 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay }) {
  )}
  <div>
  <p className="text-[13px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <p className="text-[11px]" style={{ color: '#2a1a11' }}>{member.totalHours}h · {member.sessions} sesiones</p>
+ <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>{member.totalHours}h · {member.sessions} sesiones</p>
  </div>
  </div>
  </div>
+
+ {/* Mini calendario */}
  <div className="grid grid-cols-7 gap-[3px]">
  {trailing.map(i => (
  <div key={`t-${i}`} className="aspect-square" aria-hidden="true" />
@@ -415,29 +419,73 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay }) {
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
  const emoji = has
  ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
- : hasPlan
- ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
- : null;
+ : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
  return (
  <div key={day} className="aspect-square rounded-md flex flex-col items-center justify-center"
  style={has ? {
- background: '#8fa898',
- boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
+ background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
  } : hasPlan ? {
- background: DAY_PALETTE.planned.bg,
- boxShadow: DAY_PALETTE.planned.glow,
+ background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)',
- } : {
- background: 'rgba(42,26,17,0.07)',
- }}>
+ } : { background: 'rgba(42,26,17,0.07)' }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>{day}</span>
+ style={{ color: has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ {day}
+ </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
  </div>
  );
  })}
  </div>
+
+ {/* Sección desplegable de Metas */}
+ <button
+ onClick={() => setGoalsOpen(v => !v)}
+ className="w-full flex items-center justify-between mt-3 pt-3"
+ style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
+ >
+ <div className="flex items-center gap-1.5">
+ <Trophy className="w-3 h-3" style={{ color: TEXT_MUTED }} />
+ <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
+ Metas {memberGoals.length > 0 ? `(${memberGoals.length})` : ''}
+ </span>
+ </div>
+ <ChevronDown
+ className="w-3.5 h-3.5 transition-transform"
+ style={{ color: TEXT_MUTED, transform: goalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+ />
+ </button>
+
+ {goalsOpen && (
+ <div className="mt-2 space-y-2">
+ {memberGoals.length === 0 ? (
+ <p className="text-[11px] text-center py-2" style={{ color: TEXT_MUTED }}>Sin metas registradas</p>
+ ) : (
+ memberGoals.map(goal => (
+ <div key={goal.id} className="flex items-center justify-between rounded-lg px-3 py-2"
+ style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.08)' }}>
+ <div className="min-w-0">
+ <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
+ {goal.activity_type && (
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ {ACTIVITY_TYPES[goal.activity_type]?.emoji} {ACTIVITY_TYPES[goal.activity_type]?.label}
+ </p>
+ )}
+ </div>
+ {goal.current_value != null && (
+ <div className="text-right flex-shrink-0 ml-2">
+ <span className="text-[16px] font-bold font-mono" style={{ color: '#7a1a2a' }}>
+ {goal.current_value}
+ </span>
+ <span className="text-[10px] ml-0.5" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
+ </div>
+ )}
+ </div>
+ ))
+ )}
+ </div>
+ )}
  </div>
  );
 }

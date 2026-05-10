@@ -860,15 +860,15 @@ export default function Actividad() {
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(122,26,42,0.12)', border: '1px solid rgba(122,26,42,0.2)' }}>
- <Trophy className="w-3.5 h-3.5" style={{ color: '#7a1a2a' }} />
+ style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ <Trophy className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Metas</h2>
  </div>
  <button
  onClick={() => setShowGoalForm(v => !v)}
  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
- style={{ background: 'rgba(122,26,42,0.1)', border: '1px solid rgba(122,26,42,0.2)', color: '#7a1a2a' }}>
+ style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.12)', color: TEXT_PRIMARY }}>
  <Plus className="w-3 h-3" /> Nueva
  </button>
  </div>
@@ -925,7 +925,7 @@ export default function Actividad() {
  onClick={handleCreateGoal}
  disabled={!goalTitle.trim()}
  className="flex-1 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-40"
- style={{ background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' }}>
+ style={{ background: TEXT_PRIMARY, color: 'rgba(245,237,224,0.95)' }}>
  Guardar meta
  </button>
  <button
