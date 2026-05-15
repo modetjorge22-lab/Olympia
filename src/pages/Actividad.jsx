@@ -424,7 +424,9 @@ export default function Actividad() {
  }, [myActivities]);
 
  const handleDayClick = (day) => {
- if (activitiesByDate[day]) setExpandedDay(expandedDay === day ? null : day);
+ const hasActs = !!activitiesByDate[day]?.length;
+ const hasPlans = !!plansByDayOfMonth[day]?.length;
+ if (hasActs || hasPlans) setExpandedDay(expandedDay === day ? null : day);
  else { setSelectedDate(new Date(year, month, day)); setShowLogDialog(true); }
  };
 
@@ -1085,10 +1087,11 @@ export default function Actividad() {
  <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} />
 
  <AnimatePresence>
- {expandedDay && activitiesByDate[expandedDay] && (
+ {expandedDay && (activitiesByDate[expandedDay]?.length || plansByDayOfMonth[expandedDay]?.length) && (
  <div exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
- {activitiesByDate[expandedDay].map(act => {
- return (
+
+ {/* Actividades realizadas */}
+ {(activitiesByDate[expandedDay] || []).map(act => (
  <div key={act.id} className="rounded-xl px-3 py-2.5"
  style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
  <div className="flex items-center justify-between">
@@ -1104,8 +1107,31 @@ export default function Actividad() {
  </button>
  </div>
  </div>
- );
- })}
+ ))}
+
+ {/* Entrenamientos planificados */}
+ {(plansByDayOfMonth[expandedDay] || []).map(plan => (
+ <div key={plan.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(42,26,17,0.04)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(42,26,17,0.22)' }}>
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
+ <span className="text-[15px]">{ACTIVITY_TYPES[plan.activity_type]?.emoji || '📅'}</span>
+ <div className="min-w-0">
+ <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
+ {ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type}
+ <span className="ml-1.5 text-[10px] font-normal" style={{ color: TEXT_MUTED }}>planificado</span>
+ </p>
+ {plan.notes && <p className="text-[11px] truncate" style={{ color: TEXT_MUTED }}>{plan.notes}</p>}
+ {plan.duration_minutes > 0 && <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{plan.duration_minutes} min</p>}
+ </div>
+ </div>
+ <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
+ <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+ ))}
+
  {/* PR achievements del día — borrables */}
  {(() => {
  const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
@@ -1130,6 +1156,7 @@ export default function Actividad() {
  </div>
  ));
  })()}
+
  <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
  className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
  style={{ background: 'rgba(42,26,17,0.04)', border: '1px dashed rgba(42,26,17,0.18)', color: TEXT_MUTED }}>

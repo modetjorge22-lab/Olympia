@@ -133,7 +133,8 @@ export default async function handler(req, res) {
 
     for (const sa of stravaActivities) {
       const stravaId = String(sa.id);
-      const type = ACTIVITY_TYPE_MAP[sa.type] || ACTIVITY_TYPE_MAP[sa.sport_type] || 'other';
+      // sport_type es más específico que type (ej: Padel vs Workout genérico)
+      const type = ACTIVITY_TYPE_MAP[sa.sport_type] || ACTIVITY_TYPE_MAP[sa.type] || 'other';
       const date = sa.start_date_local.split('T')[0];
       const durationMins = Math.round(sa.elapsed_time / 60);
       const distanceKm = sa.distance ? +(sa.distance / 1000).toFixed(2) : null;
@@ -184,9 +185,11 @@ export default async function handler(req, res) {
         continue;
       }
 
-      // 3. Check if there's ANY activity on the same date with similar duration (±15 min)
+      // 3. Actividad manual del mismo día, MISMO TIPO y duración similar (±15 min)
+      // Requiere tipo idéntico — un padel no puede matchear con una sesión de fuerza.
       const similarMatch = existing.find(a =>
         a.date === date &&
+        a.type === type &&
         !a.strava_id &&
         Math.abs((a.duration_minutes || 0) - durationMins) <= 15
       );
