@@ -72,7 +72,8 @@ export default async function handler(req, res) {
     // Sincronizar últimos 90 días
     const start = new Date();
     start.setDate(start.getDate() - 90);
-    const startISO = start.toISOString();
+    // Whoop no acepta milisegundos en el parámetro start
+    const startISO = start.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
     // Obtener fechas ya guardadas para deduplicar por fecha+email
     const { data: existingSleeps } = await supabase
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
         ...(nextToken ? { nextToken } : {}),
       });
       const page = await whoopGet(
-        `https://api.prod.whoop.com/developer/v1/activity/sleep?${params}`,
+        `https://api.prod.whoop.com/developer/v1/sleep?${params}`,
         accessToken
       );
       allSleeps = allSleeps.concat(page.records || []);
@@ -112,6 +113,7 @@ export default async function handler(req, res) {
         `https://api.prod.whoop.com/developer/v1/recovery?${params}`,
         accessToken
       );
+      // recovery puede devolver array vacío si no hay datos — continuar
       allRecoveries = allRecoveries.concat(page.records || []);
       nextToken = page.next_token;
     } while (nextToken);
