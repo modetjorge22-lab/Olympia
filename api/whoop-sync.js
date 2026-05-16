@@ -1,14 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
 async function refreshWhoopToken(supabase, tokenRecord) {
+  const basicAuth = Buffer.from(
+    `${process.env.WHOOP_CLIENT_ID}:${process.env.WHOOP_CLIENT_SECRET}`
+  ).toString('base64');
+
   const res = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${basicAuth}`,
+    },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: tokenRecord.refresh_token,
-      client_id: process.env.WHOOP_CLIENT_ID,
-      client_secret: process.env.WHOOP_CLIENT_SECRET,
     }),
   });
 
