@@ -6,7 +6,7 @@ export default function handler(req, res) {
     client_id: process.env.WHOOP_CLIENT_ID,
     redirect_uri: 'https://olympia-navy.vercel.app/api/whoop-callback',
     response_type: 'code',
-    scope: 'offline read:sleep read:recovery read:profile',
+    scope: 'read:sleep read:recovery read:profile',
     state: email,
   });
 
