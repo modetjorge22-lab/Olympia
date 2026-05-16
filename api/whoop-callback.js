@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const redirectUri = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/whoop-callback`;
+    const redirectUri = 'https://olympia-navy.vercel.app/api/whoop-callback';
 
     // Intercambiar code por tokens
     const tokenRes = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
