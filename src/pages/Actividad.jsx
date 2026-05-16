@@ -348,54 +348,66 @@ export default function Actividad() {
  const MONTH_LABELS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
  const MONTH_NAMES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
+ // Helper reutilizable para calcular horas en un rango de fechas
+ const computeHours = useCallback((startStr, endStr) => {
+ const acts = myAllActivities.filter(a => {
+ const ds = a.date?.slice(0, 10);
+ return ds >= startStr && ds <= endStr;
+ });
+ if (actFilter === 'accumulated') return +(acts.reduce((s, a) => s + (a.duration_minutes || 0), 0) / 60).toFixed(1);
+ return +(acts.filter(a => a.type === actFilter).reduce((s, a) => s + (a.duration_minutes || 0), 0) / 60).toFixed(1);
+ }, [myAllActivities, actFilter]);
+
  const weeklyData = useMemo(() => {
- // Referencia siempre HOY: la última semana mostrada es la actual,
- // independientemente del mes que esté navegado en el calendario.
  const today = new Date();
  today.setHours(23, 59, 59, 999);
  let lastMonth = -1;
- return buildBuckets(16, i => {
+ return Array.from({ length: 16 }, (_, i) => {
  const w = 15 - i;
- const end = new Date(today);
- end.setDate(today.getDate() - w * 7);
- const start = new Date(end);
- start.setDate(end.getDate() - 6);
- // Solo mostramos la inicial cuando cambia el mes (en el primer día visible de ese mes)
+ const end = new Date(today); end.setDate(today.getDate() - w * 7);
+ const start = new Date(end); start.setDate(end.getDate() - 6);
+ const startStr = toDateStr(start); const endStr = toDateStr(end);
+ // Período anterior: misma semana 16 semanas atrás
+ const prevEnd = new Date(end); prevEnd.setDate(end.getDate() - 16 * 7);
+ const prevStart = new Date(start); prevStart.setDate(start.getDate() - 16 * 7);
+ const prev = computeHours(toDateStr(prevStart), toDateStr(prevEnd));
  const showMonth = start.getMonth() !== lastMonth;
  lastMonth = start.getMonth();
  return {
- start,
- end,
  label: `${start.getDate()}/${start.getMonth() + 1}`,
  monthLabel: showMonth ? MONTH_LABELS_SHORT[start.getMonth()] : '',
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
+ hours: computeHours(startStr, endStr),
+ prevHours: prev > 0 ? prev : null,
  };
  });
- }, [myAllActivities, actFilter]);
+ }, [myAllActivities, actFilter, computeHours]);
 
  const dailyData = useMemo(() => {
  const today = new Date();
  let lastMonth = -1;
- return buildBuckets(60, i => {
+ return Array.from({ length: 60 }, (_, i) => {
  const d = 59 - i;
- const date = new Date(today);
- date.setDate(today.getDate() - d);
- const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
- const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+ const date = new Date(today); date.setDate(today.getDate() - d);
+ const startStr = toDateStr(new Date(date.getFullYear(), date.getMonth(), date.getDate()));
+ // Período anterior: mismo día 60 días atrás
+ const prevDate = new Date(date); prevDate.setDate(date.getDate() - 60);
+ const prevStr = toDateStr(new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate()));
+ const prev = computeHours(prevStr, prevStr);
  const showMonth = date.getMonth() !== lastMonth;
  lastMonth = date.getMonth();
  return {
- start,
- end,
  label: `${date.getDate()}/${date.getMonth() + 1}`,
  monthLabel: showMonth ? MONTH_LABELS_SHORT[date.getMonth()] : '',
  intervalLabel: `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`,
+ hours: computeHours(startStr, startStr),
+ prevHours: prev > 0 ? prev : null,
  };
  });
- }, [myAllActivities, actFilter]);
+ }, [myAllActivities, actFilter, computeHours]);
 
  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
- const maxHours = Math.max(...chartData.map(d => d.hours || 0), 0.5);
+ const maxHours = Math.max(...chartData.map(d => d.hours || 0), ...chartData.map(d => d.prevHours || 0), 0.5);
  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
  // Eje Y: max = pico real (sin headroom). Tope en la barra/punto más alto.
@@ -714,7 +726,8 @@ export default function Actividad() {
  )}
  </div>
 
- <div className="h-[160px] -ml-2">
+ {/* user-select:none previene la selección de texto nativa en long-press */}
+ <div className="h-[160px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
@@ -724,7 +737,8 @@ export default function Actividad() {
  </linearGradient>
  </defs>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" vertical={false} />
- <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={0} />
+ {/* minTickGap evita que las etiquetas de mes se solapen en móvil */}
+ <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={0} minTickGap={18} />
  <YAxis
  tick={{ fontSize: 9, fill: TEXT_MUTED }}
  axisLine={false}
@@ -737,29 +751,28 @@ export default function Actividad() {
  <Tooltip
  cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
- const payload = (props.payload || []).map(p => ({ ...p, tooltipName: 'Horas' }));
+ const payload = (props.payload || []).map(p => ({
+ ...p,
+ tooltipName: p.dataKey === 'prevHours' ? '16 sem. antes' : 'Horas',
+ }));
  return <ChartTooltip {...props} payload={payload} />;
  }}
  />
 
- {/* Línea horizontal discontinua: media habitual */}
- {referenceLineValue > 0 && (
- <ReferenceLine
- y={referenceLineValue}
- stroke="rgba(42,18,26,0.5)"
- strokeDasharray="4 4"
- strokeWidth={1}
- label={{
- value: `Media ${loadTF === 'weeks' ? referenceLineValue + 'h' : referenceLineValue + 'h/d'}`,
- position: 'insideTopRight',
- fill: 'rgba(42,18,26,0.65)',
- fontSize: 9,
- offset: 4,
- }}
+ {/* Línea gris: período anterior (mismas 16 semanas, 16 semanas atrás) */}
+ <Area
+ type="monotone"
+ dataKey="prevHours"
+ stroke="rgba(42,26,17,0.28)"
+ strokeWidth={1.5}
+ fill="none"
+ dot={false}
+ activeDot={{ r: 4, fill: 'rgba(42,26,17,0.4)', strokeWidth: 0 }}
+ isAnimationActive={false}
+ connectNulls
  />
- )}
 
- {/* Área única que une los puntos. Dots prominentes en cada bucket. */}
+ {/* Área principal: período actual con puntos */}
  <Area
  type="monotone"
  dataKey="hours"
