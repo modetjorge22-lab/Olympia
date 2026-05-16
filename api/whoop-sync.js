@@ -19,15 +19,11 @@ async function refreshWhoopToken(supabase, tokenRecord) {
 
   if (!res.ok) throw new Error('Failed to refresh Whoop token');
   const data = await res.json();
-  const expires_at = Math.floor(Date.now() / 1000) + data.expires_in;
+  const expires_at = Math.floor(Date.now() / 1000) + (data.expires_in || 3600);
 
   await supabase
     .from('whoop_tokens')
-    .update({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at,
-    })
+    .update({ access_token: data.access_token, refresh_token: data.refresh_token || tokenRecord.refresh_token, expires_at })
     .eq('id', tokenRecord.id);
 
   return data.access_token;
@@ -70,18 +66,23 @@ export default async function handler(req, res) {
       accessToken = await refreshWhoopToken(supabase, tokenRecord);
     }
 
-    // Obtener user_id de Whoop (necesario para algunas peticiones)
-    const profile = await whoopGet(
-      'https://api.prod.whoop.com/developer/v1/user/profile/basic',
-      accessToken
-    );
+    // user_id del token (guardado en el callback)
+    const user_id = tokenRecord.user_id || null;
 
-    // Sincronizar los últimos 90 días de sueño
+    // Sincronizar últimos 90 días
     const start = new Date();
     start.setDate(start.getDate() - 90);
     const startISO = start.toISOString();
 
-    // Paginar todos los registros de sueño
+    // Obtener fechas ya guardadas para deduplicar por fecha+email
+    const { data: existingSleeps } = await supabase
+      .from('whoop_sleep')
+      .select('date')
+      .eq('user_email', email);
+
+    const existingDates = new Set((existingSleeps || []).map(s => s.date));
+
+    // Paginar registros de sueño
     let allSleeps = [];
     let nextToken = null;
     do {
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
       nextToken = page.next_token;
     } while (nextToken);
 
-    // Sincronizar recovery (contiene el recovery_score vinculado al sueño)
+    // Recovery para cruzar recovery_score con el sueño
     let allRecoveries = [];
     nextToken = null;
     do {
@@ -115,67 +116,56 @@ export default async function handler(req, res) {
       nextToken = page.next_token;
     } while (nextToken);
 
-    // Map recovery_score por sleep_id para cruzarlo con el sueño
     const recoveryBySleepId = {};
     allRecoveries.forEach(r => {
       if (r.sleep_id) recoveryBySleepId[r.sleep_id] = r.score?.recovery_score ?? null;
     });
 
-    // Obtener sleeps ya guardados para no duplicar
-    const { data: existingSleeps } = await supabase
-      .from('whoop_sleep')
-      .select('id')
-      .eq('user_email', email);
-
-    const existingIds = new Set((existingSleeps || []).map(s => s.id));
-
     let imported = 0;
     let skipped = 0;
 
     for (const sleep of allSleeps) {
-      // Ignorar naps (is_nap: true)
+      // Ignorar siestas
       if (sleep.nap) { skipped++; continue; }
 
-      const sleepId = String(sleep.id);
-      if (existingIds.has(sleepId)) { skipped++; continue; }
-
-      // Fecha del sueño: usar el día de fin (cuando despiertas)
+      // Fecha = día en que se despertó (fin del sueño)
       const endDate = sleep.end ? sleep.end.split('T')[0] : null;
       if (!endDate) { skipped++; continue; }
 
-      const stages = sleep.score?.stage_summary || {};
-      const totalMins = sleep.score?.sleep_performance_percentage != null
-        ? null // lo calculamos desde stages
-        : null;
+      // Deduplicar por fecha
+      if (existingDates.has(endDate)) { skipped++; continue; }
 
-      const durationMins = Math.round(
-        ((stages.total_in_bed_time_milli || 0) / 60000)
-      );
-      const remMins = Math.round((stages.total_rem_sleep_time_milli || 0) / 60000);
-      const deepMins = Math.round((stages.total_slow_wave_sleep_time_milli || 0) / 60000);
-      const lightMins = Math.round((stages.total_light_sleep_time_milli || 0) / 60000);
-      const awakeMins = Math.round((stages.total_awake_time_milli || 0) / 60000);
+      const stages = sleep.score?.stage_summary || {};
+      const durationMins = Math.round((stages.total_in_bed_time_milli || 0) / 60000) || null;
+      const remMins = Math.round((stages.total_rem_sleep_time_milli || 0) / 60000) || null;
+      const deepMins = Math.round((stages.total_slow_wave_sleep_time_milli || 0) / 60000) || null;
+      const lightMins = Math.round((stages.total_light_sleep_time_milli || 0) / 60000) || null;
+      const awakeMins = Math.round((stages.total_awake_time_milli || 0) / 60000) || null;
       const efficiency = sleep.score?.sleep_efficiency_percentage ?? null;
       const score = recoveryBySleepId[sleep.id] ?? null;
 
       const { error: insertError } = await supabase
         .from('whoop_sleep')
         .insert({
-          id: sleepId,
+          user_id,
           user_email: email,
           date: endDate,
           score,
-          duration_minutes: durationMins || null,
+          duration_minutes: durationMins,
           efficiency,
-          rem_minutes: remMins || null,
-          deep_minutes: deepMins || null,
-          light_minutes: lightMins || null,
-          awake_minutes: awakeMins || null,
-          raw_data: sleep,
+          rem_minutes: remMins,
+          deep_minutes: deepMins,
+          light_minutes: lightMins,
+          awake_minutes: awakeMins,
+          raw_data: { whoop_id: sleep.id, ...sleep },
         });
 
-      if (!insertError) imported++;
-      else console.error('whoop_sleep insert error:', insertError.message);
+      if (!insertError) {
+        imported++;
+        existingDates.add(endDate); // evitar duplicado si hay 2 registros el mismo día
+      } else {
+        console.error('whoop_sleep insert error:', insertError.message);
+      }
     }
 
     return res.status(200).json({ success: true, imported, skipped });
