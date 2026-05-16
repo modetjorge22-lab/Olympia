@@ -87,21 +87,22 @@ export default async function handler(req, res) {
       .from('whoop_sleep').select('date').eq('user_email', email);
     const existingDates = new Set((existingSleeps || []).map(s => s.date));
 
-    // Fuente principal: endpoint de recovery (scope read:recovery — sabemos que funciona)
+    // Fuente principal: endpoint de recovery
+    // Probamos sin parámetro start para descartar problemas de formato de fecha
     let allRecoveries = [];
     let nextToken = null;
+    let pageCount = 0;
     do {
-      const params = new URLSearchParams({
-        start: startISO,
-        limit: '25',
-        ...(nextToken ? { nextToken } : {}),
-      });
-      const page = await whoopGet(
-        `https://api.prod.whoop.com/developer/v1/recovery?${params}`,
-        accessToken
-      );
+      const params = new URLSearchParams({ limit: '25' });
+      if (nextToken) params.set('nextToken', nextToken);
+      const url = `https://api.prod.whoop.com/developer/v1/recovery?${params}`;
+      console.log(`[whoop-sync] fetching: ${url}`);
+      const page = await whoopGet(url, accessToken);
+      console.log(`[whoop-sync] page ${++pageCount} records:`, page.records?.length ?? 0);
       allRecoveries = allRecoveries.concat(page.records || []);
       nextToken = page.next_token;
+      // Parar después de 3 páginas para el primer test
+      if (pageCount >= 3) break;
     } while (nextToken);
 
     console.log(`[whoop-sync] recovery records fetched: ${allRecoveries.length}`);
