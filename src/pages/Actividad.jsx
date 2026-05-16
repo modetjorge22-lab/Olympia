@@ -362,23 +362,22 @@ export default function Actividad() {
  const today = new Date();
  today.setHours(23, 59, 59, 999);
  let lastMonth = -1;
+ let lastLabelIdx = -4; // mínimo 3 semanas entre etiquetas de mes
  return Array.from({ length: 16 }, (_, i) => {
  const w = 15 - i;
  const end = new Date(today); end.setDate(today.getDate() - w * 7);
  const start = new Date(end); start.setDate(end.getDate() - 6);
  const startStr = toDateStr(start); const endStr = toDateStr(end);
- // Período anterior: misma semana 16 semanas atrás
- const prevEnd = new Date(end); prevEnd.setDate(end.getDate() - 16 * 7);
- const prevStart = new Date(start); prevStart.setDate(start.getDate() - 16 * 7);
- const prev = computeHours(toDateStr(prevStart), toDateStr(prevEnd));
- const showMonth = start.getMonth() !== lastMonth;
+ const isNewMonth = start.getMonth() !== lastMonth;
  lastMonth = start.getMonth();
+ // Solo mostramos la etiqueta si cambia el mes Y han pasado ≥3 semanas desde la última
+ const showLabel = isNewMonth && (i - lastLabelIdx >= 3);
+ if (showLabel) lastLabelIdx = i;
  return {
  label: `${start.getDate()}/${start.getMonth() + 1}`,
- monthLabel: showMonth ? MONTH_LABELS_SHORT[start.getMonth()] : '',
+ monthLabel: showLabel ? MONTH_LABELS_SHORT[start.getMonth()] : '',
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
  hours: computeHours(startStr, endStr),
- prevHours: prev > 0 ? prev : null,
  };
  });
  }, [myAllActivities, actFilter, computeHours]);
@@ -386,28 +385,26 @@ export default function Actividad() {
  const dailyData = useMemo(() => {
  const today = new Date();
  let lastMonth = -1;
+ let lastLabelIdx = -10;
  return Array.from({ length: 60 }, (_, i) => {
  const d = 59 - i;
  const date = new Date(today); date.setDate(today.getDate() - d);
  const startStr = toDateStr(new Date(date.getFullYear(), date.getMonth(), date.getDate()));
- // Período anterior: mismo día 60 días atrás
- const prevDate = new Date(date); prevDate.setDate(date.getDate() - 60);
- const prevStr = toDateStr(new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate()));
- const prev = computeHours(prevStr, prevStr);
- const showMonth = date.getMonth() !== lastMonth;
+ const isNewMonth = date.getMonth() !== lastMonth;
  lastMonth = date.getMonth();
+ const showLabel = isNewMonth && (i - lastLabelIdx >= 10);
+ if (showLabel) lastLabelIdx = i;
  return {
  label: `${date.getDate()}/${date.getMonth() + 1}`,
- monthLabel: showMonth ? MONTH_LABELS_SHORT[date.getMonth()] : '',
+ monthLabel: showLabel ? MONTH_LABELS_SHORT[date.getMonth()] : '',
  intervalLabel: `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`,
  hours: computeHours(startStr, startStr),
- prevHours: prev > 0 ? prev : null,
  };
  });
  }, [myAllActivities, actFilter, computeHours]);
 
  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
- const maxHours = Math.max(...chartData.map(d => d.hours || 0), ...chartData.map(d => d.prevHours || 0), 0.5);
+ const maxHours = Math.max(...chartData.map(d => d.hours || 0), 0.5);
  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
  // Eje Y: max = pico real (sin headroom). Tope en la barra/punto más alto.
@@ -751,25 +748,9 @@ export default function Actividad() {
  <Tooltip
  cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
- const payload = (props.payload || []).map(p => ({
- ...p,
- tooltipName: p.dataKey === 'prevHours' ? '16 sem. antes' : 'Horas',
- }));
+ const payload = (props.payload || []).map(p => ({ ...p, tooltipName: 'Horas' }));
  return <ChartTooltip {...props} payload={payload} />;
  }}
- />
-
- {/* Línea gris: período anterior (mismas 16 semanas, 16 semanas atrás) */}
- <Area
- type="monotone"
- dataKey="prevHours"
- stroke="rgba(42,26,17,0.28)"
- strokeWidth={1.5}
- fill="none"
- dot={false}
- activeDot={{ r: 4, fill: 'rgba(42,26,17,0.4)', strokeWidth: 0 }}
- isAnimationActive={false}
- connectNulls
  />
 
  {/* Área principal: período actual con puntos */}

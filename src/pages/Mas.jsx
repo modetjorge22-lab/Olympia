@@ -29,23 +29,61 @@ export default function Mas() {
  const [syncResult, setSyncResult] = useState(null);
  const [stravaStatus, setStravaStatus] = useState(null);
 
+ const [whoopConnected, setWhoopConnected] = useState(false);
+ const [whoopSyncing, setWhoopSyncing] = useState(false);
+ const [whoopSyncResult, setWhoopSyncResult] = useState(null);
+ const [whoopStatus, setWhoopStatus] = useState(null);
+
  useEffect(() => {
  const stravaParam = searchParams.get('strava');
  if (stravaParam === 'success') setStravaStatus('success');
  else if (stravaParam === 'error') setStravaStatus('error');
+ const whoopParam = searchParams.get('whoop');
+ if (whoopParam === 'success') setWhoopStatus('success');
+ else if (whoopParam === 'error') setWhoopStatus('error');
  }, [searchParams]);
 
  useEffect(() => {
- async function checkStrava() {
+ async function checkConnections() {
  if (!user?.email) return;
- const { data } = await supabase.from('strava_tokens').select('id').eq('user_email', user.email).limit(1);
- setStravaConnected(data?.length > 0);
+ const [strava, whoop] = await Promise.all([
+ supabase.from('strava_tokens').select('id').eq('user_email', user.email).limit(1),
+ supabase.from('whoop_tokens').select('id').eq('user_email', user.email).limit(1),
+ ]);
+ setStravaConnected(strava.data?.length > 0);
+ setWhoopConnected(whoop.data?.length > 0);
  }
- checkStrava();
- }, [user, stravaStatus]);
+ checkConnections();
+ }, [user, stravaStatus, whoopStatus]);
 
  const connectStrava = () => {
  window.location.href = `/api/strava-auth?email=${encodeURIComponent(user.email)}`;
+ };
+
+ const connectWhoop = () => {
+ window.location.href = `/api/whoop-auth?email=${encodeURIComponent(user.email)}`;
+ };
+
+ const syncWhoop = async () => {
+ setWhoopSyncing(true);
+ setWhoopSyncResult(null);
+ try {
+ const response = await fetch('/api/whoop-sync', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ email: user.email }),
+ });
+ const data = await response.json();
+ if (response.ok) {
+ setWhoopSyncResult({ type: 'success', message: `${data.imported} noches importadas` });
+ } else {
+ setWhoopSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
+ }
+ } catch (err) {
+ setWhoopSyncResult({ type: 'error', message: 'Error de conexión' });
+ } finally {
+ setWhoopSyncing(false);
+ }
  };
 
  const syncStrava = async () => {
@@ -263,18 +301,54 @@ export default function Mas() {
 
  {/* Whoop */}
  <div className="px-4 py-4">
- <div className="flex items-center justify-between">
+ <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-3">
  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(20,184,166,0.18)', border: '1px solid rgba(20,184,166,0.35)' }}>
  <span className="text-sm font-bold" style={{ color: '#0f766e' }}>W</span>
  </div>
  <div>
  <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>Whoop</p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Próximamente</p>
+ <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{whoopConnected ? 'Conectado · datos de sueño' : 'Sincroniza tu sueño'}</p>
  </div>
  </div>
- <span className="text-[11px] px-2 py-1 rounded" style={{ background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>Pronto</span>
+ {whoopConnected ? (
+ <button onClick={syncWhoop} disabled={whoopSyncing}
+ className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
+ style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.15)', color: TEXT_PRIMARY }}>
+ {whoopSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+ Sincronizar
+ </button>
+ ) : (
+ <button onClick={connectWhoop}
+ className="text-white text-[12px] font-semibold px-3 py-2 rounded-lg"
+ style={{ background: '#0f766e' }}>
+ Conectar
+ </button>
+ )}
  </div>
+ {whoopSyncResult && (
+ <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium"
+ style={{
+ background: whoopSyncResult.type === 'success' ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
+ color: whoopSyncResult.type === 'success' ? '#047857' : '#b91c1c',
+ }}>
+ {whoopSyncResult.message}
+ </div>
+ )}
+ {whoopStatus === 'success' && (
+ <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
+ style={{ background: 'rgba(16,185,129,0.18)' }}>
+ <Check className="w-4 h-4" style={{ color: '#047857' }} />
+ <span style={{ color: '#047857' }}>Whoop conectado correctamente</span>
+ </div>
+ )}
+ {whoopStatus === 'error' && (
+ <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
+ style={{ background: 'rgba(239,68,68,0.18)' }}>
+ <AlertCircle className="w-4 h-4" style={{ color: '#b91c1c' }} />
+ <span style={{ color: '#b91c1c' }}>Error al conectar Whoop</span>
+ </div>
+ )}
  </div>
  </div>
  </div>
