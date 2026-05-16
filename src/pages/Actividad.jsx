@@ -9,7 +9,7 @@ import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { useGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
@@ -214,6 +214,18 @@ export default function Actividad() {
  }, [user?.email]);
  useEffect(() => { fetchPrAchievements(); }, [fetchPrAchievements]);
 
+ // Datos de sueño de Whoop
+ const [whoopSleepData, setWhoopSleepData] = useState([]);
+ const [showSleep, setShowSleep] = useState(false);
+ useEffect(() => {
+ if (!user?.email) return;
+ supabase
+ .from('whoop_sleep')
+ .select('date, duration_minutes')
+ .eq('user_email', user.email)
+ .then(({ data }) => { if (data) setWhoopSleepData(data); });
+ }, [user?.email]);
+
  const [showLogDialog, setShowLogDialog] = useState(false);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
@@ -361,26 +373,28 @@ export default function Actividad() {
  const weeklyData = useMemo(() => {
  const today = new Date();
  today.setHours(23, 59, 59, 999);
- let lastMonth = -1;
- let lastLabelIdx = -4; // mínimo 3 semanas entre etiquetas de mes
  return Array.from({ length: 16 }, (_, i) => {
  const w = 15 - i;
  const end = new Date(today); end.setDate(today.getDate() - w * 7);
  const start = new Date(end); start.setDate(end.getDate() - 6);
  const startStr = toDateStr(start); const endStr = toDateStr(end);
- const isNewMonth = start.getMonth() !== lastMonth;
- lastMonth = start.getMonth();
- // Solo mostramos la etiqueta si cambia el mes Y han pasado ≥3 semanas desde la última
- const showLabel = isNewMonth && (i - lastLabelIdx >= 3);
- if (showLabel) lastLabelIdx = i;
+ // Mostrar etiqueta solo si la semana empieza en los primeros 7 días del mes
+ // (= primera semana real de ese mes en el gráfico)
+ const showLabel = start.getDate() <= 7;
+ // Media de horas de sueño por noche en esta semana
+ const sleepInWeek = whoopSleepData.filter(s => s.date >= startStr && s.date <= endStr);
+ const sleepHours = sleepInWeek.length > 0
+ ? +(sleepInWeek.reduce((s, r) => s + (r.duration_minutes || 0), 0) / sleepInWeek.length / 60).toFixed(1)
+ : null;
  return {
  label: `${start.getDate()}/${start.getMonth() + 1}`,
  monthLabel: showLabel ? MONTH_LABELS_SHORT[start.getMonth()] : '',
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
  hours: computeHours(startStr, endStr),
+ sleepHours,
  };
  });
- }, [myAllActivities, actFilter, computeHours]);
+ }, [myAllActivities, actFilter, computeHours, whoopSleepData]);
 
  const dailyData = useMemo(() => {
  const today = new Date();
@@ -394,17 +408,24 @@ export default function Actividad() {
  lastMonth = date.getMonth();
  const showLabel = isNewMonth && (i - lastLabelIdx >= 10);
  if (showLabel) lastLabelIdx = i;
+ const sleepRecord = whoopSleepData.find(s => s.date === startStr);
+ const sleepHours = sleepRecord ? +(sleepRecord.duration_minutes / 60).toFixed(1) : null;
  return {
  label: `${date.getDate()}/${date.getMonth() + 1}`,
  monthLabel: showLabel ? MONTH_LABELS_SHORT[date.getMonth()] : '',
  intervalLabel: `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`,
  hours: computeHours(startStr, startStr),
+ sleepHours,
  };
  });
- }, [myAllActivities, actFilter, computeHours]);
+ }, [myAllActivities, actFilter, computeHours, whoopSleepData]);
 
  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
- const maxHours = Math.max(...chartData.map(d => d.hours || 0), 0.5);
+ const maxHours = Math.max(
+ ...chartData.map(d => d.hours || 0),
+ ...(showSleep ? chartData.map(d => d.sleepHours || 0) : []),
+ 0.5
+ );
  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
  // Eje Y: max = pico real (sin headroom). Tope en la barra/punto más alto.
@@ -687,8 +708,23 @@ export default function Actividad() {
  </div>
  </div>
 
- <div className="mb-3">
+ <div className="mb-3 flex items-center gap-2">
  <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
+ <button
+ onClick={() => setShowSleep(s => !s)}
+ className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0"
+ style={showSleep ? {
+ background: 'rgba(16,185,129,0.18)',
+ border: '1px solid rgba(16,185,129,0.4)',
+ color: '#047857',
+ } : {
+ background: 'rgba(42,26,17,0.07)',
+ border: '1px solid rgba(42,26,17,0.12)',
+ color: TEXT_MUTED,
+ }}>
+ <Moon className="w-3 h-3" />
+ Descanso
+ </button>
  </div>
 
  {/* Última semana + comparativa con la media habitual */}
@@ -748,10 +784,29 @@ export default function Actividad() {
  <Tooltip
  cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
- const payload = (props.payload || []).map(p => ({ ...p, tooltipName: 'Horas' }));
+ const payload = (props.payload || []).map(p => ({
+ ...p,
+ tooltipName: p.dataKey === 'sleepHours' ? 'Sueño/noche' : 'Entrenamiento',
+ }));
  return <ChartTooltip {...props} payload={payload} />;
  }}
  />
+
+ {/* Área de sueño — detrás del ejercicio */}
+ {showSleep && (
+ <Area
+ type="monotone"
+ dataKey="sleepHours"
+ stroke="rgba(16,185,129,0.5)"
+ strokeWidth={1}
+ fill="rgba(16,185,129,0.18)"
+ dot={false}
+ activeDot={{ r: 4, fill: 'rgba(16,185,129,0.7)', strokeWidth: 0 }}
+ isAnimationActive={false}
+ connectNulls={false}
+ name="Sueño"
+ />
+ )}
 
  {/* Área principal: período actual con puntos */}
  <Area
