@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     }
 
     const tokens = JSON.parse(tokenText);
-    const { access_token, refresh_token, expires_in } = tokens;
+    const { access_token, refresh_token = '', expires_in } = tokens;
     const expires_at = Math.floor(Date.now() / 1000) + (expires_in || 3600);
 
     const supabase = createClient(
