@@ -24,21 +24,15 @@ export default async function handler(req, res) {
 
   try {
     // 1. Intercambiar code por tokens
-    // Whoop requiere credenciales como Basic Auth header
-    const basicAuth = Buffer.from(
-      `${process.env.WHOOP_CLIENT_ID}:${process.env.WHOOP_CLIENT_SECRET}`
-    ).toString('base64');
-
     const tokenRes = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${basicAuth}`,
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
         redirect_uri: REDIRECT_URI,
+        client_id: process.env.WHOOP_CLIENT_ID,
+        client_secret: process.env.WHOOP_CLIENT_SECRET,
       }),
     });
 
