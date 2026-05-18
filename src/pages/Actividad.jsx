@@ -323,6 +323,13 @@ export default function Actividad() {
  return top ? ACTIVITY_TYPES[top[0]] : null;
  }, [myActivities]);
 
+ const padelWinRate = useMemo(() => {
+ const games = myAllActivities.filter(a => a.type === 'padel' && a.match_result?.result);
+ if (games.length === 0) return null;
+ const wins = games.filter(a => a.match_result.result === 'win').length;
+ return { wins, total: games.length, rate: Math.round((wins / games.length) * 100) };
+ }, [myAllActivities]);
+
  function toDateStr(d) {
  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
  }
@@ -1230,7 +1237,12 @@ export default function Actividad() {
 
  {/* Stats */}
  <div className="grid grid-cols-3 gap-3">
- <StatBox icon={<TrendingUp className="w-4 h-4" style={{ color: '#3b82f6' }} />} value={`${totalAllTimeHours}h`} label="Total" />
+ <StatBox
+ icon={<span className="text-[16px]">🏓</span>}
+ value={padelWinRate !== null ? `${padelWinRate.rate}%` : '—'}
+ label="Win rate"
+ sub={padelWinRate ? `${padelWinRate.wins}/${padelWinRate.total}` : 'Pádel'}
+ />
  <StatBox icon={<Sparkles className="w-4 h-4" style={{ color: '#4338ca' }} />} value={`${totalHours}h`} label="Este mes" />
  <StatBox icon={<Target className="w-4 h-4" style={{ color: '#10b981' }} />} value={`${ritmo}%`} label="Ritmo" />
  </div>
@@ -1260,12 +1272,13 @@ export default function Actividad() {
  );
 }
 
-function StatBox({ icon, value, label }) {
+function StatBox({ icon, value, label, sub }) {
  return (
  <div className="rounded-2xl p-4 flex flex-col items-center" style={glassCard}>
  {icon}
  <span className="text-[22px] font-bold font-mono mt-1.5" style={{ color: TEXT_PRIMARY }}>{value}</span>
  <span className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>{label}</span>
+ {sub && <span className="text-[9px]" style={{ color: TEXT_MUTED }}>{sub}</span>}
  </div>
  );
 }

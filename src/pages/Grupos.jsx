@@ -398,6 +398,7 @@ export default function Grupos() {
 function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set() }) {
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
+ const [expandedDay, setExpandedDay] = useState(null);
  let startDow = new Date(year, month, 1).getDay() - 1;
  if (startDow < 0) startDow = 6;
  const trailing = [];
@@ -441,17 +442,19 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  const emoji = isPR ? '🏆'
  : has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
  : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
+ const isExpanded = expandedDay === day;
  return (
- <div key={day} className="aspect-square rounded-md flex flex-col items-center justify-center"
- style={isPR ? {
- background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow,
- } : has ? {
- background: '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)',
- } : hasPlan ? {
- background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow,
- } : isToday ? {
- background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)',
- } : { background: 'rgba(42,26,17,0.07)' }}>
+ <div key={day}
+ onClick={() => has && setExpandedDay(d => d === day ? null : day)}
+ className="aspect-square rounded-md flex flex-col items-center justify-center"
+ style={{
+ cursor: has ? 'pointer' : 'default',
+ ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
+ : has ? { background: isExpanded ? '#7a9583' : '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)' }
+ : hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
+ : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
+ : { background: 'rgba(42,26,17,0.07)' }),
+ }}>
  <span className="text-[8px] font-semibold leading-none"
  style={{ color: isPR ? DAY_PALETTE.pr.text : has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
@@ -461,6 +464,38 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  );
  })}
  </div>
+
+ {/* Entrenos del día expandido */}
+ {expandedDay && member.actByDay[expandedDay]?.length > 0 && (
+ <div className="mt-2 space-y-1.5">
+ <p className="text-[9px] uppercase tracking-widest font-semibold px-0.5" style={{ color: TEXT_MUTED }}>
+ {expandedDay} {['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][month]}
+ </p>
+ {member.actByDay[expandedDay].map((act, idx) => (
+ <div key={idx} className="flex items-center gap-2 rounded-lg px-2.5 py-2"
+ style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.08)' }}>
+ <span className="text-[13px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
+ <div className="flex-1 min-w-0">
+ <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
+ {ACTIVITY_TYPES[act.type]?.label || act.type}
+ </p>
+ {act.duration_minutes > 0 && (
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min</p>
+ )}
+ </div>
+ {act.match_result?.result && (
+ <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+ style={{
+ background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(42,26,17,0.08)',
+ color: act.match_result.result === 'win' ? '#047857' : act.match_result.result === 'loss' ? '#b91c1c' : TEXT_MUTED,
+ }}>
+ {act.match_result.result === 'win' ? 'Victoria' : act.match_result.result === 'loss' ? 'Derrota' : 'Empate'}
+ </span>
+ )}
+ </div>
+ ))}
+ </div>
+ )}
 
  {/* Sección desplegable de Metas */}
  <button

@@ -27,6 +27,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
   const [progressNote, setProgressNote] = useState('');
   const [dateInput, setDateInput] = useState(selectedDate ? formatLocalDate(selectedDate) : '');
   const [loading, setLoading] = useState(false);
+  const [matchResult, setMatchResult] = useState(null); // 'win' | 'loss' | 'draw'
 
   // Estado para marcas batidas: { [goalId]: newValue (string) }
   const [prBeaten, setPrBeaten] = useState({});
@@ -55,6 +56,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     setProgressNote('');
     setMode('realized');
     setPrBeaten({});
+    setMatchResult(null);
   };
 
   const handleSubmit = async () => {
@@ -78,6 +80,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           date: dateInput,
           description: notes || null,
           progress_note: showProgressNote ? (progressNote || null) : null,
+          match_result: matchResult ? { result: matchResult } : null,
           source: 'manual',
           completed: true,
         });
@@ -253,6 +256,22 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               </div>
             </div>
           </div>
+
+          {/* Resultado — solo para pádel realizado */}
+          {mode === 'realized' && activityType === 'padel' && (
+            <div>
+              <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Resultado</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[['win','Victoria','#047857','rgba(16,185,129,0.18)'],['draw','Empate','#6e5647','rgba(42,26,17,0.08)'],['loss','Derrota','#b91c1c','rgba(239,68,68,0.18)']].map(([val, label, color, bg]) => (
+                  <button key={val} onClick={() => setMatchResult(v => v === val ? null : val)}
+                    className="py-2 rounded-lg text-[11px] font-semibold transition-all"
+                    style={matchResult === val ? { background: bg, border: `1px solid ${color}`, color } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_MUTED }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Training type — solo si aplica y es Realizada */}
           {showTrainingType && (
