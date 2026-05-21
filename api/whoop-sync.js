@@ -75,9 +75,15 @@ export default async function handler(req, res) {
 
     const tokenRecord = tokens[0];
     const now = Math.floor(Date.now() / 1000);
-    let accessToken = tokenRecord.expires_at < now
-      ? await refreshWhoopToken(supabase, tokenRecord)
-      : tokenRecord.access_token;
+    let accessToken;
+    if (tokenRecord.expires_at < now) {
+      if (!tokenRecord.refresh_token) {
+        return res.status(401).json({ error: 'reconnect_required', message: 'Token expirado sin refresh. Por favor reconecta Whoop.' });
+      }
+      accessToken = await refreshWhoopToken(supabase, tokenRecord);
+    } else {
+      accessToken = tokenRecord.access_token;
+    }
 
     const user_id = tokenRecord.user_id || null;
 

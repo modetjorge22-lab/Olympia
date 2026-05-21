@@ -76,8 +76,12 @@ export default function Mas() {
  const data = await response.json();
  if (response.ok) {
  setWhoopSyncResult({ type: 'success', message: `${data.imported} noches importadas` });
+ if (data.imported > 0) refreshData();
+ } else if (response.status === 401 || data.error === 'reconnect_required') {
+ setWhoopConnected(false);
+ setWhoopSyncResult({ type: 'error', message: 'Token expirado. Reconecta Whoop para continuar.' });
  } else {
- setWhoopSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
+ setWhoopSyncResult({ type: 'error', message: data.message || data.error || 'Error al sincronizar' });
  }
  } catch (err) {
  setWhoopSyncResult({ type: 'error', message: 'Error de conexión' });
