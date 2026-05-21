@@ -64,6 +64,18 @@ export default function Mas() {
  window.location.href = `/api/whoop-auth?email=${encodeURIComponent(user.email)}`;
  };
 
+ const disconnectWhoop = async () => {
+ try {
+ const { createClient } = await import('@supabase/supabase-js');
+ const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+ await sb.from('whoop_tokens').delete().eq('user_email', user.email);
+ setWhoopConnected(false);
+ setWhoopSyncResult(null);
+ } catch (err) {
+ console.error('Error disconnecting Whoop:', err);
+ }
+ };
+
  const syncWhoop = async () => {
  setWhoopSyncing(true);
  setWhoopSyncResult(null);
@@ -316,12 +328,19 @@ export default function Mas() {
  </div>
  </div>
  {whoopConnected ? (
+ <div className="flex items-center gap-2">
+ <button onClick={disconnectWhoop}
+ className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+ style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: '#b91c1c' }}>
+ Desconectar
+ </button>
  <button onClick={syncWhoop} disabled={whoopSyncing}
  className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
  style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.15)', color: TEXT_PRIMARY }}>
  {whoopSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
  Sincronizar
  </button>
+ </div>
  ) : (
  <button onClick={connectWhoop}
  className="text-white text-[12px] font-semibold px-3 py-2 rounded-lg"
