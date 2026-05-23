@@ -71,6 +71,23 @@ export default async function handler(req, res) {
     );
     console.log('[whoop-sync] profile OK, whoop user_id:', profile.user_id);
 
+    // Diagnóstico: probar varios endpoints para ver cuáles funcionan
+    const endpoints = [
+      'https://api.prod.whoop.com/developer/v1/activity/sleep?limit=5',
+      'https://api.prod.whoop.com/developer/v1/recovery?limit=5',
+      'https://api.prod.whoop.com/developer/v1/cycle?limit=5',
+      'https://api.prod.whoop.com/developer/v1/activity/workout?limit=5',
+    ];
+    for (const ep of endpoints) {
+      try {
+        const r = await fetch(ep, { headers: { Authorization: `Bearer ${accessToken}` } });
+        const body = await r.text();
+        console.log(`[whoop-sync] ${ep} → ${r.status} | ${body.slice(0, 120)}`);
+      } catch (e) {
+        console.log(`[whoop-sync] ${ep} → ERROR: ${e.message}`);
+      }
+    }
+
     // Obtener datos de sueño directamente (sin pasar por recovery)
     console.log('[whoop-sync] fetching sleep collection...');
     const sleepPage = await whoopGet(
