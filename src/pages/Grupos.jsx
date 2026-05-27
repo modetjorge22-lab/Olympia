@@ -177,6 +177,21 @@ export default function Grupos() {
  actByDay[day].push(a);
  });
 
+ // Desglose por tipo de actividad
+ const byType = {};
+ monthActs.forEach(a => {
+ if (!byType[a.type]) byType[a.type] = 0;
+ byType[a.type] += a.duration_minutes || 0;
+ });
+ const activityBreakdown = Object.entries(byType)
+ .map(([type, mins]) => ({
+ type,
+ label: ACTIVITY_TYPES[type]?.label || type,
+ emoji: ACTIVITY_TYPES[type]?.emoji || '🏅',
+ hours: +(mins / 60).toFixed(1),
+ }))
+ .sort((a, b) => b.hours - a.hours);
+
  return {
  email,
  name: member?.full_name || email.split('@')[0],
@@ -184,7 +199,7 @@ export default function Grupos() {
  totalHours: +(totalMins / 60).toFixed(1),
  totalMins, sessions: monthActs.length,
  color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
- cumByDay, actByDay,
+ cumByDay, actByDay, activityBreakdown,
  };
  }).sort((a, b) => b.totalMins - a.totalMins);
 
@@ -387,6 +402,7 @@ export default function Grupos() {
  plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
  memberGoals={teamGoals.filter(g => g.user_email === member.email)}
  prDates={memberPrDates[member.email] || new Set()}
+ activityBreakdown={member.activityBreakdown}
  />
  ))}
  </div>
@@ -395,7 +411,7 @@ export default function Grupos() {
  );
 }
 
-function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set() }) {
+function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set(), activityBreakdown = [] }) {
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
  const [expandedDay, setExpandedDay] = useState(null);
@@ -464,6 +480,34 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  );
  })}
  </div>
+
+ {/* Desglose de actividades del mes */}
+ {activityBreakdown.length > 0 && (
+ <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}>
+ <p className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: TEXT_MUTED }}>
+ Desglose del mes
+ </p>
+ <div className="space-y-1.5">
+ {activityBreakdown.map(({ type, label, emoji, hours }) => {
+ const pct = member.totalHours > 0 ? (hours / member.totalHours) * 100 : 0;
+ return (
+ <div key={type} className="flex items-center gap-2">
+ <span className="text-[11px] w-4 text-center flex-shrink-0">{emoji}</span>
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center justify-between mb-0.5">
+ <span className="text-[10px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
+ <span className="text-[10px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
+ </div>
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#8fa898' }} />
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ </div>
+ )}
 
  {/* Entrenos del día expandido */}
  {expandedDay && member.actByDay[expandedDay]?.length > 0 && (
