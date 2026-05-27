@@ -13,13 +13,14 @@ const ACTIVITY_TYPE_MAP = {
   'Padel': 'padel',
   'Soccer': 'football',
   'MartialArts': 'martial_arts',
+  'Golf': 'golf',
 };
 
 const TYPE_LABELS = {
   running: 'Running', cycling: 'Ciclismo', swimming: 'Natación',
   hiking: 'Senderismo', strength_training: 'Fuerza', yoga: 'Yoga',
   tennis: 'Tenis', padel: 'Pádel', football: 'Fútbol',
-  martial_arts: 'Artes marciales', other: 'Otro',
+  martial_arts: 'Artes marciales', golf: 'Golf', other: 'Otro',
 };
 
 async function refreshToken(supabase, tokenRecord) {

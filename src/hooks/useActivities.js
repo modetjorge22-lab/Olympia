@@ -11,6 +11,7 @@ export const ACTIVITY_TYPES = {
   yoga:              { emoji: '🧘', label: 'Yoga' },
   hiking:            { emoji: '🥾', label: 'Senderismo' },
   martial_arts:      { emoji: '🥊', label: 'Artes marciales' },
+  golf:              { emoji: '⛳', label: 'Golf' },
   other:             { emoji: '🏅', label: 'Otro' },
 };
 
