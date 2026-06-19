@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, Zap, Trophy, ChevronDown } from 'lucide-react';
+import { Users, TrendingUp, Zap, Trophy, ChevronDown, Activity } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, BarChart, Bar, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
@@ -108,6 +108,7 @@ export default function Grupos() {
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
  const [showAllActs, setShowAllActs] = useState(false);
+ const [expandedActType, setExpandedActType] = useState(null);
 
  // PR achievements del equipo para colorear mini calendarios
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
@@ -217,17 +218,23 @@ export default function Grupos() {
  return { chartData: data, memberStats: stats };
  }, [allActivities, members, year, month, daysInMonth]);
 
- // Horas del equipo por actividad (mes navegado) — suma de todos los miembros por deporte
+ // Horas del equipo por actividad (mes navegado) — suma por deporte + desglose por miembro
  const teamActivityBreakdown = useMemo(() => {
  const byType = {};
  memberStats.forEach(m => {
  (m.activityBreakdown || []).forEach(({ type, label, emoji, hours }) => {
- if (!byType[type]) byType[type] = { type, label, emoji, hours: 0 };
+ if (hours <= 0) return;
+ if (!byType[type]) byType[type] = { type, label, emoji, hours: 0, contributors: [] };
  byType[type].hours += hours;
+ byType[type].contributors.push({ email: m.email, name: m.name, avatar_url: m.avatar_url, hours });
  });
  });
  return Object.values(byType)
- .map(t => ({ ...t, hours: +t.hours.toFixed(1) }))
+ .map(t => ({
+ ...t,
+ hours: +t.hours.toFixed(1),
+ contributors: [...t.contributors].sort((a, b) => b.hours - a.hours),
+ }))
  .sort((a, b) => b.hours - a.hours);
  }, [memberStats]);
 
@@ -313,10 +320,102 @@ export default function Grupos() {
  </div>
  </div>
 
+ {/* Horas del equipo por actividad */}
+ {teamActivityBreakdown.length > 0 && (() => {
+ const maxHours = teamActivityBreakdown[0].hours || 1;
+ const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
+ const hiddenCount = teamActivityBreakdown.length - 5;
+ return (
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-center gap-2.5 mb-4">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ <Activity className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </div>
+ <div>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Horas por actividad</h2>
+ <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Equipo · {MONTHS_ES[month]} {year}</p>
+ </div>
+ </div>
+ <div className="space-y-2.5">
+ {visible.map(({ type, label, hours, contributors }) => {
+ const pct = (hours / maxHours) * 100;
+ const isOpen = expandedActType === type;
+ return (
+ <div key={type}>
+ <button
+ onClick={() => setExpandedActType(o => o === type ? null : type)}
+ className="w-full flex items-center gap-2"
+ >
+ <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
+ style={{ color: TEXT_MUTED, transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center justify-between mb-1">
+ <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
+ <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
+ </div>
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#7a1a2a' }} />
+ </div>
+ </div>
+ </button>
+ {isOpen && contributors.length > 0 && (
+ <div className="mt-2 ml-[22px] space-y-1.5">
+ {contributors.map(c => {
+ const cpct = hours > 0 ? (c.hours / hours) * 100 : 0;
+ return (
+ <div key={c.email} className="flex items-center gap-2">
+ {c.avatar_url ? (
+ <img src={c.avatar_url} alt={c.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0"
+ style={{ border: '1px solid rgba(42,26,17,0.18)' }} />
+ ) : (
+ <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[8px] flex-shrink-0"
+ style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.18)', color: TEXT_PRIMARY }}>
+ {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+ </div>
+ )}
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center justify-between mb-0.5">
+ <span className="text-[11px] truncate" style={{ color: TEXT_SECONDARY }}>{c.name}</span>
+ <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
+ </div>
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(122,26,42,0.55)' }} />
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ )}
+ </div>
+ );
+ })}
+ </div>
+ {hiddenCount > 0 && (
+ <button
+ onClick={() => setShowAllActs(v => !v)}
+ className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
+ style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
+ >
+ <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
+ {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
+ </span>
+ <ChevronDown className="w-3.5 h-3.5 transition-transform"
+ style={{ color: TEXT_MUTED, transform: showAllActs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+ </button>
+ )}
+ </div>
+ );
+ })()}
+
  {/* Ranking */}
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
- <div className="px-4 pt-4 pb-2 flex items-center gap-2">
- <Zap className="w-4 h-4" style={{ color: '#d97706' }} />
+ <div className="px-4 pt-4 pb-2 flex items-center gap-2.5">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ <Zap className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Ranking · {MONTHS_ES[month]}</h2>
  </div>
  {memberStats.map((member, idx) => {
@@ -354,65 +453,12 @@ export default function Grupos() {
  />
  </div>
  </div>
- {idx === 0 && member.totalHours > 0 && <span className="text-sm">🏆</span>}
+ {idx === 0 && member.totalHours > 0 && <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#7a1a2a' }} />}
  </div>
  </div>
  );
  })}
  </div>
-
- {/* Horas del equipo por actividad */}
- {teamActivityBreakdown.length > 0 && (() => {
- const maxHours = teamActivityBreakdown[0].hours || 1;
- const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
- const hiddenCount = teamActivityBreakdown.length - 5;
- return (
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center gap-2.5 mb-4">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
- <span className="text-sm">📊</span>
- </div>
- <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Horas por actividad</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Equipo · {MONTHS_ES[month]} {year}</p>
- </div>
- </div>
- <div className="space-y-2.5">
- {visible.map(({ type, label, emoji, hours }) => {
- const pct = (hours / maxHours) * 100;
- return (
- <div key={type} className="flex items-center gap-2.5">
- <span className="text-[14px] w-5 text-center flex-shrink-0">{emoji}</span>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between mb-1">
- <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
- <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
- </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#8fa898' }} />
- </div>
- </div>
- </div>
- );
- })}
- </div>
- {hiddenCount > 0 && (
- <button
- onClick={() => setShowAllActs(v => !v)}
- className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
- >
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
- {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
- </span>
- <ChevronDown className="w-3.5 h-3.5 transition-transform"
- style={{ color: TEXT_MUTED, transform: showAllActs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
- </button>
- )}
- </div>
- );
- })()}
 
  {/* Member cards */}
  <div>
