@@ -107,6 +107,7 @@ export default function Grupos() {
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
+ const [showAllActs, setShowAllActs] = useState(false);
 
  // PR achievements del equipo para colorear mini calendarios
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
@@ -216,23 +217,19 @@ export default function Grupos() {
  return { chartData: data, memberStats: stats };
  }, [allActivities, members, year, month, daysInMonth]);
 
- const weeklyBreakdown = useMemo(() => {
- const weeks = [];
- const refDate = new Date(year, month + 1, 0);
- for (let w = 11; w >= 0; w--) {
- const weekEnd = new Date(refDate);
- weekEnd.setDate(refDate.getDate() - w * 7);
- const weekStart = new Date(weekEnd);
- weekStart.setDate(weekEnd.getDate() - 6);
- const weekActs = allActivities.filter(a => {
- const d = new Date(a.date);
- return d >= weekStart && d <= weekEnd;
+ // Horas del equipo por actividad (mes navegado) — suma de todos los miembros por deporte
+ const teamActivityBreakdown = useMemo(() => {
+ const byType = {};
+ memberStats.forEach(m => {
+ (m.activityBreakdown || []).forEach(({ type, label, emoji, hours }) => {
+ if (!byType[type]) byType[type] = { type, label, emoji, hours: 0 };
+ byType[type].hours += hours;
  });
- const horas = +(weekActs.reduce((s, a) => s + (a.duration_minutes || 0), 0) / 60).toFixed(1);
- weeks.push({ label: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`, horas });
- }
- return weeks;
- }, [allActivities, year, month]);
+ });
+ return Object.values(byType)
+ .map(t => ({ ...t, hours: +t.hours.toFixed(1) }))
+ .sort((a, b) => b.hours - a.hours);
+ }, [memberStats]);
 
  // Burbuja al final de cada línea (todas en lastDay).
  // Las distintas alturas de cada miembro las separan visualmente en vertical.
@@ -274,9 +271,9 @@ export default function Grupos() {
  <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Horas acumuladas · {MONTHS_ES[month]} {year}</p>
  </div>
  </div>
- <div className="h-[180px] -mx-1">
+ <div className="h-[300px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
- <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 0, left: 0 }}>
+ <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
  <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
  <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
@@ -323,7 +320,6 @@ export default function Grupos() {
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Ranking · {MONTHS_ES[month]}</h2>
  </div>
  {memberStats.map((member, idx) => {
- const isMe = member.email === user?.email;
  const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
  const rankColor = rankingGreen(idx, memberStats.length);
  return (
@@ -345,7 +341,7 @@ export default function Grupos() {
  )}
  <div className="flex-1">
  <div className="flex items-center justify-between mb-1.5">
- <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{isMe ? 'Tú' : member.name}</p>
+ <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
  <span className="text-[12px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
  </div>
  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
@@ -365,7 +361,12 @@ export default function Grupos() {
  })}
  </div>
 
- {/* Weekly team load */}
+ {/* Horas del equipo por actividad */}
+ {teamActivityBreakdown.length > 0 && (() => {
+ const maxHours = teamActivityBreakdown[0].hours || 1;
+ const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
+ const hiddenCount = teamActivityBreakdown.length - 5;
+ return (
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-center gap-2.5 mb-4">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -373,22 +374,45 @@ export default function Grupos() {
  <span className="text-sm">📊</span>
  </div>
  <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Carga semanal del equipo</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Últimas 12 semanas</p>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Horas por actividad</h2>
+ <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Equipo · {MONTHS_ES[month]} {year}</p>
  </div>
  </div>
- <div className="h-[130px] -ml-2">
- <ResponsiveContainer width="100%" height="100%">
- <BarChart data={weeklyBreakdown} barCategoryGap="24%">
- <XAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={2} />
- <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={22} />
- <Tooltip cursor={{ fill: 'rgba(42,26,17,0.04)' }}
- content={(props) => <CustomTooltip {...props} isTeam />} />
- <Bar dataKey="horas" name="Horas" fill="#8fa898" radius={[3, 3, 0, 0]} />
- </BarChart>
- </ResponsiveContainer>
+ <div className="space-y-2.5">
+ {visible.map(({ type, label, emoji, hours }) => {
+ const pct = (hours / maxHours) * 100;
+ return (
+ <div key={type} className="flex items-center gap-2.5">
+ <span className="text-[14px] w-5 text-center flex-shrink-0">{emoji}</span>
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center justify-between mb-1">
+ <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
+ <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
+ </div>
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#8fa898' }} />
  </div>
  </div>
+ </div>
+ );
+ })}
+ </div>
+ {hiddenCount > 0 && (
+ <button
+ onClick={() => setShowAllActs(v => !v)}
+ className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
+ style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
+ >
+ <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
+ {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
+ </span>
+ <ChevronDown className="w-3.5 h-3.5 transition-transform"
+ style={{ color: TEXT_MUTED, transform: showAllActs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+ </button>
+ )}
+ </div>
+ );
+ })()}
 
  {/* Member cards */}
  <div>
