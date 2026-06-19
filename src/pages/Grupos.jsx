@@ -14,12 +14,12 @@ import { supabase } from '@/lib/supabase';
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
-// Gradiente verde salvia según ranking (mismo que Feed)
-function rankingGreen(rank, total) {
- if (total <= 1) return '#8fa898';
+// Gradiente vino según ranking — líder en vino oscuro, descendiendo a vino claro
+function rankingWine(rank, total) {
+ if (total <= 1) return '#7a1a2a';
  const t = rank / (total - 1);
- const from = { r: 143, g: 168, b: 152 };
- const to = { r: 58, g: 36, b: 24 };
+ const from = { r: 82, g: 16, b: 30 };    // vino oscuro (líder)
+ const to = { r: 205, g: 150, b: 160 };   // vino claro / rosado
  const r = Math.round(from.r + (to.r - from.r) * t);
  const g = Math.round(from.g + (to.g - from.g) * t);
  const b = Math.round(from.b + (to.b - from.b) * t);
@@ -301,7 +301,7 @@ export default function Grupos() {
  />
  )}
  {memberStats.map((m, idx) => {
- const lineColor = rankingGreen(idx, memberStats.length);
+ const lineColor = rankingWine(idx, memberStats.length);
  return (
  <Line
  key={m.email}
@@ -355,7 +355,7 @@ export default function Grupos() {
  <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#7a1a2a' }} />
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#4d0f1a' }} />
  </div>
  </div>
  </button>
@@ -380,7 +380,7 @@ export default function Grupos() {
  <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
  </div>
  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(122,26,42,0.55)' }} />
+ <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(77,15,26,0.55)' }} />
  </div>
  </div>
  </div>
@@ -420,7 +420,7 @@ export default function Grupos() {
  </div>
  {memberStats.map((member, idx) => {
  const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
- const rankColor = rankingGreen(idx, memberStats.length);
+ const rankColor = rankingWine(idx, memberStats.length);
  return (
  <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
  <div className="flex items-center gap-3">

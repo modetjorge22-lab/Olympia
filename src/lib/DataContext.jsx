@@ -114,6 +114,20 @@ export function DataProvider({ children }) {
     ]).finally(() => setLoading(false));
   }, [user, mKey, fetchMonthActivities, fetchAllActivities, fetchTeamMembers, fetchWeeklyPlans]);
 
+  // Auto-refresh silencioso cada 30 min — pensado para pantallas siempre encendidas
+  // (totem de oficina). Recarga datos desde Supabase sin recargar la página.
+  useEffect(() => {
+    if (!user) return;
+    const REFRESH_MS = 30 * 60 * 1000; // 30 minutos
+    const id = setInterval(() => {
+      fetchMonthActivities(true);
+      fetchAllActivities(true);
+      fetchTeamMembers(true);
+      fetchWeeklyPlans(true);
+    }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [user, fetchMonthActivities, fetchAllActivities, fetchTeamMembers, fetchWeeklyPlans]);
+
   // ─── MUTATIONS ───
   const createActivity = useCallback(async (activityData) => {
     const { data, error } = await supabase

@@ -9,6 +9,7 @@ export const ACTIVITY_TYPES = {
   padel:             { emoji: '🏸', label: 'Pádel' },
   football:          { emoji: '⚽', label: 'Fútbol' },
   yoga:              { emoji: '🧘', label: 'Yoga' },
+  pilates:           { emoji: '🤸', label: 'Pilates' },
   hiking:            { emoji: '🥾', label: 'Senderismo' },
   martial_arts:      { emoji: '🥊', label: 'Artes marciales' },
   golf:              { emoji: '⛳', label: 'Golf' },
