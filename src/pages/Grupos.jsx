@@ -266,7 +266,7 @@ export default function Grupos() {
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Grupos</h1>
 
- {/* Monthly race chart */}
+ {/* Carrera mensual + horas por actividad (mismo marco) */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-center gap-2.5 mb-4">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -318,24 +318,17 @@ export default function Grupos() {
  </LineChart>
  </ResponsiveContainer>
  </div>
- </div>
 
- {/* Horas del equipo por actividad */}
+ {/* Horas por actividad — debajo de la carrera, dentro del mismo marco */}
  {teamActivityBreakdown.length > 0 && (() => {
  const maxHours = teamActivityBreakdown[0].hours || 1;
  const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
  const hiddenCount = teamActivityBreakdown.length - 5;
  return (
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center gap-2.5 mb-4">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
- <Activity className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Horas por actividad</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Equipo · {MONTHS_ES[month]} {year}</p>
- </div>
+ <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(42,26,17,0.1)' }}>
+ <div className="flex items-center gap-2 mb-3">
+ <Activity className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>Horas por actividad · equipo</p>
  </div>
  <div className="space-y-2.5">
  {visible.map(({ type, label, hours, contributors }) => {
@@ -408,6 +401,7 @@ export default function Grupos() {
  </div>
  );
  })()}
+ </div>
 
  {/* Ranking */}
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
