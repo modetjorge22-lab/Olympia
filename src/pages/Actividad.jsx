@@ -227,6 +227,7 @@ export default function Actividad() {
  }, [user?.email]);
 
  const [showLogDialog, setShowLogDialog] = useState(false);
+ const [editActivity, setEditActivity] = useState(null);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const [loadTF, setLoadTF] = useState('weeks');
@@ -1158,9 +1159,14 @@ export default function Actividad() {
  <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
  </div>
  </div>
- <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
+ <div className="flex items-center gap-0.5 flex-shrink-0">
+ <button onClick={e => { e.stopPropagation(); setEditActivity(act); }} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
+ <Pencil className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
  <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
  </button>
+ </div>
  </div>
  </div>
  ))}
@@ -1260,10 +1266,12 @@ export default function Actividad() {
  </button>
 
  <LogActivityDialog
- isOpen={showLogDialog}
- onClose={() => setShowLogDialog(false)}
+ isOpen={showLogDialog || !!editActivity}
+ onClose={() => { setShowLogDialog(false); setEditActivity(null); }}
  onSubmit={createActivity}
  onSubmitPlan={addPlan}
+ onUpdate={updateActivity}
+ editActivity={editActivity}
  selectedDate={selectedDate}
  goals={goals}
  onPrBeaten={handlePrBeaten}

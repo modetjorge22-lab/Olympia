@@ -162,15 +162,20 @@ export default async function handler(req, res) {
       );
 
       if (manualMatch) {
-        // Mantenemos el description original del usuario — no lo modificamos.
+        // Si el usuario editó manualmente esta actividad, su corrección manda:
+        // sólo la enlazamos a Strava (strava_id) y conservamos sus datos.
+        // En caso contrario, actualizamos los datos numéricos con los de Strava.
+        const manualPayload = manualMatch.manually_edited
+          ? { strava_id: stravaId }
+          : {
+              duration_minutes: durationMins,
+              distance_km: distanceKm,
+              calories_burned: sa.calories || null,
+              strava_id: stravaId,
+            };
         await supabase
           .from('activities')
-          .update({
-            duration_minutes: durationMins,
-            distance_km: distanceKm,
-            calories_burned: sa.calories || null,
-            strava_id: stravaId,
-          })
+          .update(manualPayload)
           .eq('id', manualMatch.id);
 
         // Si había un plan correspondiente, también lo retiramos (se ha cumplido)
@@ -196,17 +201,20 @@ export default async function handler(req, res) {
       );
 
       if (similarMatch) {
-        // Mantenemos description original; sólo actualizamos datos numéricos.
+        // Igual que arriba: la edición manual tiene prioridad sobre Strava.
+        const similarPayload = similarMatch.manually_edited
+          ? { strava_id: stravaId }
+          : {
+              type: type,
+              title: TYPE_LABELS[type] || sa.name,
+              duration_minutes: durationMins,
+              distance_km: distanceKm,
+              calories_burned: sa.calories || null,
+              strava_id: stravaId,
+            };
         await supabase
           .from('activities')
-          .update({
-            type: type,
-            title: TYPE_LABELS[type] || sa.name,
-            duration_minutes: durationMins,
-            distance_km: distanceKm,
-            calories_burned: sa.calories || null,
-            strava_id: stravaId,
-          })
+          .update(similarPayload)
           .eq('id', similarMatch.id);
 
         if (matchedPlan) {

@@ -18,7 +18,7 @@ function parseLocalDate(dateStr) {
   return new Date(y, m - 1, d);
 }
 
-export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten }) {
+export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten, editActivity = null, onUpdate }) {
   const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -38,6 +38,19 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
 
   // Resetear prBeaten cuando cambia el tipo de actividad
   useEffect(() => { setPrBeaten({}); }, [activityType]);
+
+  // Modo edición: precargar los campos con la actividad existente
+  useEffect(() => {
+    if (isOpen && editActivity) {
+      setMode('realized');
+      setActivityType(editActivity.type || '');
+      setDurationMinutes(editActivity.duration_minutes != null ? String(editActivity.duration_minutes) : '');
+      setDateInput(editActivity.date || '');
+      setNotes(editActivity.description || '');
+      setTrainingType(editActivity.training_type || '');
+      setMatchResult(editActivity.match_result?.result || null);
+    }
+  }, [isOpen, editActivity]);
 
   const showTrainingType = mode === 'realized' && TRACKABLE_TYPES.includes(activityType);
   const showProgressNote = mode === 'realized' && trainingType === 'progress';
@@ -59,11 +72,25 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     setMatchResult(null);
   };
 
+  // Al cerrar, limpiamos el formulario para no arrastrar datos entre aperturas
+  useEffect(() => { if (!isOpen) resetForm(); }, [isOpen]);
+
   const handleSubmit = async () => {
     if (!activityType || !durationMinutes || !dateInput) return;
     setLoading(true);
     try {
-      if (mode === 'planned') {
+      if (editActivity) {
+        await onUpdate(editActivity.id, {
+          type: activityType,
+          title: ACTIVITY_TYPES[activityType]?.label || activityType,
+          training_type: showTrainingType ? (trainingType || null) : null,
+          duration_minutes: parseInt(durationMinutes),
+          date: dateInput,
+          description: notes || null,
+          match_result: matchResult ? { result: matchResult } : null,
+          manually_edited: true,
+        });
+      } else if (mode === 'planned') {
         if (!onSubmitPlan) { console.error('LogActivityDialog: falta onSubmitPlan'); return; }
         await onSubmitPlan({
           date: dateInput,
@@ -147,7 +174,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         {/* Header */}
         <div className="flex items-center justify-between px-3.5 pt-3 pb-2 flex-shrink-0">
           <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>
-            {mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad'}
+            {editActivity ? 'Editar actividad' : (mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad')}
           </h2>
           <button
             onClick={onClose}
@@ -159,7 +186,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         </div>
 
         <div className="overflow-y-auto flex-1 px-3.5 pb-3.5 space-y-3">
-          {/* Toggle Realizada / Planificada */}
+          {/* Toggle Realizada / Planificada — oculto al editar */}
+          {!editActivity && (
           <div className="grid grid-cols-2 gap-1.5">
             <button
               onClick={() => setMode('realized')}
@@ -184,6 +212,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               }}
             >Planificada</button>
           </div>
+          )}
 
           {/* Date picker */}
           <div>
@@ -317,7 +346,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           )}
 
           {/* ── ¿Superaste una marca? ── */}
-          {showPrSection && (
+          {showPrSection && !editActivity && (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Trophy className="w-3 h-3" style={{ color: '#7a1a2a' }} />
@@ -397,7 +426,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             ) : (
               <>
                 {activityType && ACTIVITY_TYPES[activityType]?.emoji}
-                {mode === 'planned' ? 'Planificar' : 'Guardar'}
+                {editActivity ? 'Guardar cambios' : (mode === 'planned' ? 'Planificar' : 'Guardar')}
               </>
             )}
           </button>
