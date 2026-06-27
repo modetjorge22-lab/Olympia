@@ -13,7 +13,7 @@ import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, 
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
 const glassCard = {
- background: 'rgba(245,237,224,0.92)',
+ background: 'rgba(249,244,236,0.92)',
  border: '1px solid rgba(255,255,255,0.35)',
  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
  backdropFilter: 'blur(20px)',
@@ -1373,7 +1373,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : has
  ? isExp
- ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,149,131,0.4)', border: '1px solid rgba(255,255,255,0.25)' }
+ ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,26,42,0.45)', border: '1px solid rgba(255,255,255,0.25)' }
  : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : hasPlan
  ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }

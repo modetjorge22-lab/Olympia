@@ -61,7 +61,7 @@ function makeMemberDot(member, lastDay) {
 }
 
 const glassCard = {
- background: 'rgba(245,237,224,0.92)',
+ background: 'rgba(249,244,236,0.92)',
  border: '1px solid rgba(255,255,255,0.35)',
  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
  backdropFilter: 'blur(20px)',
@@ -72,7 +72,7 @@ const TEXT_PRIMARY = '#2a1a11';
 const TEXT_SECONDARY = '#6e5647';
 const TEXT_MUTED = '#8c7364';
 
-function CustomTooltip({ active, payload, label, memberStats, isTeam }) {
+function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h' }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
@@ -92,7 +92,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam }) {
  <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
  <span style={{ color: 'rgba(245,237,224,0.85)' }}>{m?.name || entry.name}</span>
  </div>
- <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}h</span>
+ <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}{unit}</span>
  </div>
  );
  })}
@@ -109,6 +109,7 @@ export default function Grupos() {
  const teamGoals = useTeamGoals();
  const [showAllActs, setShowAllActs] = useState(false);
  const [expandedActType, setExpandedActType] = useState(null);
+ const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
 
  // PR achievements del equipo para colorear mini calendarios
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
@@ -160,16 +161,22 @@ export default function Grupos() {
  const totalMins = monthActs.reduce((s, a) => s + (a.duration_minutes || 0), 0);
 
  const dailyMins = {};
+ const dailyCount = {};
  monthActs.forEach(a => {
  const day = new Date(a.date).getDate();
  dailyMins[day] = (dailyMins[day] || 0) + (a.duration_minutes || 0);
+ dailyCount[day] = (dailyCount[day] || 0) + 1;
  });
 
  let cum = 0;
- const cumByDay = {};
+ let cumC = 0;
+ const cumByDay = {};       // horas acumuladas
+ const cumByDayCount = {};  // nº de actividades acumuladas
  for (let d = 1; d <= daysInMonth; d++) {
  cum += (dailyMins[d] || 0);
+ cumC += (dailyCount[d] || 0);
  cumByDay[d] = +(cum / 60).toFixed(1);
+ cumByDayCount[d] = cumC;
  }
 
  const actByDay = {};
@@ -201,7 +208,7 @@ export default function Grupos() {
  totalHours: +(totalMins / 60).toFixed(1),
  totalMins, sessions: monthActs.length,
  color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
- cumByDay, actByDay, activityBreakdown,
+ cumByDay, cumByDayCount, actByDay, activityBreakdown,
  };
  }).sort((a, b) => b.totalMins - a.totalMins);
 
@@ -212,11 +219,11 @@ export default function Grupos() {
  const data = [];
  for (let d = 1; d <= lastDay; d++) {
  const point = { day: d };
- stats.forEach(m => { point[m.email] = m.cumByDay[d]; });
+ stats.forEach(m => { point[m.email] = raceMetric === 'count' ? m.cumByDayCount[d] : m.cumByDay[d]; });
  data.push(point);
  }
  return { chartData: data, memberStats: stats };
- }, [allActivities, members, year, month, daysInMonth]);
+ }, [allActivities, members, year, month, daysInMonth, raceMetric]);
 
  // Horas del equipo por actividad (mes navegado) — suma por deporte + desglose por miembro
  const teamActivityBreakdown = useMemo(() => {
@@ -245,9 +252,11 @@ export default function Grupos() {
  // Media del equipo para la línea de referencia
  const teamAverage = useMemo(() => {
  if (memberStats.length === 0) return null;
- const avg = memberStats.reduce((s, m) => s + m.totalHours, 0) / memberStats.length;
- return +avg.toFixed(1);
- }, [memberStats]);
+ const total = memberStats.reduce((s, m) => s + (raceMetric === 'count' ? m.sessions : m.totalHours), 0);
+ return +(total / memberStats.length).toFixed(1);
+ }, [memberStats, raceMetric]);
+
+ const raceUnit = raceMetric === 'count' ? '' : 'h';
 
  if (memberStats.length === 0) {
  return (
@@ -268,14 +277,30 @@ export default function Grupos() {
 
  {/* Carrera mensual + horas por actividad (mismo marco) */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center gap-2.5 mb-4">
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
  style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
  <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Carrera mensual</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>Horas acumuladas · {MONTHS_ES[month]} {year}</p>
+ <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}</p>
+ </div>
+ </div>
+ <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(42,26,17,0.06)' }}>
+ {[['hours', 'Horas'], ['count', 'Nº']].map(([key, lbl]) => (
+ <button
+ key={key}
+ onClick={() => setRaceMetric(key)}
+ className="px-2 py-1 rounded-md text-[10px] font-semibold transition-all"
+ style={raceMetric === key
+ ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' }
+ : { background: 'transparent', color: TEXT_MUTED }}
+ >
+ {lbl}
+ </button>
+ ))}
  </div>
  </div>
  <div className="h-[300px] -mx-1">
@@ -284,7 +309,7 @@ export default function Grupos() {
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
  <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
  <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
- <Tooltip content={<CustomTooltip memberStats={memberStats} />} />
+ <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} />} />
  {teamAverage !== null && teamAverage > 0 && (
  <ReferenceLine
  y={teamAverage}
@@ -292,7 +317,7 @@ export default function Grupos() {
  strokeDasharray="4 4"
  strokeWidth={1}
  label={{
- value: `Media ${teamAverage}h`,
+ value: raceMetric === 'count' ? `Media ${teamAverage} act` : `Media ${teamAverage}h`,
  position: 'insideTopLeft',
  fill: 'rgba(42,26,17,0.5)',
  fontSize: 9,
@@ -530,13 +555,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : has ? { background: isExpanded ? '#7a9583' : '#8fa898', boxShadow: '0 1px 4px rgba(143,168,152,0.25)' }
+ : has ? { background: isExpanded ? '#5c1322' : '#7a1a2a', boxShadow: '0 1px 4px rgba(122,26,42,0.35)' }
  : hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }),
  }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : has ? '#1c2620' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : has ? 'rgba(245,237,224,0.95)' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}

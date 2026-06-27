@@ -165,7 +165,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         className="rounded-2xl w-full max-w-sm flex flex-col"
         style={{
           maxHeight: '100%',
-          background: '#f5ede0',
+          background: '#f9f4ec',
           border: '1px solid rgba(255,255,255,0.4)',
           boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
         }}

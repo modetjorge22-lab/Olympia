@@ -43,7 +43,7 @@ export default function FeatureAnnouncement() {
       <div
         className="w-full max-w-sm rounded-3xl overflow-hidden"
         style={{
-          background: '#f5ede0',
+          background: '#f9f4ec',
           boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
           border: '1px solid rgba(255,255,255,0.35)',
         }}

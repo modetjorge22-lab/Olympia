@@ -5,7 +5,7 @@ export const COLORS = {
   bgHeader: '#2a121a',
 
   // Cards beige glass opaco
-  cardBg: 'rgba(245,237,224,0.92)',
+  cardBg: 'rgba(249,244,236,0.92)',
   cardBorder: 'rgba(255,255,255,0.35)',
   cardShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
 
@@ -21,9 +21,9 @@ export const COLORS = {
   textOnBgMuted:     'rgba(245,237,224,0.4)',
 
   // Verde salvia suave para días activos
-  dayActive: '#8fa898',
-  dayActiveStrong: '#7a9583',
-  dayActiveText: '#1c2620',
+  dayActive: '#7a1a2a',
+  dayActiveStrong: '#5c1322',
+  dayActiveText: 'rgba(245,237,224,0.95)',
 
   // Fondo de elementos dentro de card beige
   innerCellBg: 'rgba(42,26,17,0.07)',

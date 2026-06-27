@@ -11,7 +11,7 @@ const TEXT_MUTED = '#8c7364';
 const TRACKABLE_TYPES = ['strength_training', 'running', 'swimming'];
 
 const glassCard = {
- background: 'rgba(245,237,224,0.92)',
+ background: 'rgba(249,244,236,0.92)',
  border: '1px solid rgba(255,255,255,0.35)',
  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
  backdropFilter: 'blur(20px)',
@@ -262,7 +262,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  style={{
  maxHeight: '100%',
  overflowY: 'auto',
- background: '#f5ede0',
+ background: '#f9f4ec',
  border: '1px solid rgba(255,255,255,0.4)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
@@ -565,7 +565,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  className="rounded-2xl w-full max-w-sm flex flex-col"
  style={{
  maxHeight: '100%',
- background: '#f5ede0',
+ background: '#f9f4ec',
  border: '1px solid rgba(255,255,255,0.35)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
