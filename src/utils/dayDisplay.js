@@ -30,8 +30,8 @@ export function getPlanSummary(plan, activityTypes) {
 // Paleta unificada para los marcos de actividad
 export const DAY_PALETTE = {
   completed: {
-    bg: '#2a121a',
-    bgExpanded: '#3d1a26',
+    bg: '#3a1622',
+    bgExpanded: '#4a202e',
     text: 'rgba(245,237,224,0.95)',
     textOnSummary: '#2a121a',
     line: 'rgba(42,18,26,0.7)',

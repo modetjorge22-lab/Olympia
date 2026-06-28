@@ -555,7 +555,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : has ? { background: isExpanded ? '#3d1a26' : '#2a121a', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
+ : has ? { background: isExpanded ? '#4a202e' : '#3a1622', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
  : hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }),
