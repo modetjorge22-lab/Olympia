@@ -21,8 +21,8 @@ export const COLORS = {
   textOnBgMuted:     'rgba(245,237,224,0.4)',
 
   // Verde salvia suave para días activos
-  dayActive: '#7a1a2a',
-  dayActiveStrong: '#5c1322',
+  dayActive: '#2a121a',
+  dayActiveStrong: '#3d1a26',
   dayActiveText: 'rgba(245,237,224,0.95)',
 
   // Fondo de elementos dentro de card beige

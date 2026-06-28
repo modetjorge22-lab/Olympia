@@ -32,7 +32,7 @@ function makeMemberDot(member, lastDay) {
  if (cx == null || cy == null) return null;
  if (payload.day !== lastDay) return null;
  const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
- const radius = 10;
+ const radius = 8;
  return (
  <g>
  <circle cx={cx} cy={cy} r={radius + 1.5} fill="rgba(245,237,224,0.95)" stroke={member.color} strokeWidth="1.5" />
@@ -49,7 +49,7 @@ function makeMemberDot(member, lastDay) {
  ) : (
  <>
  <circle cx={cx} cy={cy} r={radius} fill={member.color} fillOpacity="0.25" />
- <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="700"
+ <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="7" fontWeight="700"
  fill={member.color} style={{ fontFamily: 'DM Sans, sans-serif' }}>
  {initials}
  </text>
@@ -303,7 +303,7 @@ export default function Grupos() {
  ))}
  </div>
  </div>
- <div className="h-[300px] -mx-1">
+ <div className="h-[340px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
@@ -555,7 +555,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : has ? { background: isExpanded ? '#5c1322' : '#7a1a2a', boxShadow: '0 1px 4px rgba(122,26,42,0.35)' }
+ : has ? { background: isExpanded ? '#3d1a26' : '#2a121a', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
  : hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }),
@@ -588,7 +588,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <span className="text-[10px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#8fa898' }} />
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#4d0f1a' }} />
  </div>
  </div>
  </div>
