@@ -257,10 +257,10 @@ export default function Grupos() {
 
  // Datos del radar — equipo (suma) o un miembro concreto
  const radarData = useMemo(() => {
- return teamActivityBreakdown.map(t => ({
- type: t.type, label: t.label, emoji: t.emoji,
- hours: radarMember ? +(((t.contributors || []).find(c => c.email === radarMember)?.hours) || 0).toFixed(1) : t.hours,
- }));
+ return teamActivityBreakdown.map(t => {
+ const hours = radarMember ? +(((t.contributors || []).find(c => c.email === radarMember)?.hours) || 0).toFixed(1) : t.hours;
+ return { type: t.type, label: t.label, emoji: t.emoji, hours, value: +Math.sqrt(hours).toFixed(3) };
+ });
  }, [teamActivityBreakdown, radarMember]);
 
  // Burbuja al final de cada línea (todas en lastDay).
@@ -393,13 +393,13 @@ export default function Grupos() {
  ))}
  </div>
  {teamActivityBreakdown.length >= 3 ? (
- <div className="h-[260px] -mx-1">
+ <div className="h-[300px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
- <RadarChart data={radarData} outerRadius="68%">
+ <RadarChart data={radarData} outerRadius="62%">
  <PolarGrid stroke="rgba(42,26,17,0.12)" />
- <PolarAngleAxis dataKey="emoji" tick={{ fontSize: 14 }} />
+ <PolarAngleAxis dataKey="label" tick={{ fontSize: 9, fill: TEXT_MUTED }} />
  <PolarRadiusAxis tick={false} axisLine={false} />
- <Radar dataKey="hours" stroke="#7a1a2a" strokeWidth={2} fill="#7a1a2a" fillOpacity={0.35} isAnimationActive={false} />
+ <Radar dataKey="value" stroke="#7a1a2a" strokeWidth={2} fill="#7a1a2a" fillOpacity={0.35} isAnimationActive={false} />
  <Tooltip content={<ActivityRadarTooltip />} />
  </RadarChart>
  </ResponsiveContainer>
