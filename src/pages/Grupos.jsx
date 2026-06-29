@@ -6,7 +6,7 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
@@ -100,6 +100,17 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  );
 }
 
+function ActivityRadarTooltip({ active, payload }) {
+ if (!active || !payload?.length) return null;
+ const d = payload[0].payload;
+ return (
+ <div style={{ background: '#2a121a', border: '1px solid rgba(245,237,224,0.15)', borderRadius: 10, padding: '6px 10px', fontSize: 11, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+ <span style={{ color: 'rgba(245,237,224,0.9)' }}>{d.emoji} {d.label}</span>
+ <span style={{ color: '#ffffff', fontWeight: 600, marginLeft: 8 }}>{d.hours}h</span>
+ </div>
+ );
+}
+
 export default function Grupos() {
  const { currentMonth } = useMonth();
  const { user } = useAuth();
@@ -107,9 +118,8 @@ export default function Grupos() {
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
- const [showAllActs, setShowAllActs] = useState(false);
- const [expandedActType, setExpandedActType] = useState(null);
  const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
+ const [radarMember, setRadarMember] = useState(null); // null = equipo
 
  // PR achievements del equipo para colorear mini calendarios
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
@@ -245,6 +255,14 @@ export default function Grupos() {
  .sort((a, b) => b.hours - a.hours);
  }, [memberStats]);
 
+ // Datos del radar — equipo (suma) o un miembro concreto
+ const radarData = useMemo(() => {
+ return teamActivityBreakdown.map(t => ({
+ type: t.type, label: t.label, emoji: t.emoji,
+ hours: radarMember ? +(((t.contributors || []).find(c => c.email === radarMember)?.hours) || 0).toFixed(1) : t.hours,
+ }));
+ }, [teamActivityBreakdown, radarMember]);
+
  // Burbuja al final de cada línea (todas en lastDay).
  // Las distintas alturas de cada miembro las separan visualmente en vertical.
  const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
@@ -344,29 +362,55 @@ export default function Grupos() {
  </ResponsiveContainer>
  </div>
 
- {/* Horas por actividad — debajo de la carrera, dentro del mismo marco */}
- {teamActivityBreakdown.length > 0 && (() => {
- const maxHours = teamActivityBreakdown[0].hours || 1;
- const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
- const hiddenCount = teamActivityBreakdown.length - 5;
- return (
+ {/* Horas por actividad — radar del equipo o de un miembro */}
+ {teamActivityBreakdown.length > 0 && (
  <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(42,26,17,0.1)' }}>
- <div className="flex items-center gap-2 mb-3">
+ <div className="flex items-center gap-2 mb-2">
  <Activity className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>Horas por actividad · equipo</p>
+ <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>
+ Horas por actividad · {radarMember ? (memberStats.find(m => m.email === radarMember)?.name || 'miembro') : 'equipo'}
+ </p>
  </div>
- <div className="space-y-2.5">
- {visible.map(({ type, label, hours, contributors }) => {
- const pct = (hours / maxHours) * 100;
- const isOpen = expandedActType === type;
+ <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1" style={{ scrollbarWidth: 'none' }}>
+ <button onClick={() => setRadarMember(null)}
+ className="flex-shrink-0 px-2 py-1 rounded-full text-[10px] font-semibold transition-all"
+ style={radarMember === null ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ Equipo
+ </button>
+ {memberStats.map(m => (
+ <button key={m.email} onClick={() => setRadarMember(x => x === m.email ? null : m.email)} title={m.name}
+ className="flex-shrink-0 rounded-full transition-all"
+ style={{ boxShadow: radarMember === m.email ? '0 0 0 2px #7a1a2a' : '0 0 0 1px rgba(42,26,17,0.15)' }}>
+ {m.avatar_url ? (
+ <img src={m.avatar_url} alt={m.name} className="w-6 h-6 rounded-full object-cover block" />
+ ) : (
+ <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[8px]"
+ style={{ background: 'rgba(42,26,17,0.08)', color: TEXT_PRIMARY }}>
+ {m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+ </div>
+ )}
+ </button>
+ ))}
+ </div>
+ {teamActivityBreakdown.length >= 3 ? (
+ <div className="h-[260px] -mx-1">
+ <ResponsiveContainer width="100%" height="100%">
+ <RadarChart data={radarData} outerRadius="68%">
+ <PolarGrid stroke="rgba(42,26,17,0.12)" />
+ <PolarAngleAxis dataKey="emoji" tick={{ fontSize: 14 }} />
+ <PolarRadiusAxis tick={false} axisLine={false} />
+ <Radar dataKey="hours" stroke="#7a1a2a" strokeWidth={2} fill="#7a1a2a" fillOpacity={0.35} isAnimationActive={false} />
+ <Tooltip content={<ActivityRadarTooltip />} />
+ </RadarChart>
+ </ResponsiveContainer>
+ </div>
+ ) : (
+ <div className="space-y-2.5 mt-2">
+ {radarData.map(({ type, label, emoji, hours }) => {
+ const pct = (hours / (Math.max(...radarData.map(r => r.hours)) || 1)) * 100;
  return (
- <div key={type}>
- <button
- onClick={() => setExpandedActType(o => o === type ? null : type)}
- className="w-full flex items-center gap-2"
- >
- <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
- style={{ color: TEXT_MUTED, transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+ <div key={type} className="flex items-center gap-2.5">
+ <span className="text-[14px] w-5 text-center flex-shrink-0">{emoji}</span>
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between mb-1">
  <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
@@ -376,56 +420,13 @@ export default function Grupos() {
  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#4d0f1a' }} />
  </div>
  </div>
- </button>
- {isOpen && contributors.length > 0 && (
- <div className="mt-2 ml-[22px] space-y-1.5">
- {contributors.map(c => {
- const cpct = hours > 0 ? (c.hours / hours) * 100 : 0;
- return (
- <div key={c.email} className="flex items-center gap-2">
- {c.avatar_url ? (
- <img src={c.avatar_url} alt={c.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0"
- style={{ border: '1px solid rgba(42,26,17,0.18)' }} />
- ) : (
- <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[8px] flex-shrink-0"
- style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.18)', color: TEXT_PRIMARY }}>
- {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
- </div>
- )}
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between mb-0.5">
- <span className="text-[11px] truncate" style={{ color: TEXT_SECONDARY }}>{c.name}</span>
- <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
- </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(77,15,26,0.55)' }} />
- </div>
- </div>
  </div>
  );
  })}
  </div>
  )}
  </div>
- );
- })}
- </div>
- {hiddenCount > 0 && (
- <button
- onClick={() => setShowAllActs(v => !v)}
- className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
- >
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
- {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
- </span>
- <ChevronDown className="w-3.5 h-3.5 transition-transform"
- style={{ color: TEXT_MUTED, transform: showAllActs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
- </button>
  )}
- </div>
- );
- })()}
  </div>
 
  {/* Ranking */}
