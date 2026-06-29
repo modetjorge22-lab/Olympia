@@ -504,6 +504,8 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
  const [expandedDay, setExpandedDay] = useState(null);
+ const [filterType, setFilterType] = useState(null);
+ const availableTypes = activityBreakdown.map(b => b.type);
  let startDow = new Date(year, month, 1).getDay() - 1;
  if (startDow < 0) startDow = 6;
  const trailing = [];
@@ -531,6 +533,24 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </div>
  </div>
 
+ {/* Filtro por actividad */}
+ {availableTypes.length > 1 && (
+ <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2" style={{ scrollbarWidth: 'none' }}>
+ <button onClick={() => setFilterType(null)}
+ className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-semibold transition-all"
+ style={filterType === null ? { background: '#3a1622', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ Todo
+ </button>
+ {availableTypes.map(t => (
+ <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
+ className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[11px] transition-all"
+ style={filterType === t ? { background: '#3a1622' } : { background: 'rgba(42,26,17,0.06)' }}>
+ <span>{ACTIVITY_TYPES[t]?.emoji}</span>
+ </button>
+ ))}
+ </div>
+ )}
+
  {/* Mini calendario */}
  <div className="grid grid-cols-7 gap-[3px]">
  {trailing.map(i => (
@@ -539,14 +559,17 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
  const has = acts.length > 0;
+ const matchesFilter = !filterType || acts.some(a => a.type === filterType);
+ const show = has && matchesFilter;
  const planned = (plansByDay && plansByDay[day]) || [];
  const hasPlan = !has && planned.length > 0;
+ const showPlan = hasPlan && !filterType;
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
- const isPR = prDates.has(dateStr);
+ const isPR = prDates.has(dateStr) && matchesFilter;
  const emoji = isPR ? '🏆'
- : has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
- : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
+ : show ? (ACTIVITY_TYPES[filterType || acts[0].type]?.emoji || '🏅')
+ : showPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
  const isExpanded = expandedDay === day;
  return (
  <div key={day}
@@ -555,13 +578,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : has ? { background: isExpanded ? '#4a202e' : '#3a1622', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
- : hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
+ : show ? { background: isExpanded ? '#4a202e' : '#3a1622', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
+ : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }),
  }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : has ? 'rgba(245,237,224,0.95)' : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : show ? 'rgba(245,237,224,0.95)' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}

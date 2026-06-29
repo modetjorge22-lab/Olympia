@@ -1348,7 +1348,29 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  const trailing = [];
  for (let i = 0; i < startDow; i++) trailing.push(i);
 
+ const [filterType, setFilterType] = useState(null);
+ const availableTypes = Object.keys(ACTIVITY_TYPES).filter(t =>
+ Object.values(activitiesByDate).some(acts => acts.some(a => a.type === t))
+ );
+
  return (
+ <>
+ {availableTypes.length > 1 && (
+ <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-1" style={{ scrollbarWidth: 'none' }}>
+ <button onClick={() => setFilterType(null)}
+ className="flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+ style={filterType === null ? { background: '#3a1622', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ Todo
+ </button>
+ {availableTypes.map(t => (
+ <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
+ className="flex-shrink-0 px-2 py-1 rounded-lg text-[12px] transition-all"
+ style={filterType === t ? { background: '#3a1622' } : { background: 'rgba(42,26,17,0.06)' }}>
+ <span>{ACTIVITY_TYPES[t]?.emoji}</span>
+ </button>
+ ))}
+ </div>
+ )}
  <div className="grid grid-cols-7 gap-[5px]">
  {trailing.map(i => (
  <div key={`p-${i}`} className="aspect-square" aria-hidden="true" />
@@ -1357,42 +1379,45 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
  const acts = activitiesByDate[day] || [];
  const has = acts.length > 0;
+ const matchesFilter = !filterType || acts.some(a => a.type === filterType);
+ const show = has && matchesFilter;
+ const matchCount = filterType ? acts.filter(a => a.type === filterType).length : acts.length;
  const planned = plansByDayOfMonth[day] || [];
- const hasPlan = !has && planned.length > 0;
+ const showPlan = !has && planned.length > 0 && !filterType;
  const isExp = expandedDay === day;
  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
- const isPR = prDates.has(dateStr);
+ const isPR = prDates.has(dateStr) && matchesFilter;
  const emoji = isPR ? '🏆'
- : has ? (ACTIVITY_TYPES[acts[0].type]?.emoji || '🏅')
- : hasPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
+ : show ? (ACTIVITY_TYPES[filterType || acts[0].type]?.emoji || '🏅')
+ : showPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
  className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
  style={isPR
  ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : has
+ : show
  ? isExp
  ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,26,42,0.45)', border: '1px solid rgba(255,255,255,0.25)' }
  : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
- : hasPlan
+ : showPlan
  ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday
  ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
  : { background: 'rgba(42,26,17,0.07)' }
  }>
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : has ? DAY_PALETTE.completed.text : hasPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : show ? DAY_PALETTE.completed.text : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
  {day}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
- {has && acts.length > 1 && (
+ {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.1)' }}>
- <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{acts.length}</span>
+ <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{matchCount}</span>
  </div>
  )}
- {!has && planned.length > 1 && (
+ {showPlan && planned.length > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(125,107,167,0.4)' }}>
  <span className="text-[7px] font-bold" style={{ color: DAY_PALETTE.planned.text }}>{planned.length}</span>
@@ -1402,5 +1427,6 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  );
  })}
  </div>
+ </>
  );
 }
