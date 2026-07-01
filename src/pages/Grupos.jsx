@@ -217,6 +217,11 @@ export default function Grupos() {
  const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
 
  const data = [];
+ // Punto inicial en 0 (origen del mes) para que el progreso arranque desde 0
+ // y la línea ya se vea el día 1 aunque sólo haya un día con actividad.
+ const zeroPoint = { day: 0 };
+ stats.forEach(m => { zeroPoint[m.email] = 0; });
+ data.push(zeroPoint);
  for (let d = 1; d <= lastDay; d++) {
  const point = { day: d };
  stats.forEach(m => { point[m.email] = raceMetric === 'count' ? m.cumByDayCount[d] : m.cumByDay[d]; });
