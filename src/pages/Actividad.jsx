@@ -228,6 +228,7 @@ export default function Actividad() {
 
  const [showLogDialog, setShowLogDialog] = useState(false);
  const [editActivity, setEditActivity] = useState(null);
+ const [convertPlan, setConvertPlan] = useState(null);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const [loadTF, setLoadTF] = useState('weeks');
@@ -1187,9 +1188,14 @@ export default function Actividad() {
  {plan.duration_minutes > 0 && <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{plan.duration_minutes} min</p>}
  </div>
  </div>
- <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
+ <div className="flex items-center gap-0.5 flex-shrink-0">
+ <button onClick={e => { e.stopPropagation(); setConvertPlan(plan); }} title="Marcar como realizada" className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
+ <Check className="w-3.5 h-3.5" style={{ color: '#4d0f1a' }} />
+ </button>
+ <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
  <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
  </button>
+ </div>
  </div>
  </div>
  ))}
@@ -1266,12 +1272,13 @@ export default function Actividad() {
  </button>
 
  <LogActivityDialog
- isOpen={showLogDialog || !!editActivity}
- onClose={() => { setShowLogDialog(false); setEditActivity(null); }}
- onSubmit={createActivity}
+ isOpen={showLogDialog || !!editActivity || !!convertPlan}
+ onClose={() => { setShowLogDialog(false); setEditActivity(null); setConvertPlan(null); }}
+ onSubmit={async (data) => { await createActivity(data); if (convertPlan) { await removePlan(convertPlan.id); setConvertPlan(null); } }}
  onSubmitPlan={addPlan}
  onUpdate={updateActivity}
  editActivity={editActivity}
+ prefillPlan={convertPlan}
  selectedDate={selectedDate}
  goals={goals}
  onPrBeaten={handlePrBeaten}

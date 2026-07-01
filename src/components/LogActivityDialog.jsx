@@ -18,7 +18,7 @@ function parseLocalDate(dateStr) {
   return new Date(y, m - 1, d);
 }
 
-export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten, editActivity = null, onUpdate }) {
+export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten, editActivity = null, onUpdate, prefillPlan = null }) {
   const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -51,6 +51,17 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
       setMatchResult(editActivity.match_result?.result || null);
     }
   }, [isOpen, editActivity]);
+
+  // Convertir planificado en realizado: precargar campos desde el plan
+  useEffect(() => {
+    if (isOpen && prefillPlan && !editActivity) {
+      setMode('realized');
+      setActivityType(prefillPlan.activity_type || '');
+      setDurationMinutes(''); // minutos vacíos: se rellenan con los reales al completar
+      setDateInput(prefillPlan.date || '');
+      setNotes(prefillPlan.notes || '');
+    }
+  }, [isOpen, prefillPlan, editActivity]);
 
   const showTrainingType = mode === 'realized' && TRACKABLE_TYPES.includes(activityType);
   const showProgressNote = mode === 'realized' && trainingType === 'progress';
@@ -174,7 +185,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         {/* Header */}
         <div className="flex items-center justify-between px-3.5 pt-3 pb-2 flex-shrink-0">
           <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>
-            {editActivity ? 'Editar actividad' : (mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad')}
+            {editActivity ? 'Editar actividad' : prefillPlan ? 'Marcar como realizada' : (mode === 'planned' ? 'Planificar actividad' : 'Nueva actividad')}
           </h2>
           <button
             onClick={onClose}
@@ -187,7 +198,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
 
         <div className="overflow-y-auto flex-1 px-3.5 pb-3.5 space-y-3">
           {/* Toggle Realizada / Planificada — oculto al editar */}
-          {!editActivity && (
+          {!editActivity && !prefillPlan && (
           <div className="grid grid-cols-2 gap-1.5">
             <button
               onClick={() => setMode('realized')}
@@ -426,7 +437,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             ) : (
               <>
                 {activityType && ACTIVITY_TYPES[activityType]?.emoji}
-                {editActivity ? 'Guardar cambios' : (mode === 'planned' ? 'Planificar' : 'Guardar')}
+                {editActivity ? 'Guardar cambios' : prefillPlan ? 'Marcar como hecha' : (mode === 'planned' ? 'Planificar' : 'Guardar')}
               </>
             )}
           </button>
