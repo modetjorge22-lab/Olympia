@@ -32,10 +32,9 @@ function makeMemberDot(member, lastDay) {
  if (cx == null || cy == null) return null;
  if (payload.day !== lastDay) return null;
  const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
- const radius = 8;
+ const radius = 11;
  return (
  <g>
- <circle cx={cx} cy={cy} r={radius + 1.5} fill="rgba(245,237,224,0.95)" stroke={member.color} strokeWidth="1.5" />
  {member.avatar_url ? (
  <>
  <defs>
@@ -48,9 +47,9 @@ function makeMemberDot(member, lastDay) {
  </>
  ) : (
  <>
- <circle cx={cx} cy={cy} r={radius} fill={member.color} fillOpacity="0.25" />
- <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="7" fontWeight="700"
- fill={member.color} style={{ fontFamily: 'DM Sans, sans-serif' }}>
+ <circle cx={cx} cy={cy} r={radius} fill={member.color} />
+ <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="700"
+ fill="#2a121a" style={{ fontFamily: 'DM Sans, sans-serif' }}>
  {initials}
  </text>
  </>

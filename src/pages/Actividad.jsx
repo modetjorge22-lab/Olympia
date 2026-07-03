@@ -42,11 +42,6 @@ const ACTIVITY_COLORS = {
  other: '#71717a',
 };
 
-const TIMEFRAMES = [
- { key: 'weeks', label: 'Sem' },
- { key: 'days', label: 'Días' },
-];
-
 function ChartTooltip({ active, payload, label, labelPrefix }) {
  if (!active || !payload?.length) return null;
  const items = payload.filter(p => p.value != null && p.value > 0);
@@ -115,22 +110,17 @@ function ActivityDropdown({ value, onChange, types }) {
  ? { label: 'Acumulado' }
  : { ...ACTIVITY_TYPES[value] };
 
- const isGeneral = value === 'accumulated';
- const selColor = isGeneral ? ACCENT : ACTIVITY_COLORS[value];
+ const selColor = ACCENT;
 
  return (
  <div ref={ref} style={{ position: 'relative' }}>
  <button
  onClick={() => setOpen(o => !o)}
  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
- style={isGeneral ? {
+ style={{
  background: 'rgba(245,237,224,0.08)',
  border: '1px solid rgba(245,237,224,0.18)',
  color: TEXT_PRIMARY,
- } : {
- background: `${ACTIVITY_COLORS[value]}20`,
- border: `1px solid ${ACTIVITY_COLORS[value]}50`,
- color: ACTIVITY_COLORS[value],
  }}
  >
  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selColor }} />
@@ -162,8 +152,8 @@ function ActivityDropdown({ value, onChange, types }) {
  <div style={{ height: 1, background: 'rgba(245,237,224,0.12)', margin: '4px 6px' }} />
  <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>Por actividad</p>
  {types.map(t => (
- <MenuItem key={t.key} active={value === t.key} dot={ACTIVITY_COLORS[t.key]}
- label={`${t.emoji} ${t.label}`} color={ACTIVITY_COLORS[t.key]}
+ <MenuItem key={t.key} active={value === t.key} dot={ACCENT}
+ label={`${t.emoji} ${t.label}`}
  onClick={() => { onChange(t.key); setOpen(false); }} />
  ))}
  </>
@@ -234,7 +224,7 @@ export default function Actividad() {
  const [convertPlan, setConvertPlan] = useState(null);
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
- const [loadTF, setLoadTF] = useState('weeks');
+ const loadTF = 'weeks'; // vista fija semanal (se eliminó el toggle de días)
  const [actFilter, setActFilter] = useState('accumulated');
 
  // ── Metas / Marcas personales ──
@@ -685,9 +675,7 @@ export default function Actividad() {
 
  return (
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
- <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Mi Actividad</h1>
-
- {/* Carga de ejercicio */}
+ {/* Mi Actividad — gráfica de carga */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-2.5">
@@ -696,28 +684,13 @@ export default function Actividad() {
  <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Carga de ejercicio</h2>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Mi Actividad</h2>
  <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
- {loadTF === 'weeks' ? 'Últimas 16 semanas' : 'Últimos 60 días'} · {chartSubtitle}
+ Últimas 16 semanas · {chartSubtitle}
  </p>
  </div>
  </div>
 
- <div className="flex items-center gap-1 rounded-lg p-1 flex-shrink-0"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
- {TIMEFRAMES.map(tf => (
- <button key={tf.key} onClick={() => setLoadTF(tf.key)}
- className="px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all"
- style={loadTF === tf.key ? {
- background: ACCENT,
- color: ON_ACCENT,
- } : {
- color: TEXT_MUTED,
- }}>
- {tf.label}
- </button>
- ))}
- </div>
  </div>
 
  <div className="mb-3 flex items-center gap-2">
@@ -777,8 +750,8 @@ export default function Actividad() {
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)} stopOpacity="0.25" />
- <stop offset="100%" stopColor={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)} stopOpacity="0.02" />
+ <stop offset="0%" stopColor={ACCENT} stopOpacity="0.5" />
+ <stop offset="100%" stopColor={ACCENT} stopOpacity="0.08" />
  </linearGradient>
  </defs>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,237,224,0.08)" vertical={false} />
@@ -824,17 +797,17 @@ export default function Actividad() {
  <Area
  type="monotone"
  dataKey="hours"
- stroke={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)}
+ stroke={ACCENT}
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
  dot={{
  r: 3,
- fill: actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT),
+ fill: ACCENT,
  strokeWidth: 0,
  }}
  activeDot={{
  r: 5,
- fill: actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT),
+ fill: ACCENT,
  strokeWidth: 0,
  }}
  isAnimationActive={false}

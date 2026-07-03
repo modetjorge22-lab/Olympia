@@ -10,7 +10,7 @@ const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov
 
 const navItems = [
   { path: '/feed', label: 'Feed', icon: Newspaper },
-  { path: '/actividad', label: 'Actividad', icon: User },
+  { path: '/actividad', label: 'Tú', icon: User },
   { path: '/grupos', label: 'Grupos', icon: Users },
   { path: '/mas', label: 'Más', icon: MoreHorizontal },
 ];
