@@ -5,18 +5,7 @@ import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Newspaper, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-
-const glassCard = {
-  background: 'rgba(249,244,236,0.92)',
-  border: '1px solid rgba(255,255,255,0.35)',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-};
-
-const TEXT_PRIMARY = '#2a1a11';
-const TEXT_SECONDARY = '#6e5647';
-const TEXT_MUTED = '#8c7364';
+import { COLORS } from '@/lib/theme';
 
 const MONTHS_ES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -84,26 +73,26 @@ export default function Feed() {
   return (
     <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
       <div className="flex items-center gap-2.5">
-        <Newspaper className="w-4 h-4" style={{ color: 'rgba(245,237,224,0.92)' }} />
-        <h1 className="text-[17px] font-bold" style={{ color: 'rgba(245,237,224,0.92)' }}>Feed</h1>
+        <Newspaper className="w-4 h-4" style={{ color: COLORS.textPrimary }} />
+        <h1 className="text-[17px] font-bold" style={{ color: COLORS.textPrimary }}>Feed</h1>
       </div>
-      <p className="text-[12px] -mt-2" style={{ color: 'rgba(245,237,224,0.55)' }}>
+      <p className="text-[12px] -mt-2" style={{ color: COLORS.textMuted }}>
         Últimas sesiones del equipo
       </p>
 
       {feedItems.length === 0 ? (
-        <div className="rounded-2xl p-8 text-center" style={glassCard}>
-          <p className="text-[13px]" style={{ color: TEXT_MUTED }}>Aún no hay actividades registradas</p>
+        <div className="py-10 text-center" style={{ borderTop: `1px solid ${COLORS.divider}` }}>
+          <p className="text-[13px]" style={{ color: COLORS.textMuted }}>Aún no hay actividades registradas</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {grouped.map(([dateStr, acts]) => (
             <div key={dateStr}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 px-1"
-                 style={{ color: 'rgba(245,237,224,0.55)' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 px-1"
+                 style={{ color: COLORS.textMuted }}>
                 {formatDate(dateStr)}
               </p>
-              <div className="rounded-2xl overflow-hidden" style={glassCard}>
+              <div>
                 {acts.map((item, idx) => {
                   const memberName = members.find(m => m.email === item.user_email)?.full_name
                                    || item.user_email?.split('@')[0]
@@ -112,36 +101,35 @@ export default function Feed() {
                   const initials = memberName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                   const isMe = item.user_email === user?.email;
                   const nameLabel = isMe ? 'Tú' : memberName;
+                  const rowBorder = idx < acts.length - 1 ? { borderBottom: `1px solid ${COLORS.dividerSoft}` } : {};
 
-                  // ── Tarjeta de marca personal batida ──
+                  // ── Marca personal batida ──
                   if (item._kind === 'pr') {
                     return (
-                      <div key={`pr-${item.id}`}
-                           className={`px-4 py-3 ${idx < acts.length - 1 ? 'border-b' : ''}`}
-                           style={{ borderColor: 'rgba(42,26,17,0.08)', background: 'rgba(122,26,42,0.05)' }}>
+                      <div key={`pr-${item.id}`} className="px-1 py-3" style={rowBorder}>
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: '#7a1a2a' }}>
-                            <Trophy className="w-3.5 h-3.5" style={{ color: 'rgba(245,237,224,0.9)' }} />
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ background: COLORS.accent }}>
+                            <Trophy className="w-3.5 h-3.5" style={{ color: COLORS.onAccent }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px]" style={{ color: TEXT_PRIMARY }}>
-                              <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>
+                            <p className="text-[13px]" style={{ color: COLORS.textSecondary }}>
+                              <span className="font-semibold" style={{ color: COLORS.textPrimary }}>
                                 {nameLabel}
                               </span>
                               {' '}batió su marca en{' '}
-                              <span className="font-semibold" style={{ color: '#7a1a2a' }}>{item.goal_title}</span>
+                              <span className="font-semibold" style={{ color: COLORS.accent }}>{item.goal_title}</span>
                             </p>
                             <div className="flex items-baseline gap-1.5 mt-1">
                               {item.old_value != null && (
                                 <>
-                                  <span className="text-[12px] line-through" style={{ color: TEXT_MUTED }}>
+                                  <span className="text-[12px] line-through" style={{ color: COLORS.textMuted }}>
                                     {item.old_value} {item.unit}
                                   </span>
-                                  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>→</span>
+                                  <span className="text-[10px]" style={{ color: COLORS.textMuted }}>→</span>
                                 </>
                               )}
-                              <span className="text-[16px] font-bold font-mono" style={{ color: '#7a1a2a' }}>
+                              <span className="text-[16px] font-bold font-mono" style={{ color: COLORS.accent }}>
                                 {item.new_value} {item.unit}
                               </span>
                             </div>
@@ -151,45 +139,43 @@ export default function Feed() {
                     );
                   }
 
-                  // ── Tarjeta de actividad normal ──
+                  // ── Actividad normal ──
                   const info = ACTIVITY_TYPES[item.type] || { emoji: '🏅', label: item.type };
                   return (
-                    <div key={item.id}
-                         className={`px-4 py-3 ${idx < acts.length - 1 ? 'border-b' : ''}`}
-                         style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
+                    <div key={item.id} className="px-1 py-3" style={rowBorder}>
                       <div className="flex items-start gap-3">
                         {memberAvatar ? (
                           <img src={memberAvatar} alt={memberName}
-                            className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
-                            style={{ border: '1.5px solid rgba(42,26,17,0.18)' }} />
+                            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                            style={{ border: `1.5px solid ${COLORS.innerCellBorder}` }} />
                         ) : (
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
-                            style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: TEXT_PRIMARY }}>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[11px] flex-shrink-0"
+                            style={{ background: COLORS.innerCellBg, border: `1.5px solid ${COLORS.innerCellBorder}`, color: COLORS.textPrimary }}>
                             {initials}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between gap-2">
-                            <p className="text-[13px] truncate" style={{ color: TEXT_PRIMARY }}>
-                              <span className="font-semibold" style={{ color: isMe ? '#4338ca' : TEXT_PRIMARY }}>
+                            <p className="text-[13px] truncate" style={{ color: COLORS.textPrimary }}>
+                              <span className="font-semibold" style={{ color: isMe ? COLORS.accent : COLORS.textPrimary }}>
                                 {nameLabel}
                               </span>
                             </p>
                             {item.duration_minutes ? (
-                              <span className="text-[11px] font-mono whitespace-nowrap flex-shrink-0" style={{ color: TEXT_SECONDARY }}>
+                              <span className="text-[11px] font-mono whitespace-nowrap flex-shrink-0" style={{ color: COLORS.textMuted }}>
                                 {formatDuration(item.duration_minutes)}
                               </span>
                             ) : null}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[13px]">{info.emoji}</span>
-                            <span className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>{info.label}</span>
+                            <span className="text-[12px] font-medium" style={{ color: COLORS.textSecondary }}>{info.label}</span>
                           </div>
                           {item.description && (
-                            <p className="text-[12px] mt-1.5 leading-snug" style={{ color: TEXT_SECONDARY }}>{item.description}</p>
+                            <p className="text-[12px] mt-1.5 leading-snug" style={{ color: COLORS.textSecondary }}>{item.description}</p>
                           )}
                           {item.progress_note && (
-                            <p className="text-[11px] mt-1 italic leading-snug" style={{ color: '#5d4a85' }}>"{item.progress_note}"</p>
+                            <p className="text-[11px] mt-1 italic leading-snug" style={{ color: COLORS.textMuted }}>"{item.progress_note}"</p>
                           )}
                         </div>
                       </div>

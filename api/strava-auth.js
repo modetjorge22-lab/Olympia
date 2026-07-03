@@ -7,7 +7,7 @@ export default function handler(req, res) {
   const userEmail = req.query.email || '';
   const state = Buffer.from(JSON.stringify({ email: userEmail })).toString('base64');
 
-  const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&approval_prompt=force`;
+  const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&approval_prompt=force`;
 
   res.redirect(authUrl);
 }

@@ -16,10 +16,10 @@ const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','ago
 
 // Gradiente vino según ranking — líder en vino oscuro, descendiendo a vino claro
 function rankingWine(rank, total) {
- if (total <= 1) return '#7a1a2a';
+ if (total <= 1) return '#f0e4d0';
  const t = rank / (total - 1);
- const from = { r: 82, g: 16, b: 30 };    // vino oscuro (líder)
- const to = { r: 205, g: 150, b: 160 };   // vino claro / rosado
+ const from = { r: 245, g: 237, b: 224 }; // beige brillante (líder)
+ const to = { r: 148, g: 122, b: 108 };   // beige apagado (colista)
  const r = Math.round(from.r + (to.r - from.r) * t);
  const g = Math.round(from.g + (to.g - from.g) * t);
  const b = Math.round(from.b + (to.b - from.b) * t);
@@ -61,22 +61,24 @@ function makeMemberDot(member, lastDay) {
 }
 
 const glassCard = {
- background: 'rgba(249,244,236,0.92)',
- border: '1px solid rgba(255,255,255,0.35)',
- boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
+ background: 'transparent',
+ borderTop: '1px solid rgba(245,237,224,0.12)',
+ borderRadius: 0,
+ paddingLeft: 0,
+ paddingRight: 0,
 };
 
-const TEXT_PRIMARY = '#2a1a11';
-const TEXT_SECONDARY = '#6e5647';
-const TEXT_MUTED = '#8c7364';
+const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
+const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
+const TEXT_MUTED = 'rgba(245,237,224,0.45)';
+const ACCENT = '#f0e4d0';
+const ON_ACCENT = '#2a121a';
 
 function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h' }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
- background: '#2a121a',
+ background: '#3a1c28',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 10, padding: '8px 12px', fontSize: 11,
  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
@@ -283,7 +285,7 @@ export default function Grupos() {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
  <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
@@ -291,14 +293,14 @@ export default function Grupos() {
  <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}</p>
  </div>
  </div>
- <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(42,26,17,0.06)' }}>
+ <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(245,237,224,0.07)' }}>
  {[['hours', 'Horas'], ['count', 'Nº']].map(([key, lbl]) => (
  <button
  key={key}
  onClick={() => setRaceMetric(key)}
  className="px-2 py-1 rounded-md text-[10px] font-semibold transition-all"
  style={raceMetric === key
- ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' }
+ ? { background: ACCENT, color: ON_ACCENT }
  : { background: 'transparent', color: TEXT_MUTED }}
  >
  {lbl}
@@ -309,20 +311,20 @@ export default function Grupos() {
  <div className="h-[340px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
- <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
- <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
+ <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,237,224,0.08)" />
+ <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(245,237,224,0.18)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
  <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} />} />
  {teamAverage !== null && teamAverage > 0 && (
  <ReferenceLine
  y={teamAverage}
- stroke="rgba(42,26,17,0.35)"
+ stroke="rgba(245,237,224,0.35)"
  strokeDasharray="4 4"
  strokeWidth={1}
  label={{
  value: raceMetric === 'count' ? `Media ${teamAverage} act` : `Media ${teamAverage}h`,
  position: 'insideTopLeft',
- fill: 'rgba(42,26,17,0.5)',
+ fill: 'rgba(245,237,224,0.5)',
  fontSize: 9,
  offset: 6,
  }}
@@ -353,7 +355,7 @@ export default function Grupos() {
  const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
  const hiddenCount = teamActivityBreakdown.length - 5;
  return (
- <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(42,26,17,0.1)' }}>
+ <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(245,237,224,0.12)' }}>
  <div className="flex items-center gap-2 mb-3">
  <Activity className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
  <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>Horas por actividad · equipo</p>
@@ -375,8 +377,8 @@ export default function Grupos() {
  <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
  <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#4d0f1a' }} />
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
  </div>
  </div>
  </button>
@@ -388,10 +390,10 @@ export default function Grupos() {
  <div key={c.email} className="flex items-center gap-2">
  {c.avatar_url ? (
  <img src={c.avatar_url} alt={c.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0"
- style={{ border: '1px solid rgba(42,26,17,0.18)' }} />
+ style={{ border: '1px solid rgba(245,237,224,0.22)' }} />
  ) : (
  <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[8px] flex-shrink-0"
- style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.18)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
  {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -400,8 +402,8 @@ export default function Grupos() {
  <span className="text-[11px] truncate" style={{ color: TEXT_SECONDARY }}>{c.name}</span>
  <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
  </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(77,15,26,0.55)' }} />
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(240,228,208,0.55)' }} />
  </div>
  </div>
  </div>
@@ -417,7 +419,7 @@ export default function Grupos() {
  <button
  onClick={() => setShowAllActs(v => !v)}
  className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
+ style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}
  >
  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
  {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
@@ -435,7 +437,7 @@ export default function Grupos() {
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
  <div className="px-4 pt-4 pb-2 flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
  <Zap className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Ranking · {MONTHS_ES[month]}</h2>
@@ -444,7 +446,7 @@ export default function Grupos() {
  const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
  const rankColor = rankingWine(idx, memberStats.length);
  return (
- <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(42,26,17,0.08)' }}>
+ <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(245,237,224,0.08)' }}>
  <div className="flex items-center gap-3">
  <span className="text-[12px] font-bold w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
  {member.avatar_url ? (
@@ -452,11 +454,11 @@ export default function Grupos() {
  src={member.avatar_url}
  alt={member.name}
  className="w-8 h-8 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
+ style={{ border: '1.5px solid rgba(245,237,224,0.22)' }}
  />
  ) : (
  <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
- style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1.5px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -465,7 +467,7 @@ export default function Grupos() {
  <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
  <span className="text-[12px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
  </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
  <div
  initial={{ width: 0 }}
  animate={{ width: `${pct}%` }}
@@ -475,7 +477,7 @@ export default function Grupos() {
  />
  </div>
  </div>
- {idx === 0 && member.totalHours > 0 && <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#7a1a2a' }} />}
+ {idx === 0 && member.totalHours > 0 && <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />}
  </div>
  </div>
  );
@@ -522,10 +524,10 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {member.avatar_url ? (
  <img src={member.avatar_url} alt={member.name}
  className="w-9 h-9 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(42,26,17,0.18)' }} />
+ style={{ border: '1.5px solid rgba(245,237,224,0.22)' }} />
  ) : (
  <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
- style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1.5px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -541,13 +543,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2" style={{ scrollbarWidth: 'none' }}>
  <button onClick={() => setFilterType(null)}
  className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-semibold transition-all"
- style={filterType === null ? { background: '#3a1622', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}>
  Todo
  </button>
  {availableTypes.map(t => (
  <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
  className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[11px] transition-all"
- style={filterType === t ? { background: '#3a1622' } : { background: 'rgba(42,26,17,0.06)' }}>
+ style={filterType === t ? { background: ACCENT } : { background: 'rgba(245,237,224,0.07)' }}>
  <span>{ACTIVITY_TYPES[t]?.emoji}</span>
  </button>
  ))}
@@ -581,13 +583,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : show ? { background: isExpanded ? '#4a202e' : '#3a1622', boxShadow: '0 1px 4px rgba(42,18,26,0.4)' }
+ : show ? { background: isExpanded ? '#f7efe1' : '#f0e4d0', boxShadow: '0 1px 4px rgba(0,0,0,0.35)' }
  : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
- : { background: 'rgba(42,26,17,0.07)' }),
+ : isToday ? { background: 'transparent', border: '1.5px solid rgba(240,228,208,0.9)' }
+ : { background: 'rgba(245,237,224,0.08)' }),
  }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : show ? 'rgba(245,237,224,0.95)' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : show ? '#2a121a' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(245,237,224,0.4)' }}>
  {day}
  </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
@@ -598,7 +600,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
 
  {/* Desglose de actividades del mes */}
  {activityBreakdown.length > 0 && (
- <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}>
+ <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}>
  <p className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: TEXT_MUTED }}>
  Desglose del mes
  </p>
@@ -613,8 +615,8 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <span className="text-[10px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
  <span className="text-[10px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(42,26,17,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#4d0f1a' }} />
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
  </div>
  </div>
  </div>
@@ -632,7 +634,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </p>
  {member.actByDay[expandedDay].map((act, idx) => (
  <div key={idx} className="flex items-center gap-2 rounded-lg px-2.5 py-2"
- style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.08)' }}>
+ style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.08)' }}>
  <span className="text-[13px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
  <div className="flex-1 min-w-0">
  <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
@@ -645,8 +647,8 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {act.match_result?.result && (
  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
  style={{
- background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(42,26,17,0.08)',
- color: act.match_result.result === 'win' ? '#047857' : act.match_result.result === 'loss' ? '#b91c1c' : TEXT_MUTED,
+ background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(245,237,224,0.08)',
+ color: act.match_result.result === 'win' ? '#34d399' : act.match_result.result === 'loss' ? '#f87171' : TEXT_MUTED,
  }}>
  {act.match_result.result === 'win' ? 'Victoria' : act.match_result.result === 'loss' ? 'Derrota' : 'Empate'}
  </span>
@@ -660,7 +662,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <button
  onClick={() => setGoalsOpen(v => !v)}
  className="w-full flex items-center justify-between mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(42,26,17,0.08)' }}
+ style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}
  >
  <div className="flex items-center gap-1.5">
  <Trophy className="w-3 h-3" style={{ color: TEXT_MUTED }} />
@@ -681,7 +683,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  ) : (
  memberGoals.map(goal => (
  <div key={goal.id} className="flex items-center justify-between rounded-lg px-3 py-2"
- style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.08)' }}>
+ style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.08)' }}>
  <div className="min-w-0">
  <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
  {goal.activity_type && (
@@ -692,7 +694,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </div>
  {goal.current_value != null && (
  <div className="text-right flex-shrink-0 ml-2">
- <span className="text-[16px] font-bold font-mono" style={{ color: '#7a1a2a' }}>
+ <span className="text-[16px] font-bold font-mono" style={{ color: ACCENT }}>
  {goal.current_value}
  </span>
  <span className="text-[10px] ml-0.5" style={{ color: TEXT_MUTED }}>{goal.unit}</span>

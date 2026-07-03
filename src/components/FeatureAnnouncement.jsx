@@ -4,9 +4,11 @@ import { Trophy, X } from 'lucide-react';
 
 const SEEN_KEY = 'olympia_metas_announcement_v1';
 
-const TEXT_PRIMARY = '#2a1a11';
-const TEXT_SECONDARY = '#6e5647';
-const TEXT_MUTED = '#8c7364';
+const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
+const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
+const TEXT_MUTED = 'rgba(245,237,224,0.45)';
+const ACCENT = '#f0e4d0';
+const ON_ACCENT = '#2a121a';
 
 export default function FeatureAnnouncement() {
   const [visible, setVisible] = useState(false);
@@ -43,9 +45,9 @@ export default function FeatureAnnouncement() {
       <div
         className="w-full max-w-sm rounded-3xl overflow-hidden"
         style={{
-          background: '#f9f4ec',
+          background: '#3a1c28',
           boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
-          border: '1px solid rgba(255,255,255,0.35)',
+          border: '1px solid rgba(245,237,224,0.16)',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -82,7 +84,7 @@ export default function FeatureAnnouncement() {
           <div className="space-y-3">
             <Step number="1" text="Ve al nuevo marco Metas en la pestaña Actividad y crea tus objetivos con la marca actual." />
             <Step number="2" text="Cada vez que registres una actividad, indica si has superado alguna de tus marcas e introduce el nuevo valor." />
-            <Step number="3" text="El día en el calendario se pondrá en vino oscuro con un 🏆 y aparecerá un anuncio en el Feed del equipo." />
+            <Step number="3" text="El día en el calendario se iluminará en beige con un 🏆 y aparecerá un anuncio en el Feed del equipo." />
           </div>
 
           <p className="text-[12px] leading-relaxed pt-1" style={{ color: TEXT_MUTED }}>
@@ -96,9 +98,9 @@ export default function FeatureAnnouncement() {
             onClick={dismiss}
             className="w-full py-3.5 rounded-2xl text-[14px] font-bold"
             style={{
-              background: 'linear-gradient(135deg, #3d0010 0%, #6b1525 100%)',
-              color: 'rgba(245,237,224,0.96)',
-              boxShadow: '0 4px 16px rgba(61,0,16,0.4)',
+              background: ACCENT,
+              color: ON_ACCENT,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
             }}
           >
             ¡Empezar a marcar metas!
@@ -114,8 +116,8 @@ function Step({ number, text }) {
   return (
     <div className="flex items-start gap-3">
       <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ background: '#3d0010' }}>
-        <span className="text-[9px] font-bold" style={{ color: 'rgba(245,237,224,0.95)' }}>{number}</span>
+        style={{ background: ACCENT }}>
+        <span className="text-[9px] font-bold" style={{ color: ON_ACCENT }}>{number}</span>
       </div>
       <p className="text-[12px] leading-relaxed" style={{ color: TEXT_SECONDARY }}>{text}</p>
     </div>

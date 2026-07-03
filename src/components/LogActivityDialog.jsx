@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom';
 import { X, Clock, TrendingUp, Calendar as CalendarIcon, Trophy } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 
-const TEXT_PRIMARY = '#2a1a11';
-const TEXT_SECONDARY = '#6e5647';
-const TEXT_MUTED = '#8c7364';
+const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
+const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
+const TEXT_MUTED = 'rgba(245,237,224,0.45)';
+const ACCENT = '#f0e4d0';
+const ON_ACCENT = '#2a121a';
 
 const TRACKABLE_TYPES = ['strength_training', 'running', 'swimming'];
 
@@ -164,7 +166,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{
-        background: 'rgba(40,24,17,0.65)',
+        background: 'rgba(15,5,9,0.7)',
         paddingTop: 'max(16px, env(safe-area-inset-top))',
         paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
         paddingLeft: 12,
@@ -176,8 +178,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         className="rounded-2xl w-full max-w-sm flex flex-col"
         style={{
           maxHeight: '100%',
-          background: '#f9f4ec',
-          border: '1px solid rgba(255,255,255,0.4)',
+          background: '#3a1c28',
+          border: '1px solid rgba(245,237,224,0.16)',
           boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -190,7 +192,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(42,26,17,0.08)' }}
+            style={{ background: 'rgba(245,237,224,0.08)' }}
           >
             <X className="w-3.5 h-3.5" style={{ color: TEXT_SECONDARY }} />
           </button>
@@ -204,11 +206,11 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               onClick={() => setMode('realized')}
               className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
               style={mode === 'realized' ? {
-                background: '#8fa898', color: '#1c2620',
-                boxShadow: '0 1px 4px rgba(143,168,152,0.4)',
+                background: ACCENT, color: ON_ACCENT,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
               } : {
                 background: 'transparent', color: TEXT_MUTED,
-                border: '1px solid rgba(42,26,17,0.12)',
+                border: '1px solid rgba(245,237,224,0.14)',
               }}
             >Realizada</button>
             <button
@@ -216,10 +218,10 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               className="px-3 py-2 rounded-lg text-[12px] font-semibold transition-all"
               style={mode === 'planned' ? {
                 background: 'transparent', color: TEXT_PRIMARY,
-                boxShadow: 'inset 0 0 0 1.5px #2a121a',
+                boxShadow: 'inset 0 0 0 1.5px rgba(240,228,208,0.6)',
               } : {
                 background: 'transparent', color: TEXT_MUTED,
-                border: '1px solid rgba(42,26,17,0.12)',
+                border: '1px solid rgba(245,237,224,0.14)',
               }}
             >Planificada</button>
           </div>
@@ -235,7 +237,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 value={dateInput}
                 onChange={(e) => setDateInput(e.target.value)}
                 className="w-full rounded-lg pl-8 pr-3 py-2 text-[12px] focus:outline-none"
-                style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+                style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
               />
             </div>
             {dateInput && (
@@ -255,9 +257,9 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => handleActivityTypeChange(key)}
                   className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
                   style={activityType === key ? {
-                    background: '#8fa898', border: '1px solid rgba(143,168,152,0.6)', color: '#1c2620',
+                    background: ACCENT, border: '1px solid rgba(240,228,208,0.7)', color: ON_ACCENT,
                   } : {
-                    background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.08)', color: TEXT_PRIMARY,
+                    background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.08)', color: TEXT_PRIMARY,
                   }}
                 >
                   <span className="text-[13px]">{emoji}</span>
@@ -279,7 +281,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onChange={(e) => setDurationMinutes(e.target.value)}
                   placeholder="60" min="1"
                   className="w-full rounded-lg pl-8 pr-2 py-2 text-[12px] focus:outline-none"
-                  style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+                  style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
                 />
               </div>
               <div className="flex gap-1 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
@@ -289,8 +291,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                     onClick={() => setDurationMinutes(String(mins))}
                     className="flex-shrink-0 px-2 py-1.5 rounded-lg text-[10px] font-medium"
                     style={durationMinutes === String(mins) ? {
-                      background: '#8fa898', color: '#1c2620',
-                    } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}
+                      background: ACCENT, color: ON_ACCENT,
+                    } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}
                   >{mins}m</button>
                 ))}
               </div>
@@ -302,10 +304,10 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             <div>
               <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>Resultado</label>
               <div className="grid grid-cols-3 gap-1.5">
-                {[['win','Victoria','#047857','rgba(16,185,129,0.18)'],['draw','Empate','#6e5647','rgba(42,26,17,0.08)'],['loss','Derrota','#b91c1c','rgba(239,68,68,0.18)']].map(([val, label, color, bg]) => (
+                {[['win','Victoria','#34d399','rgba(52,211,153,0.15)'],['draw','Empate','rgba(245,237,224,0.75)','rgba(245,237,224,0.1)'],['loss','Derrota','#f87171','rgba(248,113,113,0.15)']].map(([val, label, color, bg]) => (
                   <button key={val} onClick={() => setMatchResult(v => v === val ? null : val)}
                     className="py-2 rounded-lg text-[11px] font-semibold transition-all"
-                    style={matchResult === val ? { background: bg, border: `1px solid ${color}`, color } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_MUTED }}>
+                    style={matchResult === val ? { background: bg, border: `1px solid ${color}`, color } : { background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_MUTED }}>
                     {label}
                   </button>
                 ))}
@@ -322,8 +324,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => setTrainingType('progress')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'progress' ? {
-                    background: '#6b1f2c', border: '1px solid #6b1f2c', color: 'rgba(245,237,224,0.95)',
-                  } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_SECONDARY }}
+                    background: ACCENT, border: '1px solid ' + ACCENT, color: ON_ACCENT,
+                  } : { background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_SECONDARY }}
                 >
                   <TrendingUp className="w-3 h-3" /> Progreso
                 </button>
@@ -331,8 +333,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   onClick={() => setTrainingType('consolidation')}
                   className="px-3 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5"
                   style={trainingType === 'consolidation' ? {
-                    background: '#2a121a', border: '1px solid #2a121a', color: 'rgba(245,237,224,0.95)',
-                  } : { background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_SECONDARY }}
+                    background: 'rgba(245,237,224,0.14)', border: '1px solid rgba(245,237,224,0.3)', color: TEXT_PRIMARY,
+                  } : { background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_SECONDARY }}
                 >
                   <span className="text-[11px]">🛡️</span> Consolidación
                 </button>
@@ -351,7 +353,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 onChange={(e) => setProgressNote(e.target.value)}
                 rows={1}
                 className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-                style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(156,139,191,0.45)', color: TEXT_PRIMARY }}
+                style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(196,181,253,0.4)', color: TEXT_PRIMARY }}
               />
             </div>
           )}
@@ -360,8 +362,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           {showPrSection && !editActivity && (
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Trophy className="w-3 h-3" style={{ color: '#7a1a2a' }} />
-                <label className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#7a1a2a' }}>
+                <Trophy className="w-3 h-3" style={{ color: ACCENT }} />
+                <label className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: ACCENT }}>
                   ¿Superaste alguna marca?
                 </label>
               </div>
@@ -370,11 +372,11 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                   const isSelected = goal.id in prBeaten;
                   return (
                     <div key={goal.id} className="rounded-lg overflow-hidden"
-                      style={{ border: isSelected ? '1px solid rgba(122,26,42,0.4)' : '1px solid rgba(42,26,17,0.1)' }}>
+                      style={{ border: isSelected ? '1px solid rgba(240,228,208,0.45)' : '1px solid rgba(245,237,224,0.12)' }}>
                       <button
                         onClick={() => togglePr(goal.id)}
                         className="w-full flex items-center justify-between px-3 py-2 text-left"
-                        style={{ background: isSelected ? 'rgba(122,26,42,0.08)' : 'rgba(42,26,17,0.04)' }}
+                        style={{ background: isSelected ? 'rgba(240,228,208,0.1)' : 'rgba(245,237,224,0.05)' }}
                       >
                         <div>
                           <p className="text-[12px] font-medium" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
@@ -386,13 +388,13 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                         </div>
                         <div
                           className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={isSelected ? { background: '#7a1a2a' } : { border: '1.5px solid rgba(42,26,17,0.2)' }}
+                          style={isSelected ? { background: ACCENT } : { border: '1.5px solid rgba(245,237,224,0.3)' }}
                         >
-                          {isSelected && <span className="text-[10px] text-white font-bold">✓</span>}
+                          {isSelected && <span className="text-[10px] font-bold" style={{ color: ON_ACCENT }}>✓</span>}
                         </div>
                       </button>
                       {isSelected && (
-                        <div className="px-3 pb-2 pt-1" style={{ background: 'rgba(122,26,42,0.05)' }}>
+                        <div className="px-3 pb-2 pt-1" style={{ background: 'rgba(240,228,208,0.06)' }}>
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
@@ -400,7 +402,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                               onChange={(e) => setPrBeaten(prev => ({ ...prev, [goal.id]: e.target.value }))}
                               placeholder="Nueva marca"
                               className="flex-1 rounded-md px-2 py-1.5 text-[12px] focus:outline-none"
-                              style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(122,26,42,0.3)', color: TEXT_PRIMARY }}
+                              style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(240,228,208,0.35)', color: TEXT_PRIMARY }}
                             />
                             <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
                           </div>
@@ -421,7 +423,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-              style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+              style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
             />
           </div>
 
@@ -430,10 +432,10 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             onClick={handleSubmit}
             disabled={!activityType || !durationMinutes || !dateInput || loading}
             className="w-full font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-[13px] disabled:opacity-40 disabled:cursor-not-allowed mt-1"
-            style={{ background: TEXT_PRIMARY, color: 'rgba(245,237,224,0.95)' }}
+            style={{ background: ACCENT, color: ON_ACCENT }}
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
             ) : (
               <>
                 {activityType && ACTIVITY_TYPES[activityType]?.emoji}

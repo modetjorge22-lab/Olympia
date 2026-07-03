@@ -12,18 +12,21 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
+// Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
- background: 'rgba(249,244,236,0.92)',
- border: '1px solid rgba(255,255,255,0.35)',
- boxShadow: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
+ background: 'transparent',
+ borderTop: '1px solid rgba(245,237,224,0.12)',
+ borderRadius: 0,
+ paddingLeft: 0,
+ paddingRight: 0,
 };
 
-const TEXT_PRIMARY = '#2a1a11';
-const TEXT_SECONDARY = '#6e5647';
-const TEXT_MUTED = '#8c7364';
-const TEXT_FAINT = 'rgba(42,26,17,0.35)';
+const ACCENT = '#f0e4d0';
+const ON_ACCENT = '#2a121a';
+const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
+const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
+const TEXT_MUTED = 'rgba(245,237,224,0.45)';
+const TEXT_FAINT = 'rgba(245,237,224,0.30)';
 
 const ACTIVITY_COLORS = {
  strength_training: '#6366f1',
@@ -60,7 +63,7 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
 
  return (
  <div style={{
- background: '#2a121a',
+ background: '#3a1c28',
  border: '1px solid rgba(245,237,224,0.15)',
  borderRadius: 8, padding: '6px 9px', fontSize: 10,
  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
@@ -85,7 +88,7 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
 }
 
 function singleBarColor(hours, maxHours, color) {
- if (hours === 0) return 'rgba(42,26,17,0.08)';
+ if (hours === 0) return 'rgba(245,237,224,0.08)';
  const r = Math.min(hours / Math.max(maxHours, 0.5), 1);
  const opacity = 0.35 + r * 0.6;
  const hex = color.replace('#','');
@@ -113,7 +116,7 @@ function ActivityDropdown({ value, onChange, types }) {
  : { ...ACTIVITY_TYPES[value] };
 
  const isGeneral = value === 'accumulated';
- const selColor = isGeneral ? 'rgba(42,18,26,0.7)' : ACTIVITY_COLORS[value];
+ const selColor = isGeneral ? ACCENT : ACTIVITY_COLORS[value];
 
  return (
  <div ref={ref} style={{ position: 'relative' }}>
@@ -121,8 +124,8 @@ function ActivityDropdown({ value, onChange, types }) {
  onClick={() => setOpen(o => !o)}
  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
  style={isGeneral ? {
- background: 'rgba(42,26,17,0.08)',
- border: '1px solid rgba(42,26,17,0.15)',
+ background: 'rgba(245,237,224,0.08)',
+ border: '1px solid rgba(245,237,224,0.18)',
  color: TEXT_PRIMARY,
  } : {
  background: `${ACTIVITY_COLORS[value]}20`,
@@ -143,20 +146,20 @@ function ActivityDropdown({ value, onChange, types }) {
  style={{
  position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
  minWidth: 180,
- background: 'rgba(245,237,224,0.96)',
+ background: '#3a1c28',
  backdropFilter: 'blur(24px)',
  WebkitBackdropFilter: 'blur(24px)',
- border: '1px solid rgba(255,255,255,0.45)',
+ border: '1px solid rgba(245,237,224,0.16)',
  borderRadius: 12, padding: 6,
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
  >
- <MenuItem active={value === 'accumulated'} dot="rgba(42,18,26,0.7)" label="Acumulado"
+ <MenuItem active={value === 'accumulated'} dot={ACCENT} label="Acumulado"
  onClick={() => { onChange('accumulated'); setOpen(false); }} />
 
  {types.length > 0 && (
  <>
- <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '4px 6px' }} />
+ <div style={{ height: 1, background: 'rgba(245,237,224,0.12)', margin: '4px 6px' }} />
  <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>Por actividad</p>
  {types.map(t => (
  <MenuItem key={t.key} active={value === t.key} dot={ACTIVITY_COLORS[t.key]}
@@ -178,7 +181,7 @@ function MenuItem({ active, dot, label, color, onClick }) {
  onClick={onClick}
  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all text-left"
  style={active ? {
- background: color ? `${color}22` : 'rgba(42,26,17,0.1)',
+ background: color ? `${color}22` : 'rgba(245,237,224,0.12)',
  color: color || TEXT_PRIMARY,
  } : {
  color: TEXT_SECONDARY,
@@ -567,13 +570,13 @@ export default function Actividad() {
  }
 
  if (weekSums.length === 0) {
- return { label: last7Hours > 0 ? 'Media' : 'Sin datos', color: '#8c7364', hours: last7Hours };
+ return { label: last7Hours > 0 ? 'Media' : 'Sin datos', color: 'rgba(245,237,224,0.55)', hours: last7Hours };
  }
  const avg = weekSums.reduce((s, h) => s + h, 0) / weekSums.length;
  // ±20% considerado "media"
- if (last7Hours > avg * 1.2) return { label: 'Alta', color: '#047857', hours: last7Hours, avg };
- if (last7Hours < avg * 0.8) return { label: 'Baja', color: '#b45309', hours: last7Hours, avg };
- return { label: 'Media', color: '#6e5647', hours: last7Hours, avg };
+ if (last7Hours > avg * 1.2) return { label: 'Alta', color: '#34d399', hours: last7Hours, avg };
+ if (last7Hours < avg * 0.8) return { label: 'Baja', color: '#fbbf24', hours: last7Hours, avg };
+ return { label: 'Media', color: 'rgba(245,237,224,0.75)', hours: last7Hours, avg };
  }, [last7Days, myAllActivities]);
 
  const chartSubtitle = actFilter === 'accumulated'
@@ -689,7 +692,7 @@ export default function Actividad() {
  <div className="flex items-start justify-between mb-3">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
  <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
@@ -701,13 +704,13 @@ export default function Actividad() {
  </div>
 
  <div className="flex items-center gap-1 rounded-lg p-1 flex-shrink-0"
- style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
  {TIMEFRAMES.map(tf => (
  <button key={tf.key} onClick={() => setLoadTF(tf.key)}
  className="px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all"
  style={loadTF === tf.key ? {
- background: '#2a1a11',
- color: 'rgba(245,237,224,0.95)',
+ background: ACCENT,
+ color: ON_ACCENT,
  } : {
  color: TEXT_MUTED,
  }}>
@@ -725,10 +728,10 @@ export default function Actividad() {
  style={showSleep ? {
  background: 'rgba(16,185,129,0.18)',
  border: '1px solid rgba(16,185,129,0.4)',
- color: '#047857',
+ color: '#34d399',
  } : {
- background: 'rgba(42,26,17,0.07)',
- border: '1px solid rgba(42,26,17,0.12)',
+ background: 'rgba(245,237,224,0.08)',
+ border: '1px solid rgba(245,237,224,0.14)',
  color: TEXT_MUTED,
  }}>
  <Moon className="w-3 h-3" />
@@ -750,13 +753,13 @@ export default function Actividad() {
  <div
  className="flex items-center gap-1 px-2 py-0.5 rounded-md"
  style={{
- background: lastWeekVsAvgPct >= 0 ? 'rgba(143,168,152,0.22)' : 'rgba(180,83,9,0.18)',
+ background: lastWeekVsAvgPct >= 0 ? 'rgba(52,211,153,0.14)' : 'rgba(251,191,36,0.14)',
  }}
  >
  {lastWeekVsAvgPct >= 0
- ? <TrendingUp className="w-3 h-3" style={{ color: '#1c5838' }} />
- : <TrendingDown className="w-3 h-3" style={{ color: '#b45309' }} />}
- <span className="text-[10px] font-semibold" style={{ color: lastWeekVsAvgPct >= 0 ? '#1c5838' : '#b45309' }}>
+ ? <TrendingUp className="w-3 h-3" style={{ color: '#34d399' }} />
+ : <TrendingDown className="w-3 h-3" style={{ color: '#fbbf24' }} />}
+ <span className="text-[10px] font-semibold" style={{ color: lastWeekVsAvgPct >= 0 ? '#34d399' : '#fbbf24' }}>
  {lastWeekVsAvgPct >= 0 ? '+' : ''}{lastWeekVsAvgPct}% vs media
  </span>
  </div>
@@ -774,13 +777,13 @@ export default function Actividad() {
  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.42" />
- <stop offset="100%" stopColor={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')} stopOpacity="0.02" />
+ <stop offset="0%" stopColor={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)} stopOpacity="0.25" />
+ <stop offset="100%" stopColor={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)} stopOpacity="0.02" />
  </linearGradient>
  </defs>
- <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" vertical={false} />
+ <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,237,224,0.08)" vertical={false} />
  {/* minTickGap evita que las etiquetas de mes se solapen en móvil */}
- <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={0} minTickGap={18} />
+ <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: TEXT_MUTED, fontWeight: 600 }} axisLine={{ stroke: 'rgba(245,237,224,0.18)' }} tickLine={false} interval={0} minTickGap={18} />
  <YAxis
  tick={{ fontSize: 9, fill: TEXT_MUTED }}
  axisLine={false}
@@ -791,7 +794,7 @@ export default function Actividad() {
  tickFormatter={(v) => `${v}h`}
  />
  <Tooltip
- cursor={{ stroke: 'rgba(42,26,17,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
+ cursor={{ stroke: 'rgba(245,237,224,0.25)', strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => {
  const payload = (props.payload || []).map(p => ({
  ...p,
@@ -821,17 +824,17 @@ export default function Actividad() {
  <Area
  type="monotone"
  dataKey="hours"
- stroke={actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a')}
+ stroke={actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT)}
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
  dot={{
  r: 3,
- fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
+ fill: actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT),
  strokeWidth: 0,
  }}
  activeDot={{
  r: 5,
- fill: actFilter === 'accumulated' ? '#2a121a' : (ACTIVITY_COLORS[actFilter] || '#2a121a'),
+ fill: actFilter === 'accumulated' ? ACCENT : (ACTIVITY_COLORS[actFilter] || ACCENT),
  strokeWidth: 0,
  }}
  isAnimationActive={false}
@@ -847,7 +850,7 @@ export default function Actividad() {
  {/* Cabecera del card */}
  <div className="flex items-center gap-2.5 mb-2">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
  <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Planificador</h2>
@@ -876,11 +879,11 @@ export default function Actividad() {
  style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : d.isToday ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
- : { background: 'rgba(42,26,17,0.07)' }}
+ : d.isToday ? { background: 'transparent', border: '1.5px solid rgba(240,228,208,0.9)' }
+ : { background: 'rgba(245,237,224,0.08)' }}
  >
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(245,237,224,0.4)' }}>
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
@@ -902,7 +905,7 @@ export default function Actividad() {
  </div>
 
  {/* Separador */}
- <div style={{ height: 1, background: 'rgba(42,26,17,0.1)', margin: '14px 0 12px' }} />
+ <div style={{ height: 1, background: 'rgba(245,237,224,0.12)', margin: '14px 0 12px' }} />
 
  {/* — Próximos 7 días — */}
  <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
@@ -921,10 +924,10 @@ export default function Actividad() {
  style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : { background: 'rgba(42,26,17,0.07)' }}
+ : { background: 'rgba(245,237,224,0.08)' }}
  >
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(245,237,224,0.4)' }}>
  {d.dayNum}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
@@ -955,7 +958,7 @@ export default function Actividad() {
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.1)', border: '1px solid rgba(42,26,17,0.14)' }}>
+ style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
  <Trophy className="w-3 h-3" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Metas</h2>
@@ -963,7 +966,7 @@ export default function Actividad() {
  <button
  onClick={() => setShowGoalForm(v => !v)}
  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
- style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.12)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.14)', color: TEXT_PRIMARY }}>
  <Plus className="w-3 h-3" /> Nueva
  </button>
  </div>
@@ -971,14 +974,14 @@ export default function Actividad() {
  {/* Formulario nueva meta */}
  {showGoalForm && (
  <div className="rounded-xl p-3 mb-3 space-y-2"
- style={{ background: 'rgba(122,26,42,0.06)', border: '1px solid rgba(122,26,42,0.15)' }}>
+ style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.14)' }}>
  <input
  type="text"
  placeholder="Nombre de la meta (ej: Press banca 1RM)"
  value={goalTitle}
  onChange={e => setGoalTitle(e.target.value)}
  className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
  />
  <div className="flex gap-2">
  <input
@@ -987,7 +990,7 @@ export default function Actividad() {
  value={goalValue}
  onChange={e => setGoalValue(e.target.value)}
  className="flex-1 rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
  />
  <input
  type="text"
@@ -995,14 +998,14 @@ export default function Actividad() {
  value={goalUnit}
  onChange={e => setGoalUnit(e.target.value)}
  className="w-[100px] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
  />
  </div>
  <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
  <button
  onClick={() => setGoalActivityType('')}
  className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium"
- style={goalActivityType === '' ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ style={goalActivityType === '' ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}>
  General
  </button>
  {Object.entries(ACTIVITY_TYPES).map(([key, { emoji, label }]) => (
@@ -1010,7 +1013,7 @@ export default function Actividad() {
  key={key}
  onClick={() => setGoalActivityType(key)}
  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium"
- style={goalActivityType === key ? { background: '#7a1a2a', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ style={goalActivityType === key ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}>
  <span>{emoji}</span>{label}
  </button>
  ))}
@@ -1020,13 +1023,13 @@ export default function Actividad() {
  onClick={handleCreateGoal}
  disabled={!goalTitle.trim()}
  className="flex-1 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-40"
- style={{ background: TEXT_PRIMARY, color: 'rgba(245,237,224,0.95)' }}>
+ style={{ background: ACCENT, color: ON_ACCENT }}>
  Guardar meta
  </button>
  <button
  onClick={() => setShowGoalForm(false)}
  className="px-4 py-2 rounded-lg text-[12px]"
- style={{ background: 'rgba(42,26,17,0.07)', color: TEXT_MUTED }}>
+ style={{ background: 'rgba(245,237,224,0.08)', color: TEXT_MUTED }}>
  Cancelar
  </button>
  </div>
@@ -1042,14 +1045,14 @@ export default function Actividad() {
  <div className="space-y-2">
  {goals.map(goal => (
  <div key={goal.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(42,26,17,0.05)', border: '1px solid rgba(42,26,17,0.09)' }}>
+ style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.1)' }}>
  <div className="flex items-start justify-between gap-2">
  <div className="min-w-0">
  <p className="text-[13px] font-semibold truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
  <div className="flex items-baseline gap-1.5 mt-0.5">
  {goal.current_value != null ? (
  <>
- <span className="text-[20px] font-bold font-mono leading-none" style={{ color: '#7a1a2a' }}>
+ <span className="text-[20px] font-bold font-mono leading-none" style={{ color: ACCENT }}>
  {goal.current_value}
  </span>
  <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
@@ -1073,13 +1076,13 @@ export default function Actividad() {
  <button
  onClick={() => { setEditingMarkId(goal.id); setEditingMarkValue(''); }}
  className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(122,26,42,0.1)', border: '1px solid rgba(122,26,42,0.18)' }}>
- <Pencil className="w-3 h-3" style={{ color: '#7a1a2a' }} />
+ style={{ background: 'rgba(240,228,208,0.12)', border: '1px solid rgba(240,228,208,0.25)' }}>
+ <Pencil className="w-3 h-3" style={{ color: ACCENT }} />
  </button>
  <button
  onClick={() => deleteGoal(goal.id)}
  className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(42,26,17,0.1)' }}>
+ style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)' }}>
  <Trash2 className="w-3 h-3" style={{ color: TEXT_MUTED }} />
  </button>
  </div>
@@ -1095,19 +1098,19 @@ export default function Actividad() {
  value={editingMarkValue}
  onChange={e => setEditingMarkValue(e.target.value)}
  className="flex-1 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none"
- style={{ background: 'rgba(42,26,17,0.06)', border: '1px solid rgba(122,26,42,0.35)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(240,228,208,0.4)', color: TEXT_PRIMARY }}
  />
  <button
  onClick={() => handleSaveEditMark(goal.id)}
  disabled={editingMarkValue === ''}
  className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-40"
- style={{ background: '#7a1a2a' }}>
- <Check className="w-3.5 h-3.5" style={{ color: 'rgba(245,237,224,0.95)' }} />
+ style={{ background: ACCENT }}>
+ <Check className="w-3.5 h-3.5" style={{ color: ON_ACCENT }} />
  </button>
  <button
  onClick={() => setEditingMarkId(null)}
  className="w-8 h-8 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(42,26,17,0.07)' }}>
+ style={{ background: 'rgba(245,237,224,0.08)' }}>
  <X className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
  </button>
  </div>
@@ -1127,11 +1130,11 @@ export default function Actividad() {
  src={avatarUrl}
  alt={userName}
  className="w-11 h-11 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(42,26,17,0.18)' }}
+ style={{ border: '1.5px solid rgba(245,237,224,0.22)' }}
  />
  ) : (
  <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
- style={{ background: 'rgba(42,26,17,0.08)', border: '1.5px solid rgba(42,26,17,0.18)', color: '#2a1a11' }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1.5px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
  {initials}
  </div>
  )}
@@ -1151,7 +1154,7 @@ export default function Actividad() {
  {/* Actividades realizadas */}
  {(activitiesByDate[expandedDay] || []).map(act => (
  <div key={act.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(42,26,17,0.07)', border: '1px solid rgba(42,26,17,0.1)' }}>
+ style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2.5 min-w-0">
  <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
@@ -1175,7 +1178,7 @@ export default function Actividad() {
  {/* Entrenamientos planificados */}
  {(plansByDayOfMonth[expandedDay] || []).map(plan => (
  <div key={plan.id} className="rounded-xl px-3 py-2.5"
- style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(42,26,17,0.04)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(42,26,17,0.22)' }}>
+ style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(245,237,224,0.05)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(245,237,224,0.28)' }}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2.5 min-w-0">
  <span className="text-[15px]">{ACTIVITY_TYPES[plan.activity_type]?.emoji || '📅'}</span>
@@ -1190,7 +1193,7 @@ export default function Actividad() {
  </div>
  <div className="flex items-center gap-0.5 flex-shrink-0">
  <button onClick={e => { e.stopPropagation(); setConvertPlan(plan); }} title="Marcar como realizada" className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
- <Check className="w-3.5 h-3.5" style={{ color: '#4d0f1a' }} />
+ <Check className="w-3.5 h-3.5" style={{ color: ACCENT }} />
  </button>
  <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
  <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
@@ -1205,13 +1208,13 @@ export default function Actividad() {
  const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
  return (prAchievementsByDate[ds] || []).map(pr => (
  <div key={pr.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(61,0,16,0.07)', border: '1px solid rgba(61,0,16,0.18)' }}>
+ style={{ background: 'rgba(240,228,208,0.08)', border: '1px solid rgba(240,228,208,0.2)' }}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2.5 min-w-0">
- <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#3d0010' }} />
+ <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
  <div className="min-w-0">
  <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{pr.goal_title}</p>
- <p className="text-[11px]" style={{ color: '#3d0010' }}>
+ <p className="text-[11px]" style={{ color: ACCENT }}>
  {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
  </p>
  </div>
@@ -1227,7 +1230,7 @@ export default function Actividad() {
 
  <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
  className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
- style={{ background: 'rgba(42,26,17,0.04)', border: '1px dashed rgba(42,26,17,0.18)', color: TEXT_MUTED }}>
+ style={{ background: 'rgba(245,237,224,0.05)', border: '1px dashed rgba(245,237,224,0.22)', color: TEXT_MUTED }}>
  <Plus className="w-3.5 h-3.5" /> Añadir actividad
  </button>
  </div>
@@ -1239,7 +1242,7 @@ export default function Actividad() {
  {favoriteType && (
  <div className="rounded-2xl px-4 py-3" style={glassCard}>
  <div className="flex items-center gap-2">
- <Sparkles className="w-4 h-4" style={{ color: '#4338ca' }} />
+ <Sparkles className="w-4 h-4" style={{ color: '#a5b4fc' }} />
  <span className="text-[13px]" style={{ color: TEXT_SECONDARY }}>
  Favorito: <span className="font-semibold" style={{ color: TEXT_PRIMARY }}>{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
  </span>
@@ -1255,7 +1258,7 @@ export default function Actividad() {
  label="Win rate"
  sub={padelWinRate ? `${padelWinRate.wins}/${padelWinRate.total}` : 'Pádel'}
  />
- <StatBox icon={<Sparkles className="w-4 h-4" style={{ color: '#4338ca' }} />} value={`${totalHours}h`} label="Este mes" />
+ <StatBox icon={<Sparkles className="w-4 h-4" style={{ color: '#a5b4fc' }} />} value={`${totalHours}h`} label="Este mes" />
  <StatBox icon={<Target className="w-4 h-4" style={{ color: '#10b981' }} />} value={`${ritmo}%`} label="Ritmo" />
  </div>
 
@@ -1264,11 +1267,10 @@ export default function Actividad() {
  onClick={() => { setSelectedDate(new Date()); setShowLogDialog(true); }}
  className="fixed bottom-24 right-5 w-[52px] h-[52px] rounded-full flex items-center justify-center z-40"
  style={{
- background: '#2a121a',
+ background: ACCENT,
  boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
- border: '1px solid rgba(245,237,224,0.18)',
  }}>
- <Plus className="w-5 h-5" style={{ color: 'rgba(245,237,224,0.95)' }} />
+ <Plus className="w-5 h-5" style={{ color: ON_ACCENT }} />
  </button>
 
  <LogActivityDialog
@@ -1366,13 +1368,13 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-1" style={{ scrollbarWidth: 'none' }}>
  <button onClick={() => setFilterType(null)}
  className="flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
- style={filterType === null ? { background: '#3a1622', color: 'rgba(245,237,224,0.95)' } : { background: 'rgba(42,26,17,0.06)', color: TEXT_MUTED }}>
+ style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}>
  Todo
  </button>
  {availableTypes.map(t => (
  <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
  className="flex-shrink-0 px-2 py-1 rounded-lg text-[12px] transition-all"
- style={filterType === t ? { background: '#3a1622' } : { background: 'rgba(42,26,17,0.06)' }}>
+ style={filterType === t ? { background: ACCENT } : { background: 'rgba(245,237,224,0.07)' }}>
  <span>{ACTIVITY_TYPES[t]?.emoji}</span>
  </button>
  ))}
@@ -1405,22 +1407,22 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : show
  ? isExp
- ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 10px rgba(122,26,42,0.45)', border: '1px solid rgba(255,255,255,0.25)' }
+ ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 12px rgba(240,228,208,0.35)', border: '1px solid rgba(255,255,255,0.3)' }
  : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : showPlan
  ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday
- ? { background: 'rgba(42,26,17,0.14)', border: '1px solid rgba(42,26,17,0.22)' }
- : { background: 'rgba(42,26,17,0.07)' }
+ ? { background: 'transparent', border: '1.5px solid rgba(240,228,208,0.9)' }
+ : { background: 'rgba(245,237,224,0.08)' }
  }>
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : show ? DAY_PALETTE.completed.text : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(42,26,17,0.45)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : show ? DAY_PALETTE.completed.text : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(245,237,224,0.4)' }}>
  {day}
  </span>
  {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
  {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(42,26,17,0.1)' }}>
+ style={{ background: '#fff', border: '1px solid rgba(245,237,224,0.12)' }}>
  <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{matchCount}</span>
  </div>
  )}

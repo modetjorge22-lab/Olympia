@@ -27,32 +27,33 @@ export function getPlanSummary(plan, activityTypes) {
   };
 }
 
-// Paleta unificada para los marcos de actividad
+// Paleta unificada para los días — sobre fondo vino, beige como acento.
+// Completado = beige sólido con texto vino; planificado = contorno beige suave.
 export const DAY_PALETTE = {
   completed: {
-    bg: '#3a1622',
-    bgExpanded: '#4a202e',
-    text: 'rgba(245,237,224,0.95)',
-    textOnSummary: '#2a121a',
-    line: 'rgba(42,18,26,0.7)',
-    glow: '0 1px 4px rgba(42,18,26,0.4)',
+    bg: '#f0e4d0',
+    bgExpanded: '#f7efe1',
+    text: '#2a121a',
+    textOnSummary: 'rgba(245,237,224,0.8)',
+    line: 'rgba(245,237,224,0.35)',
+    glow: '0 1px 4px rgba(0,0,0,0.35)',
   },
   planned: {
     bg: 'transparent',
-    bgExpanded: 'rgba(42,18,26,0.08)',
-    text: '#2a1a11',
-    textOnSummary: '#2a1a11',
-    line: 'rgba(42,18,26,0.55)',
-    // Borde wine sin afectar al layout (box-shadow inset)
-    glow: 'inset 0 0 0 1.5px #2a121a',
+    bgExpanded: 'rgba(245,237,224,0.08)',
+    text: 'rgba(245,237,224,0.85)',
+    textOnSummary: 'rgba(245,237,224,0.65)',
+    line: 'rgba(245,237,224,0.3)',
+    // Contorno beige sin afectar al layout (box-shadow inset)
+    glow: 'inset 0 0 0 1.5px rgba(240,228,208,0.45)',
   },
-  // Día en que se batió una marca personal
+  // Día en que se batió una marca personal — beige más brillante con halo
   pr: {
-    bg: '#3d0010',
-    bgExpanded: '#30000c',
-    text: 'rgba(245,237,224,0.95)',
-    textOnSummary: '#f5ede0',
-    line: 'rgba(61,0,16,0.75)',
-    glow: '0 2px 14px rgba(61,0,16,0.75)',
+    bg: '#f5ede0',
+    bgExpanded: '#faf4e8',
+    text: '#2a121a',
+    textOnSummary: 'rgba(245,237,224,0.85)',
+    line: 'rgba(240,228,208,0.5)',
+    glow: '0 2px 12px rgba(240,228,208,0.35)',
   },
 };
