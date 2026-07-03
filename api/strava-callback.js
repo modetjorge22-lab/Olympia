@@ -22,6 +22,9 @@ export default async function handler(req, res) {
 
     const tokenData = await tokenResponse.json();
 
+    // Diagnóstico: qué scope concedió realmente el usuario (aparece en los logs de Vercel)
+    console.log('Strava token exchange — granted scope:', tokenData.scope, '| athlete:', tokenData.athlete?.id, '| email:', (() => { try { return JSON.parse(Buffer.from(state, 'base64').toString()).email; } catch { return '?'; } })());
+
     if (!tokenResponse.ok || !tokenData.access_token) {
       return res.redirect(`${process.env.SITE_URL}/mas?strava=error&reason=token_exchange`);
     }
