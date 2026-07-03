@@ -36,7 +36,12 @@ async function refreshToken(supabase, tokenRecord) {
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error('Failed to refresh token');
+  if (!response.ok) {
+    console.error('Strava token refresh failed:', response.status, data);
+    const err = new Error('reconnect_required');
+    err.code = 'reconnect_required';
+    throw err;
+  }
 
   await supabase
     .from('strava_tokens')
@@ -74,7 +79,7 @@ export default async function handler(req, res) {
       .limit(1);
 
     if (tokenError || !tokens?.length) {
-      return res.status(404).json({ error: 'Strava not connected' });
+      return res.status(404).json({ error: 'reconnect_required', message: 'Strava no está conectado. Conéctalo en Más.' });
     }
 
     const tokenRecord = tokens[0];
@@ -83,7 +88,11 @@ export default async function handler(req, res) {
     // Refresh token if expired
     const now = Math.floor(Date.now() / 1000);
     if (tokenRecord.expires_at < now) {
-      accessToken = await refreshToken(supabase, tokenRecord);
+      try {
+        accessToken = await refreshToken(supabase, tokenRecord);
+      } catch (err) {
+        return res.status(401).json({ error: 'reconnect_required', message: 'Token de Strava expirado. Reconecta Strava para continuar.' });
+      }
     }
 
     // Fetch activities from Strava (last 90 days)
@@ -93,8 +102,13 @@ export default async function handler(req, res) {
       { headers: { 'Authorization': `Bearer ${accessToken}` } }
     );
 
+    if (stravaResponse.status === 401) {
+      return res.status(401).json({ error: 'reconnect_required', message: 'Token de Strava no válido. Reconecta Strava para continuar.' });
+    }
     if (!stravaResponse.ok) {
-      return res.status(500).json({ error: 'Failed to fetch Strava activities' });
+      const body = await stravaResponse.text().catch(() => '');
+      console.error('Strava activities fetch failed:', stravaResponse.status, body);
+      return res.status(502).json({ error: 'strava_api_error', message: `Strava devolvió ${stravaResponse.status} al pedir actividades.` });
     }
 
     const stravaActivities = await stravaResponse.json();
@@ -271,6 +285,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Sync error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'sync_error', message: err.message || 'Error al sincronizar' });
   }
 }

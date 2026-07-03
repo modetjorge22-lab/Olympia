@@ -111,7 +111,12 @@ export default function Mas() {
  if (response.ok) {
  setSyncResult({ type: 'success', message: `${data.imported} actividades importadas` });
  refreshData();
- } else setSyncResult({ type: 'error', message: data.error || 'Error al sincronizar' });
+ } else if (response.status === 401 || data.error === 'reconnect_required') {
+ setStravaConnected(false);
+ setSyncResult({ type: 'error', message: 'Token expirado. Reconecta Strava para continuar.' });
+ } else {
+ setSyncResult({ type: 'error', message: data.message || data.error || 'Error al sincronizar' });
+ }
  } catch (err) {
  setSyncResult({ type: 'error', message: 'Error de conexión' });
  } finally {

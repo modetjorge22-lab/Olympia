@@ -311,7 +311,7 @@ export default function Grupos() {
  <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,26,17,0.08)" />
  <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(42,26,17,0.15)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
- <YAxis tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
+ <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
  <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} />} />
  {teamAverage !== null && teamAverage > 0 && (
  <ReferenceLine
