@@ -35,10 +35,10 @@ export default function AppLayout({ children }) {
         className="fixed top-0 left-0 right-0 z-50"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          background: 'rgba(42,18,26,0.85)',
+          background: 'var(--header-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(245,237,224,0.08)',
+          borderBottom: '1px solid rgba(var(--ink),0.08)',
         }}
       >
         <div
@@ -53,7 +53,7 @@ export default function AppLayout({ children }) {
               fontSize: 11,
               letterSpacing: '0.3em',
               textTransform: 'uppercase',
-              color: 'rgba(245,237,224,0.92)',
+              color: 'rgba(var(--ink),0.92)',
             }}>
               Olympia
             </div>
@@ -62,19 +62,19 @@ export default function AppLayout({ children }) {
           <div
             className="flex items-center gap-3 px-3 py-1.5 rounded-xl"
             style={{
-              background: 'rgba(245,237,224,0.08)',
-              border: '1px solid rgba(245,237,224,0.14)',
+              background: 'rgba(var(--ink),0.08)',
+              border: '1px solid rgba(var(--ink),0.14)',
             }}
           >
-            <button onClick={goBack} style={{ color: 'rgba(245,237,224,0.55)' }} className="hover:opacity-100 transition-opacity">
+            <button onClick={goBack} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(245,237,224,0.92)' }}>
+            <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(var(--ink),0.92)' }}>
               {monthLabel}
             </span>
-            <button onClick={goForward} style={{ color: 'rgba(245,237,224,0.55)' }} className="hover:opacity-100 transition-opacity">
+            <button onClick={goForward} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -98,10 +98,10 @@ export default function AppLayout({ children }) {
         className="fixed bottom-0 left-0 right-0 z-50"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          background: 'rgba(42,18,26,0.85)',
+          background: 'var(--header-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(245,237,224,0.08)',
+          borderTop: '1px solid rgba(var(--ink),0.08)',
         }}
       >
         <div
@@ -122,17 +122,17 @@ export default function AppLayout({ children }) {
                 {isActive && (
                   <div
                     className="absolute inset-0 rounded-xl"
-                    style={{ background: 'rgba(245,237,224,0.1)' }}
+                    style={{ background: 'rgba(var(--ink),0.1)' }}
                   />
                 )}
                 <Icon
                   className="w-[20px] h-[20px] transition-colors relative z-10"
                   strokeWidth={isActive ? 2.2 : 1.6}
-                  style={{ color: isActive ? 'rgba(245,237,224,0.95)' : 'rgba(245,237,224,0.5)' }}
+                  style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
                 />
                 <span
                   className="text-[10px] font-medium transition-colors relative z-10"
-                  style={{ color: isActive ? 'rgba(245,237,224,0.95)' : 'rgba(245,237,224,0.5)' }}
+                  style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
                 >
                   {label}
                 </span>

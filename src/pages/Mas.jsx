@@ -5,23 +5,25 @@ import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'react-router-dom';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useData } from '@/lib/DataContext';
-import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle, Camera } from 'lucide-react';
+import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle, Camera, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 
 const glassCard = {
  background: 'transparent',
- borderTop: '1px solid rgba(245,237,224,0.12)',
+ borderTop: '1px solid rgba(var(--ink),0.12)',
  borderRadius: 0,
  paddingLeft: 0,
  paddingRight: 0,
 };
 
-const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
-const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
-const TEXT_MUTED = 'rgba(245,237,224,0.45)';
-const ACCENT = '#f0e4d0';
-const ON_ACCENT = '#2a121a';
+const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
+const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
+const TEXT_MUTED = 'rgba(var(--ink),0.45)';
+const ACCENT = 'var(--accent)';
+const ON_ACCENT = 'var(--on-accent)';
 
 export default function Mas() {
+ const { mode, setMode } = useTheme();
  const { user, signOut } = useAuth();
  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
  const [searchParams] = useSearchParams();
@@ -224,14 +226,14 @@ export default function Mas() {
  src={avatarUrl}
  alt={userName}
  className="w-14 h-14 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(245,237,224,0.22)' }}
+ style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
  />
  ) : (
  <div
  className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold"
  style={{
- background: 'rgba(245,237,224,0.08)',
- border: '1.5px solid rgba(245,237,224,0.22)',
+ background: 'rgba(var(--ink),0.08)',
+ border: '1.5px solid rgba(var(--ink),0.22)',
  color: TEXT_PRIMARY,
  }}
  >
@@ -243,7 +245,7 @@ export default function Mas() {
  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
  style={{
  background: ACCENT,
- border: '2px solid #2a121a',
+ border: '2px solid var(--bg)',
  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
  }}
  >
@@ -265,8 +267,33 @@ export default function Mas() {
  <p className="text-[15px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
  <p className="text-[13px] truncate" style={{ color: TEXT_SECONDARY }}>{user?.email}</p>
  {avatarError && (
- <p className="text-[11px] mt-1" style={{ color: '#f87171' }}>{avatarError}</p>
+ <p className="text-[11px] mt-1" style={{ color: 'var(--danger)' }}>{avatarError}</p>
  )}
+ </div>
+ </div>
+
+ {/* Apariencia */}
+ <div>
+ <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Apariencia</p>
+ <div className="grid grid-cols-2 gap-1.5">
+ {[['dark', 'Oscuro', Moon], ['light', 'Claro', Sun]].map(([key, label, Icon]) => (
+ <button
+ key={key}
+ onClick={() => setMode(key)}
+ className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-all"
+ style={mode === key ? {
+ background: ACCENT,
+ color: ON_ACCENT,
+ } : {
+ background: 'rgba(var(--ink),0.07)',
+ border: '1px solid rgba(var(--ink),0.12)',
+ color: TEXT_MUTED,
+ }}
+ >
+ <Icon className="w-3.5 h-3.5" />
+ {label}
+ </button>
+ ))}
  </div>
  </div>
 
@@ -274,21 +301,21 @@ export default function Mas() {
  {stravaStatus === 'success' && (
  <div className="rounded-xl px-4 py-3 flex items-center gap-2"
  style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)' }}>
- <Check className="w-4 h-4" style={{ color: '#34d399' }} />
- <span className="text-[13px] font-medium" style={{ color: '#34d399' }}>Strava conectado correctamente</span>
+ <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+ <span className="text-[13px] font-medium" style={{ color: 'var(--success)' }}>Strava conectado correctamente</span>
  </div>
  )}
  {stravaStatus === 'error' && (
  <div className="rounded-xl px-4 py-3 flex items-center gap-2"
  style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.35)' }}>
- <AlertCircle className="w-4 h-4" style={{ color: '#f87171' }} />
- <span className="text-[13px] font-medium" style={{ color: '#f87171' }}>Error al conectar Strava</span>
+ <AlertCircle className="w-4 h-4" style={{ color: 'var(--danger)' }} />
+ <span className="text-[13px] font-medium" style={{ color: 'var(--danger)' }}>Error al conectar Strava</span>
  </div>
  )}
 
  {/* Integrations */}
  <div >
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(245,237,224,0.5)' }}>Integraciones</p>
+ <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Integraciones</p>
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
  {/* Strava */}
  <div className="px-4 py-4">
@@ -308,12 +335,12 @@ export default function Mas() {
  <div className="flex items-center gap-2">
  <button onClick={disconnectStrava}
  className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
- style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+ style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
  Desconectar
  </button>
  <button onClick={syncStrava} disabled={syncing}
  className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.18)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.18)', color: TEXT_PRIMARY }}>
  {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
  Sincronizar
  </button>
@@ -330,14 +357,14 @@ export default function Mas() {
  <div className={`mt-2 px-3 py-2 rounded-lg text-[12px] font-medium`}
  style={{
  background: syncResult.type === 'success' ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
- color: syncResult.type === 'success' ? '#34d399' : '#f87171',
+ color: syncResult.type === 'success' ? 'var(--success)' : 'var(--danger)',
  }}>
  {syncResult.message}
  </div>
  )}
  </div>
 
- <div style={{ height: 1, background: 'rgba(245,237,224,0.08)' }} />
+ <div style={{ height: 1, background: 'rgba(var(--ink),0.08)' }} />
 
  {/* Whoop */}
  <div className="px-4 py-4">
@@ -355,12 +382,12 @@ export default function Mas() {
  <div className="flex items-center gap-2">
  <button onClick={disconnectWhoop}
  className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
- style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+ style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
  Desconectar
  </button>
  <button onClick={syncWhoop} disabled={whoopSyncing}
  className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.18)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.18)', color: TEXT_PRIMARY }}>
  {whoopSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
  Sincronizar
  </button>
@@ -377,7 +404,7 @@ export default function Mas() {
  <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium"
  style={{
  background: whoopSyncResult.type === 'success' ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
- color: whoopSyncResult.type === 'success' ? '#34d399' : '#f87171',
+ color: whoopSyncResult.type === 'success' ? 'var(--success)' : 'var(--danger)',
  }}>
  {whoopSyncResult.message}
  </div>
@@ -385,15 +412,15 @@ export default function Mas() {
  {whoopStatus === 'success' && (
  <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
  style={{ background: 'rgba(16,185,129,0.18)' }}>
- <Check className="w-4 h-4" style={{ color: '#34d399' }} />
- <span style={{ color: '#34d399' }}>Whoop conectado correctamente</span>
+ <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+ <span style={{ color: 'var(--success)' }}>Whoop conectado correctamente</span>
  </div>
  )}
  {whoopStatus === 'error' && (
  <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
  style={{ background: 'rgba(239,68,68,0.18)' }}>
- <AlertCircle className="w-4 h-4" style={{ color: '#f87171' }} />
- <span style={{ color: '#f87171' }}>Error al conectar Whoop</span>
+ <AlertCircle className="w-4 h-4" style={{ color: 'var(--danger)' }} />
+ <span style={{ color: 'var(--danger)' }}>Error al conectar Whoop</span>
  </div>
  )}
  </div>
@@ -402,17 +429,17 @@ export default function Mas() {
 
  {/* Personal menu */}
  <div >
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(245,237,224,0.5)' }}>Personal</p>
+ <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Personal</p>
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
  {[
- { icon: User, label: 'Perfil', color: 'rgba(99,102,241,0.22)', iconColor: '#a5b4fc' },
- { icon: Dumbbell, label: 'Mis Workouts', color: 'rgba(16,185,129,0.22)', iconColor: '#34d399' },
- { icon: BarChart3, label: 'Estadísticas', color: 'rgba(245,158,11,0.22)', iconColor: '#fbbf24' },
- { icon: Settings, label: 'Ajustes', color: 'rgba(245,237,224,0.12)', iconColor: TEXT_SECONDARY },
+ { icon: User, label: 'Perfil', color: 'rgba(99,102,241,0.22)', iconColor: 'var(--info)' },
+ { icon: Dumbbell, label: 'Mis Workouts', color: 'rgba(16,185,129,0.22)', iconColor: 'var(--success)' },
+ { icon: BarChart3, label: 'Estadísticas', color: 'rgba(245,158,11,0.22)', iconColor: 'var(--warning)' },
+ { icon: Settings, label: 'Ajustes', color: 'rgba(var(--ink),0.12)', iconColor: TEXT_SECONDARY },
  ].map((item, idx, arr) => (
  <button key={item.label}
  className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${idx < arr.length - 1 ? 'border-b' : ''}`}
- style={{ borderColor: 'rgba(245,237,224,0.08)' }}>
+ style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
  <div className="flex items-center gap-3">
  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: item.color }}>
  <item.icon className="w-[15px] h-[15px]" style={{ color: item.iconColor }} />
@@ -431,9 +458,9 @@ export default function Mas() {
  className="w-full rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-colors"
  style={glassCard}>
  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.18)' }}>
- <LogOut className="w-[15px] h-[15px]" style={{ color: '#f87171' }} />
+ <LogOut className="w-[15px] h-[15px]" style={{ color: 'var(--danger)' }} />
  </div>
- <span className="text-[13px] font-medium" style={{ color: '#f87171' }}>Cerrar sesión</span>
+ <span className="text-[13px] font-medium" style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
  </button>
  </div>
  </div>

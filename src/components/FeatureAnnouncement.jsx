@@ -4,11 +4,11 @@ import { Trophy, X } from 'lucide-react';
 
 const SEEN_KEY = 'olympia_metas_announcement_v1';
 
-const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
-const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
-const TEXT_MUTED = 'rgba(245,237,224,0.45)';
-const ACCENT = '#f0e4d0';
-const ON_ACCENT = '#2a121a';
+const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
+const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
+const TEXT_MUTED = 'rgba(var(--ink),0.45)';
+const ACCENT = 'var(--accent)';
+const ON_ACCENT = 'var(--on-accent)';
 
 export default function FeatureAnnouncement() {
   const [visible, setVisible] = useState(false);
@@ -45,9 +45,9 @@ export default function FeatureAnnouncement() {
       <div
         className="w-full max-w-sm rounded-3xl overflow-hidden"
         style={{
-          background: '#3a1c28',
+          background: 'var(--surface)',
           boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
-          border: '1px solid rgba(245,237,224,0.16)',
+          border: '1px solid rgba(var(--ink),0.16)',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -57,19 +57,19 @@ export default function FeatureAnnouncement() {
           <button
             onClick={dismiss}
             className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(245,237,224,0.15)' }}
+            style={{ background: 'rgba(var(--ink),0.15)' }}
           >
-            <X className="w-3.5 h-3.5" style={{ color: 'rgba(245,237,224,0.8)' }} />
+            <X className="w-3.5 h-3.5" style={{ color: 'rgba(var(--ink),0.8)' }} />
           </button>
 
           {/* Icono */}
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.2)' }}>
-            <Trophy className="w-6 h-6" style={{ color: 'rgba(245,237,224,0.92)' }} />
+            style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.2)' }}>
+            <Trophy className="w-6 h-6" style={{ color: 'rgba(var(--ink),0.92)' }} />
           </div>
 
           <h2 className="text-[20px] font-bold leading-snug"
-            style={{ color: 'rgba(245,237,224,0.96)', fontFamily: '"DM Sans", system-ui, sans-serif' }}>
+            style={{ color: 'rgba(var(--ink),0.96)', fontFamily: '"DM Sans", system-ui, sans-serif' }}>
             ¡Es el momento<br />de marcar tus metas!
           </h2>
         </div>

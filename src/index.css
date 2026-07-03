@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Tokens de tema ──
+   --ink: tinta base (triplete RGB, se usa como rgba(var(--ink),X))
+   --accent: color de resalte (beige en oscuro, vino en claro)
+   El modo se controla con data-theme en <html>. */
+:root,
+[data-theme='dark'] {
+  --bg: #2a121a;
+  --header-bg: rgba(42, 18, 26, 0.85);
+  --ink: 245, 237, 224;
+  --accent: #f0e4d0;
+  --accent-rgb: 240, 228, 208;
+  --accent-strong: #f5ede0;
+  --on-accent: #2a121a;
+  --surface: #3a1c28;
+  --scrim: rgba(15, 5, 9, 0.7);
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #a5b4fc;
+}
+
+[data-theme='light'] {
+  --bg: #f6f0e4;
+  --header-bg: rgba(246, 240, 228, 0.85);
+  --ink: 42, 18, 26;
+  --accent: #4a1626;
+  --accent-rgb: 74, 22, 38;
+  --accent-strong: #31000f;
+  --on-accent: #f5ede0;
+  --surface: #fdf9f0;
+  --scrim: rgba(42, 18, 26, 0.45);
+  --success: #047857;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --info: #4338ca;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,18 +47,19 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background-color: #2a121a;
-  color: #f4f4f5;
+  background-color: var(--bg);
+  color: rgba(var(--ink), 0.95);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
   min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Refined scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3a1626; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(var(--ink), 0.18); border-radius: 2px; }
 
 /* Remove tap highlight on mobile */
 * { -webkit-tap-highlight-color: transparent; }

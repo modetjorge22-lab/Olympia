@@ -27,33 +27,34 @@ export function getPlanSummary(plan, activityTypes) {
   };
 }
 
-// Paleta unificada para los días — sobre fondo vino, beige como acento.
-// Completado = beige sólido con texto vino; planificado = contorno beige suave.
+// Paleta unificada para los días — usa tokens de tema (var CSS), así funciona
+// en modo oscuro (acento beige) y claro (acento vino) sin cambios.
+// Completado = acento sólido con texto invertido; planificado = contorno suave.
 export const DAY_PALETTE = {
   completed: {
-    bg: '#f0e4d0',
-    bgExpanded: '#f7efe1',
-    text: '#2a121a',
-    textOnSummary: 'rgba(245,237,224,0.8)',
-    line: 'rgba(245,237,224,0.35)',
-    glow: '0 1px 4px rgba(0,0,0,0.35)',
+    bg: 'var(--accent)',
+    bgExpanded: 'var(--accent-strong)',
+    text: 'var(--on-accent)',
+    textOnSummary: 'rgba(var(--ink),0.8)',
+    line: 'rgba(var(--ink),0.35)',
+    glow: '0 1px 4px rgba(0,0,0,0.25)',
   },
   planned: {
     bg: 'transparent',
-    bgExpanded: 'rgba(245,237,224,0.08)',
-    text: 'rgba(245,237,224,0.85)',
-    textOnSummary: 'rgba(245,237,224,0.65)',
-    line: 'rgba(245,237,224,0.3)',
-    // Contorno beige sin afectar al layout (box-shadow inset)
-    glow: 'inset 0 0 0 1.5px rgba(240,228,208,0.45)',
+    bgExpanded: 'rgba(var(--ink),0.08)',
+    text: 'rgba(var(--ink),0.85)',
+    textOnSummary: 'rgba(var(--ink),0.65)',
+    line: 'rgba(var(--ink),0.3)',
+    // Contorno sin afectar al layout (box-shadow inset)
+    glow: 'inset 0 0 0 1.5px rgba(var(--accent-rgb),0.45)',
   },
-  // Día en que se batió una marca personal — beige más brillante con halo
+  // Día en que se batió una marca personal — acento intenso con halo
   pr: {
-    bg: '#f5ede0',
-    bgExpanded: '#faf4e8',
-    text: '#2a121a',
-    textOnSummary: 'rgba(245,237,224,0.85)',
-    line: 'rgba(240,228,208,0.5)',
-    glow: '0 2px 12px rgba(240,228,208,0.35)',
+    bg: 'var(--accent-strong)',
+    bgExpanded: 'var(--accent-strong)',
+    text: 'var(--on-accent)',
+    textOnSummary: 'rgba(var(--ink),0.85)',
+    line: 'rgba(var(--accent-rgb),0.5)',
+    glow: '0 2px 12px rgba(var(--accent-rgb),0.35)',
   },
 };

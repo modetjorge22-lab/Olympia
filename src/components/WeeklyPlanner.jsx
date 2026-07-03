@@ -4,17 +4,17 @@ import { Calendar, Plus, X, Trash2, Check, Clock, TrendingUp } from 'lucide-reac
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 
-const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
-const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
-const TEXT_MUTED = 'rgba(245,237,224,0.45)';
-const ACCENT = '#f0e4d0';
-const ON_ACCENT = '#2a121a';
+const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
+const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
+const TEXT_MUTED = 'rgba(var(--ink),0.45)';
+const ACCENT = 'var(--accent)';
+const ON_ACCENT = 'var(--on-accent)';
 
 const TRACKABLE_TYPES = ['strength_training', 'running', 'swimming'];
 
 const glassCard = {
  background: 'transparent',
- borderTop: '1px solid rgba(245,237,224,0.12)',
+ borderTop: '1px solid rgba(var(--ink),0.12)',
  borderRadius: 0,
  paddingLeft: 0,
  paddingRight: 0,
@@ -119,7 +119,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
+ style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
  <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
@@ -131,7 +131,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  </div>
 
  <div className="flex items-center gap-1 rounded-lg p-0.5"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
  <button
  onClick={() => setWeekOffset(w => Math.max(0, w - 1))}
  disabled={weekOffset === 0}
@@ -205,11 +205,11 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  boxShadow: DAY_PALETTE.planned.glow,
  } : isToday ? {
  background: 'transparent',
- border: '1.5px solid rgba(240,228,208,0.9)',
+ border: '1.5px solid rgba(var(--accent-rgb),0.9)',
  } : isPast ? {
- background: 'rgba(245,237,224,0.05)',
+ background: 'rgba(var(--ink),0.05)',
  } : {
- background: 'rgba(245,237,224,0.08)',
+ background: 'rgba(var(--ink),0.08)',
  }
  }
  >
@@ -218,15 +218,15 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  color: isCompleted ? DAY_PALETTE.completed.text
  : hasPlan ? DAY_PALETTE.planned.text
  : isToday ? TEXT_PRIMARY
- : isPast ? 'rgba(245,237,224,0.3)'
- : 'rgba(245,237,224,0.5)'
+ : isPast ? 'rgba(var(--ink),0.3)'
+ : 'rgba(var(--ink),0.5)'
  }}>
  {d.getDate()}
  </span>
  {firstEmoji && <span className="text-[10px] leading-none mt-0.5">{firstEmoji}</span>}
  {totalCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(245,237,224,0.18)' }}>
+ style={{ background: '#fff', border: '1px solid rgba(var(--ink),0.18)' }}>
  <span className="text-[7px] font-bold" style={{ color: TEXT_PRIMARY }}>{totalCount}</span>
  </div>
  )}
@@ -250,7 +250,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <div
  className="fixed inset-0 z-[100] flex items-center justify-center"
  style={{
- background: 'rgba(15,5,9,0.7)',
+ background: 'var(--scrim)',
  paddingTop: 'max(16px, env(safe-area-inset-top))',
  paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
  paddingLeft: 12,
@@ -264,8 +264,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  style={{
  maxHeight: '100%',
  overflowY: 'auto',
- background: '#3a1c28',
- border: '1px solid rgba(245,237,224,0.16)',
+ background: 'var(--surface)',
+ border: '1px solid rgba(var(--ink),0.16)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
  onClick={(e) => e.stopPropagation()}
@@ -282,7 +282,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  )}
  </div>
  <button onClick={() => setSelectedDay(null)} className="w-7 h-7 rounded-full flex items-center justify-center"
- style={{ background: 'rgba(245,237,224,0.08)' }}>
+ style={{ background: 'rgba(var(--ink),0.08)' }}>
  <X className="w-3.5 h-3.5" style={{ color: TEXT_SECONDARY }} />
  </button>
  </div>
@@ -299,7 +299,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  className="rounded-xl p-3"
  style={{
  background: 'transparent',
- boxShadow: 'inset 0 0 0 1.5px rgba(240,228,208,0.45)',
+ boxShadow: 'inset 0 0 0 1.5px rgba(var(--accent-rgb),0.45)',
  }}
  >
  {/* Línea 1: emoji + nombre/tipo + duración + delete */}
@@ -323,7 +323,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <button
  onClick={() => onRemovePlan(p.id)}
  className="p-1.5 rounded-md flex-shrink-0 transition-colors"
- style={{ background: 'rgba(245,237,224,0.06)' }}
+ style={{ background: 'rgba(var(--ink),0.06)' }}
  aria-label="Eliminar plan"
  >
  <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
@@ -362,8 +362,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  onClick={() => setShowAddForm(true)}
  className="w-full py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
  style={{
- background: 'rgba(245,237,224,0.06)',
- border: '1px dashed rgba(245,237,224,0.25)',
+ background: 'rgba(var(--ink),0.06)',
+ border: '1px dashed rgba(var(--ink),0.25)',
  color: TEXT_MUTED,
  }}
  >
@@ -376,7 +376,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {showAddForm && (
  <div>
  {(plansByDate[toDateStr(selectedDay)] || []).length > 0 && (
- <div className="border-t mb-3 pt-3" style={{ borderColor: 'rgba(245,237,224,0.12)' }}>
+ <div className="border-t mb-3 pt-3" style={{ borderColor: 'rgba(var(--ink),0.12)' }}>
  <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: TEXT_MUTED }}>
  Añadir otro plan
  </p>
@@ -392,8 +392,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  maxLength={40}
  className="w-full mb-3 px-2.5 py-1.5 rounded-lg text-[11px] outline-none"
  style={{
- background: 'rgba(245,237,224,0.07)',
- border: '1px solid rgba(245,237,224,0.14)',
+ background: 'rgba(var(--ink),0.07)',
+ border: '1px solid rgba(var(--ink),0.14)',
  color: TEXT_PRIMARY,
  }}
  />
@@ -409,11 +409,11 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  style={planDuration === mins ? {
  background: 'transparent',
  color: TEXT_PRIMARY,
- boxShadow: 'inset 0 0 0 1.5px rgba(240,228,208,0.45)',
+ boxShadow: 'inset 0 0 0 1.5px rgba(var(--accent-rgb),0.45)',
  } : {
- background: 'rgba(245,237,224,0.07)',
+ background: 'rgba(var(--ink),0.07)',
  color: TEXT_MUTED,
- border: '1px solid rgba(245,237,224,0.12)',
+ border: '1px solid rgba(var(--ink),0.12)',
  }}
  >
  {mins < 60 ? `${mins}m` : mins === 60 ? '1h' : mins === 120 ? '2h' : `${mins}m`}
@@ -431,8 +431,8 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  disabled={adding}
  className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
  style={{
- background: 'rgba(245,237,224,0.07)',
- border: '1px solid rgba(245,237,224,0.12)',
+ background: 'rgba(var(--ink),0.07)',
+ border: '1px solid rgba(var(--ink),0.12)',
  opacity: adding ? 0.5 : 1,
  cursor: adding ? 'wait' : 'pointer',
  }}
@@ -451,7 +451,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {/* Error banner */}
  {addError && (
  <div className="mt-3 rounded-lg px-3 py-2 text-[11px]"
- style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', color: '#fca5a5' }}>
+ style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', color: 'var(--danger)' }}>
  {addError}
  </div>
  )}
@@ -555,7 +555,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  <div
  className="fixed inset-0 z-[100] flex items-center justify-center"
  style={{
- background: 'rgba(15,5,9,0.7)',
+ background: 'var(--scrim)',
  paddingTop: 'max(16px, env(safe-area-inset-top))',
  paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 96px))',
  paddingLeft: 12,
@@ -567,8 +567,8 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  className="rounded-2xl w-full max-w-sm flex flex-col"
  style={{
  maxHeight: '100%',
- background: '#3a1c28',
- border: '1px solid rgba(245,237,224,0.16)',
+ background: 'var(--surface)',
+ border: '1px solid rgba(var(--ink),0.16)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
  }}
  onClick={(e) => e.stopPropagation()}
@@ -584,7 +584,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  </div>
  </div>
  <button onClick={onCancel} className="w-8 h-8 rounded-full flex items-center justify-center"
- style={{ background: 'rgba(245,237,224,0.12)' }}>
+ style={{ background: 'rgba(var(--ink),0.12)' }}>
  <X className="w-4 h-4" style={{ color: TEXT_SECONDARY }} />
  </button>
  </div>
@@ -599,7 +599,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  type="number" value={duration} onChange={e => setDuration(e.target.value)}
  placeholder="60 min" min="1"
  className="w-full rounded-xl pl-10 pr-4 py-3 text-[13px] focus:outline-none"
- style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
  />
  </div>
  <div className="flex gap-2 mt-2">
@@ -607,9 +607,9 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  <button key={mins} onClick={() => setDuration(String(mins))}
  className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium"
  style={duration === String(mins) ? {
- background: ACCENT, color: ON_ACCENT, border: '1px solid rgba(240,228,208,0.5)',
+ background: ACCENT, color: ON_ACCENT, border: '1px solid rgba(var(--accent-rgb),0.5)',
  } : {
- background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED, border: '1px solid rgba(245,237,224,0.08)',
+ background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED, border: '1px solid rgba(var(--ink),0.08)',
  }}>
  {mins}m
  </button>
@@ -627,18 +627,18 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  <button onClick={() => setTrainingType('progress')}
  className="px-4 py-3 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2"
  style={trainingType === 'progress' ? {
- background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', color: '#c4b5fd',
+ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', color: 'var(--info)',
  } : {
- background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_SECONDARY,
+ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_SECONDARY,
  }}>
  <TrendingUp className="w-4 h-4" /> Progreso
  </button>
  <button onClick={() => setTrainingType('consolidation')}
  className="px-4 py-3 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2"
  style={trainingType === 'consolidation' ? {
- background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', color: '#34d399',
+ background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', color: 'var(--success)',
  } : {
- background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_SECONDARY,
+ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_SECONDARY,
  }}>
  <span className="text-sm">🛡️</span> Consolidación
  </button>
@@ -655,7 +655,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  <textarea value={progressNote} onChange={e => setProgressNote(e.target.value)}
  placeholder="He subido a 100kg en press banca..." rows={2}
  className="w-full rounded-xl px-4 py-3 text-[13px] focus:outline-none resize-none"
- style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(139,92,246,0.25)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(139,92,246,0.25)', color: TEXT_PRIMARY }}
  />
  </div>
  )}
@@ -666,7 +666,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  <textarea value={notes} onChange={e => setNotes(e.target.value)}
  placeholder="Cómo te has sentido..." rows={2}
  className="w-full rounded-xl px-4 py-3 text-[13px] focus:outline-none resize-none"
- style={{ background: 'rgba(245,237,224,0.07)', border: '1px solid rgba(245,237,224,0.12)', color: TEXT_PRIMARY }}
+ style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
  />
  </div>
 

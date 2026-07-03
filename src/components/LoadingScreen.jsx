@@ -4,7 +4,7 @@ import InfinityMark from './InfinityMark';
 export default function LoadingScreen() {
   return (
     <div style={{
-      background: '#2a121a',
+      background: 'var(--bg)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -22,7 +22,7 @@ export default function LoadingScreen() {
         fontSize: 22,
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
-        color: 'rgba(245,237,224,0.92)',
+        color: 'rgba(var(--ink),0.92)',
         animation: 'olympia-breathe 2.2s ease-in-out infinite',
       }}>
         Olympia

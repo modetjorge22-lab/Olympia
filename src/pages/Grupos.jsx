@@ -10,23 +10,24 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianG
 import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
+import { useTheme } from '@/lib/theme';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
-// Gradiente vino según ranking — líder en vino oscuro, descendiendo a vino claro
-function rankingWine(rank, total) {
- if (total <= 1) return '#f0e4d0';
+// Gradiente según ranking — líder en el acento del tema, descendiendo a tono apagado
+function rankingWine(rank, total, chart) {
+ if (total <= 1) return chart.accent;
  const t = rank / (total - 1);
- const from = { r: 245, g: 237, b: 224 }; // beige brillante (líder)
- const to = { r: 148, g: 122, b: 108 };   // beige apagado (colista)
+ const from = chart.raceFrom; // líder
+ const to = chart.raceTo;     // colista
  const r = Math.round(from.r + (to.r - from.r) * t);
  const g = Math.round(from.g + (to.g - from.g) * t);
  const b = Math.round(from.b + (to.b - from.b) * t);
  return `rgb(${r},${g},${b})`;
 }
 
-function makeMemberDot(member, lastDay) {
+function makeMemberDot(member, lastDay, onAccent) {
  return function MemberDot(props) {
  const { cx, cy, payload } = props;
  if (cx == null || cy == null) return null;
@@ -49,7 +50,7 @@ function makeMemberDot(member, lastDay) {
  <>
  <circle cx={cx} cy={cy} r={radius} fill={member.color} />
  <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="700"
- fill="#2a121a" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+ fill={onAccent} style={{ fontFamily: 'DM Sans, sans-serif' }}>
  {initials}
  </text>
  </>
@@ -61,28 +62,28 @@ function makeMemberDot(member, lastDay) {
 
 const glassCard = {
  background: 'transparent',
- borderTop: '1px solid rgba(245,237,224,0.12)',
+ borderTop: '1px solid rgba(var(--ink),0.12)',
  borderRadius: 0,
  paddingLeft: 0,
  paddingRight: 0,
 };
 
-const TEXT_PRIMARY = 'rgba(245,237,224,0.95)';
-const TEXT_SECONDARY = 'rgba(245,237,224,0.65)';
-const TEXT_MUTED = 'rgba(245,237,224,0.45)';
-const ACCENT = '#f0e4d0';
-const ON_ACCENT = '#2a121a';
+const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
+const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
+const TEXT_MUTED = 'rgba(var(--ink),0.45)';
+const ACCENT = 'var(--accent)';
+const ON_ACCENT = 'var(--on-accent)';
 
 function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h' }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
- background: '#3a1c28',
- border: '1px solid rgba(245,237,224,0.15)',
+ background: 'var(--surface)',
+ border: '1px solid rgba(var(--ink),0.15)',
  borderRadius: 10, padding: '8px 12px', fontSize: 11,
  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
  }}>
- <p style={{ color: 'rgba(245,237,224,0.5)', fontSize: 10, marginBottom: 4 }}>
+ <p style={{ color: 'rgba(var(--ink),0.5)', fontSize: 10, marginBottom: 4 }}>
  {isTeam ? label : `Día ${label}`}
  </p>
  {payload.map((entry, i) => {
@@ -91,9 +92,9 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
  <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
- <span style={{ color: 'rgba(245,237,224,0.85)' }}>{m?.name || entry.name}</span>
+ <span style={{ color: 'rgba(var(--ink),0.85)' }}>{m?.name || entry.name}</span>
  </div>
- <span style={{ color: '#ffffff', fontWeight: 600 }}>{entry.value}{unit}</span>
+ <span style={{ color: 'rgba(var(--ink),0.95)', fontWeight: 600 }}>{entry.value}{unit}</span>
  </div>
  );
  })}
@@ -102,6 +103,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
 }
 
 export default function Grupos() {
+ const { chart: CH } = useTheme();
  const { currentMonth } = useMonth();
  const { user } = useAuth();
  const { allActivities } = useActivities(currentMonth);
@@ -268,11 +270,11 @@ export default function Grupos() {
  return (
  <div className="px-4 py-5 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[50vh]">
  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.12)' }}>
- <Users className="w-6 h-6" style={{ color: 'rgba(245,237,224,0.75)' }} />
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
+ <Users className="w-6 h-6" style={{ color: 'rgba(var(--ink),0.75)' }} />
  </div>
- <h2 className="text-[15px] font-semibold mb-1" style={{ color: 'rgba(245,237,224,0.92)' }}>Sin actividad de equipo</h2>
- <p className="text-[13px] text-center" style={{ color: 'rgba(245,237,224,0.5)' }}>Los datos del grupo aparecerán aquí</p>
+ <h2 className="text-[15px] font-semibold mb-1" style={{ color: 'rgba(var(--ink),0.92)' }}>Sin actividad de equipo</h2>
+ <p className="text-[13px] text-center" style={{ color: 'rgba(var(--ink),0.5)' }}>Los datos del grupo aparecerán aquí</p>
  </div>
  );
  }
@@ -284,7 +286,7 @@ export default function Grupos() {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
+ style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
  <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
@@ -292,7 +294,7 @@ export default function Grupos() {
  <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}</p>
  </div>
  </div>
- <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(245,237,224,0.07)' }}>
+ <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(var(--ink),0.07)' }}>
  {[['hours', 'Horas'], ['count', 'Nº']].map(([key, lbl]) => (
  <button
  key={key}
@@ -310,27 +312,27 @@ export default function Grupos() {
  <div className="h-[340px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
- <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,237,224,0.08)" />
- <XAxis dataKey="day" tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={{ stroke: 'rgba(245,237,224,0.18)' }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
- <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: TEXT_MUTED }} axisLine={false} tickLine={false} width={24} />
+ <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} />
+ <XAxis dataKey="day" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
+ <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={24} />
  <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} />} />
  {teamAverage !== null && teamAverage > 0 && (
  <ReferenceLine
  y={teamAverage}
- stroke="rgba(245,237,224,0.35)"
+ stroke={CH.ref}
  strokeDasharray="4 4"
  strokeWidth={1}
  label={{
  value: raceMetric === 'count' ? `Media ${teamAverage} act` : `Media ${teamAverage}h`,
  position: 'insideTopLeft',
- fill: 'rgba(245,237,224,0.5)',
+ fill: CH.refLabel,
  fontSize: 9,
  offset: 6,
  }}
  />
  )}
  {memberStats.map((m, idx) => {
- const lineColor = rankingWine(idx, memberStats.length);
+ const lineColor = rankingWine(idx, memberStats.length, CH);
  return (
  <Line
  key={m.email}
@@ -338,7 +340,7 @@ export default function Grupos() {
  dataKey={m.email}
  stroke={lineColor}
  strokeWidth={idx === 0 ? 2.5 : 2}
- dot={makeMemberDot({ ...m, color: lineColor }, lastDay)}
+ dot={makeMemberDot({ ...m, color: lineColor }, lastDay, CH.onAccent)}
  activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }}
  isAnimationActive={false}
  />
@@ -354,7 +356,7 @@ export default function Grupos() {
  const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
  const hiddenCount = teamActivityBreakdown.length - 5;
  return (
- <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(245,237,224,0.12)' }}>
+ <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.12)' }}>
  <div className="flex items-center gap-2 mb-3">
  <Activity className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
  <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>Horas por actividad · equipo</p>
@@ -376,7 +378,7 @@ export default function Grupos() {
  <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
  <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
  </div>
  </div>
@@ -389,10 +391,10 @@ export default function Grupos() {
  <div key={c.email} className="flex items-center gap-2">
  {c.avatar_url ? (
  <img src={c.avatar_url} alt={c.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0"
- style={{ border: '1px solid rgba(245,237,224,0.22)' }} />
+ style={{ border: '1px solid rgba(var(--ink),0.22)' }} />
  ) : (
  <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[8px] flex-shrink-0"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -401,8 +403,8 @@ export default function Grupos() {
  <span className="text-[11px] truncate" style={{ color: TEXT_SECONDARY }}>{c.name}</span>
  <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
  </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(240,228,208,0.55)' }} />
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
+ <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(var(--accent-rgb),0.55)' }} />
  </div>
  </div>
  </div>
@@ -418,7 +420,7 @@ export default function Grupos() {
  <button
  onClick={() => setShowAllActs(v => !v)}
  className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}
+ style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}
  >
  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
  {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
@@ -436,16 +438,16 @@ export default function Grupos() {
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
  <div className="px-4 pt-4 pb-2 flex items-center gap-2.5">
  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(245,237,224,0.12)', border: '1px solid rgba(245,237,224,0.16)' }}>
+ style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
  <Zap className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Ranking · {MONTHS_ES[month]}</h2>
  </div>
  {memberStats.map((member, idx) => {
  const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
- const rankColor = rankingWine(idx, memberStats.length);
+ const rankColor = rankingWine(idx, memberStats.length, CH);
  return (
- <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(245,237,224,0.08)' }}>
+ <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
  <div className="flex items-center gap-3">
  <span className="text-[12px] font-bold w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
  {member.avatar_url ? (
@@ -453,11 +455,11 @@ export default function Grupos() {
  src={member.avatar_url}
  alt={member.name}
  className="w-8 h-8 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(245,237,224,0.22)' }}
+ style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
  />
  ) : (
  <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1.5px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -466,7 +468,7 @@ export default function Grupos() {
  <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
  <span className="text-[12px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
  </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
  <div
  initial={{ width: 0 }}
  animate={{ width: `${pct}%` }}
@@ -485,7 +487,7 @@ export default function Grupos() {
 
  {/* Member cards */}
  <div>
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(245,237,224,0.5)' }}>Miembros</p>
+ <p className="text-[11px] font-semibold uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(var(--ink),0.5)' }}>Miembros</p>
  <div className="space-y-3">
  {memberStats.map((member, idx) => (
  <MiniMemberCard
@@ -523,10 +525,10 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {member.avatar_url ? (
  <img src={member.avatar_url} alt={member.name}
  className="w-9 h-9 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(245,237,224,0.22)' }} />
+ style={{ border: '1.5px solid rgba(var(--ink),0.22)' }} />
  ) : (
  <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
- style={{ background: 'rgba(245,237,224,0.08)', border: '1.5px solid rgba(245,237,224,0.22)', color: TEXT_PRIMARY }}>
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
@@ -542,13 +544,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2" style={{ scrollbarWidth: 'none' }}>
  <button onClick={() => setFilterType(null)}
  className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-semibold transition-all"
- style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(245,237,224,0.07)', color: TEXT_MUTED }}>
+ style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED }}>
  Todo
  </button>
  {availableTypes.map(t => (
  <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
  className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[11px] transition-all"
- style={filterType === t ? { background: ACCENT } : { background: 'rgba(245,237,224,0.07)' }}>
+ style={filterType === t ? { background: ACCENT } : { background: 'rgba(var(--ink),0.07)' }}>
  <span>{ACTIVITY_TYPES[t]?.emoji}</span>
  </button>
  ))}
@@ -582,13 +584,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : show ? { background: isExpanded ? '#f7efe1' : '#f0e4d0', boxShadow: '0 1px 4px rgba(0,0,0,0.35)' }
+ : show ? { background: isExpanded ? 'var(--accent-strong)' : 'var(--accent)', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }
  : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : isToday ? { background: 'transparent', border: '1.5px solid rgba(240,228,208,0.9)' }
- : { background: 'rgba(245,237,224,0.08)' }),
+ : isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
+ : { background: 'rgba(var(--ink),0.08)' }),
  }}>
  <span className="text-[8px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : show ? '#2a121a' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(245,237,224,0.4)' }}>
+ style={{ color: isPR ? DAY_PALETTE.pr.text : show ? 'var(--on-accent)' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {day}
  </span>
  {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
@@ -599,7 +601,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
 
  {/* Desglose de actividades del mes */}
  {activityBreakdown.length > 0 && (
- <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}>
+ <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
  <p className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: TEXT_MUTED }}>
  Desglose del mes
  </p>
@@ -614,7 +616,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <span className="text-[10px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
  <span className="text-[10px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(245,237,224,0.08)' }}>
+ <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
  </div>
  </div>
@@ -633,7 +635,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </p>
  {member.actByDay[expandedDay].map((act, idx) => (
  <div key={idx} className="flex items-center gap-2 rounded-lg px-2.5 py-2"
- style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.08)' }}>
+ style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.08)' }}>
  <span className="text-[13px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
  <div className="flex-1 min-w-0">
  <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
@@ -646,8 +648,8 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {act.match_result?.result && (
  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
  style={{
- background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(245,237,224,0.08)',
- color: act.match_result.result === 'win' ? '#34d399' : act.match_result.result === 'loss' ? '#f87171' : TEXT_MUTED,
+ background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(var(--ink),0.08)',
+ color: act.match_result.result === 'win' ? 'var(--success)' : act.match_result.result === 'loss' ? 'var(--danger)' : TEXT_MUTED,
  }}>
  {act.match_result.result === 'win' ? 'Victoria' : act.match_result.result === 'loss' ? 'Derrota' : 'Empate'}
  </span>
@@ -661,7 +663,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <button
  onClick={() => setGoalsOpen(v => !v)}
  className="w-full flex items-center justify-between mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(245,237,224,0.08)' }}
+ style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}
  >
  <div className="flex items-center gap-1.5">
  <Trophy className="w-3 h-3" style={{ color: TEXT_MUTED }} />
@@ -682,7 +684,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  ) : (
  memberGoals.map(goal => (
  <div key={goal.id} className="flex items-center justify-between rounded-lg px-3 py-2"
- style={{ background: 'rgba(245,237,224,0.06)', border: '1px solid rgba(245,237,224,0.08)' }}>
+ style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.08)' }}>
  <div className="min-w-0">
  <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
  {goal.activity_type && (
