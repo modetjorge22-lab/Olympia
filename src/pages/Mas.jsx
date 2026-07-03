@@ -60,6 +60,16 @@ export default function Mas() {
  window.location.href = `/api/strava-auth?email=${encodeURIComponent(user.email)}`;
  };
 
+ const disconnectStrava = async () => {
+ try {
+ await supabase.from('strava_tokens').delete().eq('user_email', user.email);
+ } catch (err) {
+ console.error('Error disconnecting Strava:', err);
+ }
+ setStravaConnected(false);
+ setSyncResult(null);
+ };
+
  const connectWhoop = () => {
  window.location.href = `/api/whoop-auth?email=${encodeURIComponent(user.email)}`;
  };
@@ -293,12 +303,19 @@ export default function Mas() {
  </div>
  </div>
  {stravaConnected ? (
+ <div className="flex items-center gap-2">
+ <button onClick={disconnectStrava}
+ className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+ style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: '#b91c1c' }}>
+ Desconectar
+ </button>
  <button onClick={syncStrava} disabled={syncing}
  className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
  style={{ background: 'rgba(42,26,17,0.08)', border: '1px solid rgba(42,26,17,0.15)', color: TEXT_PRIMARY }}>
  {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
  Sincronizar
  </button>
+ </div>
  ) : (
  <button onClick={connectStrava}
  className="text-white text-[12px] font-semibold px-3 py-2 rounded-lg transition-colors"
