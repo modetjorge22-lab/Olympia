@@ -817,6 +817,123 @@ export default function Actividad() {
  </AreaChart>
  </ResponsiveContainer>
  </div>
+
+ {/* Calendario — mismo marco que la gráfica, comparte el filtro de actividad */}
+ <div ref={calendarRef} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-3">
+ {avatarUrl ? (
+ <img
+ src={avatarUrl}
+ alt={userName}
+ className="w-11 h-11 rounded-xl object-cover"
+ style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
+ />
+ ) : (
+ <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
+ {initials}
+ </div>
+ )}
+ <div>
+ <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
+ <p className="text-[12px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
+ </div>
+ </div>
+ </div>
+
+ <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} filterType={actFilter === 'accumulated' ? null : actFilter} />
+
+ <AnimatePresence>
+ {expandedDay && (activitiesByDate[expandedDay]?.length || plansByDayOfMonth[expandedDay]?.length) && (
+ <div exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
+
+ {/* Actividades realizadas */}
+ {(activitiesByDate[expandedDay] || []).map(act => (
+ <div key={act.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
+ <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
+ <div className="min-w-0">
+ <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
+ <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
+ </div>
+ </div>
+ <div className="flex items-center gap-0.5 flex-shrink-0">
+ <button onClick={e => { e.stopPropagation(); setEditActivity(act); }} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
+ <Pencil className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
+ <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+ </div>
+ ))}
+
+ {/* Entrenamientos planificados */}
+ {(plansByDayOfMonth[expandedDay] || []).map(plan => (
+ <div key={plan.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(var(--ink),0.05)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(var(--ink),0.28)' }}>
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
+ <span className="text-[15px]">{ACTIVITY_TYPES[plan.activity_type]?.emoji || '📅'}</span>
+ <div className="min-w-0">
+ <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
+ {ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type}
+ <span className="ml-1.5 text-[10px] font-normal" style={{ color: TEXT_MUTED }}>planificado</span>
+ </p>
+ {plan.notes && <p className="text-[11px] truncate" style={{ color: TEXT_MUTED }}>{plan.notes}</p>}
+ {plan.duration_minutes > 0 && <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{plan.duration_minutes} min</p>}
+ </div>
+ </div>
+ <div className="flex items-center gap-0.5 flex-shrink-0">
+ <button onClick={e => { e.stopPropagation(); setConvertPlan(plan); }} title="Marcar como realizada" className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
+ <Check className="w-3.5 h-3.5" style={{ color: ACCENT }} />
+ </button>
+ <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
+ <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+ </div>
+ ))}
+
+ {/* PR achievements del día — borrables */}
+ {(() => {
+ const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
+ return (prAchievementsByDate[ds] || []).map(pr => (
+ <div key={pr.id} className="rounded-xl px-3 py-2.5"
+ style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-2.5 min-w-0">
+ <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
+ <div className="min-w-0">
+ <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{pr.goal_title}</p>
+ <p className="text-[11px]" style={{ color: ACCENT }}>
+ {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
+ </p>
+ </div>
+ </div>
+ <button onClick={e => { e.stopPropagation(); deletePrAchievement(pr.id); }}
+ className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
+ <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
+ </button>
+ </div>
+ </div>
+ ));
+ })()}
+
+ <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
+ className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
+ style={{ background: 'rgba(var(--ink),0.05)', border: '1px dashed rgba(var(--ink),0.22)', color: TEXT_MUTED }}>
+ <Plus className="w-3.5 h-3.5" /> Añadir actividad
+ </button>
+ </div>
+ )}
+ </AnimatePresence>
+ </div>
  </div>
 
  {/* ── Planificador ── */}
@@ -1096,123 +1213,6 @@ export default function Actividad() {
  )}
  </div>
 
- {/* Perfil + Calendario */}
- <div ref={calendarRef} className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center justify-between mb-4">
- <div className="flex items-center gap-3">
- {avatarUrl ? (
- <img
- src={avatarUrl}
- alt={userName}
- className="w-11 h-11 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
- />
- ) : (
- <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
- {initials}
- </div>
- )}
- <div>
- <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
- <p className="text-[12px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
- </div>
- </div>
- </div>
-
- <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} />
-
- <AnimatePresence>
- {expandedDay && (activitiesByDate[expandedDay]?.length || plansByDayOfMonth[expandedDay]?.length) && (
- <div exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
-
- {/* Actividades realizadas */}
- {(activitiesByDate[expandedDay] || []).map(act => (
- <div key={act.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
- <div className="min-w-0">
- <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
- </div>
- </div>
- <div className="flex items-center gap-0.5 flex-shrink-0">
- <button onClick={e => { e.stopPropagation(); setEditActivity(act); }} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
- <Pencil className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
- <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- </div>
- ))}
-
- {/* Entrenamientos planificados */}
- {(plansByDayOfMonth[expandedDay] || []).map(plan => (
- <div key={plan.id} className="rounded-xl px-3 py-2.5"
- style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(var(--ink),0.05)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(var(--ink),0.28)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <span className="text-[15px]">{ACTIVITY_TYPES[plan.activity_type]?.emoji || '📅'}</span>
- <div className="min-w-0">
- <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
- {ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type}
- <span className="ml-1.5 text-[10px] font-normal" style={{ color: TEXT_MUTED }}>planificado</span>
- </p>
- {plan.notes && <p className="text-[11px] truncate" style={{ color: TEXT_MUTED }}>{plan.notes}</p>}
- {plan.duration_minutes > 0 && <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{plan.duration_minutes} min</p>}
- </div>
- </div>
- <div className="flex items-center gap-0.5 flex-shrink-0">
- <button onClick={e => { e.stopPropagation(); setConvertPlan(plan); }} title="Marcar como realizada" className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
- <Check className="w-3.5 h-3.5" style={{ color: ACCENT }} />
- </button>
- <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
- <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- </div>
- ))}
-
- {/* PR achievements del día — borrables */}
- {(() => {
- const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
- return (prAchievementsByDate[ds] || []).map(pr => (
- <div key={pr.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
- <div className="min-w-0">
- <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{pr.goal_title}</p>
- <p className="text-[11px]" style={{ color: ACCENT }}>
- {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
- </p>
- </div>
- </div>
- <button onClick={e => { e.stopPropagation(); deletePrAchievement(pr.id); }}
- className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
- <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- ));
- })()}
-
- <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
- className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
- style={{ background: 'rgba(var(--ink),0.05)', border: '1px dashed rgba(var(--ink),0.22)', color: TEXT_MUTED }}>
- <Plus className="w-3.5 h-3.5" /> Añadir actividad
- </button>
- </div>
- )}
- </AnimatePresence>
- </div>
-
  {/* Favorito */}
  {favoriteType && (
  <div className="rounded-2xl px-4 py-3" style={glassCard}>
@@ -1324,7 +1324,7 @@ function DaySummaryDrop({ summary, palette, extraCount = 0 }) {
  );
 }
 
-function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, prDates = new Set(), onDayClick, expandedDay }) {
+function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, prDates = new Set(), onDayClick, expandedDay, filterType = null }) {
  const now = new Date();
  const daysInMonth = new Date(year, month + 1, 0).getDate();
  let startDow = new Date(year, month, 1).getDay() - 1;
@@ -1332,30 +1332,9 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  const trailing = [];
  for (let i = 0; i < startDow; i++) trailing.push(i);
 
- const [filterType, setFilterType] = useState(null);
- const availableTypes = Object.keys(ACTIVITY_TYPES).filter(t =>
- Object.values(activitiesByDate).some(acts => acts.some(a => a.type === t))
- );
-
  return (
  <>
- {availableTypes.length > 1 && (
- <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-1" style={{ scrollbarWidth: 'none' }}>
- <button onClick={() => setFilterType(null)}
- className="flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
- style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED }}>
- Todo
- </button>
- {availableTypes.map(t => (
- <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
- className="flex-shrink-0 px-2 py-1 rounded-lg text-[12px] transition-all"
- style={filterType === t ? { background: ACCENT } : { background: 'rgba(var(--ink),0.07)' }}>
- <span>{ACTIVITY_TYPES[t]?.emoji}</span>
- </button>
- ))}
- </div>
- )}
- <div className="grid grid-cols-7 gap-[5px]">
+  <div className="grid grid-cols-7 gap-[5px]">
  {trailing.map(i => (
  <div key={`p-${i}`} className="aspect-square" aria-hidden="true" />
  ))}
