@@ -975,7 +975,7 @@ export default function Actividad() {
  : { background: 'rgba(var(--ink),0.07)' }}
  >
  {emoji ? (
- <span className="text-[11px] leading-none">{emoji}</span>
+ <span className="text-[10px] leading-none">{emoji}</span>
  ) : (
  <span className="text-[11px] font-semibold leading-none"
  style={{ color: d.isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
@@ -1022,7 +1022,7 @@ export default function Actividad() {
  : { background: 'rgba(var(--ink),0.07)' }}
  >
  {emoji ? (
- <span className="text-[11px] leading-none">{emoji}</span>
+ <span className="text-[10px] leading-none">{emoji}</span>
  ) : (
  <span className="text-[11px] font-semibold leading-none" style={{ color: 'rgba(var(--ink),0.4)' }}>
  {d.dayNum}
@@ -1339,9 +1339,9 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
 
  return (
  <>
-  <div className="grid grid-cols-7 gap-x-1 gap-y-1 max-w-[280px]">
+  <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
  {trailing.map(i => (
- <div key={`p-${i}`} className="w-7 h-7 mx-auto" aria-hidden="true" />
+ <div key={`p-${i}`} className="w-8 h-8 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
@@ -1361,7 +1361,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
- className="w-7 h-7 mx-auto rounded-full flex items-center justify-center transition-all relative"
+ className="w-8 h-8 mx-auto rounded-full flex items-center justify-center transition-all relative"
  style={isPR
  ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : show
@@ -1375,7 +1375,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : { background: 'rgba(var(--ink),0.07)' }
  }>
  {emoji ? (
- <span className="text-[11px] leading-none">{emoji}</span>
+ <span className="text-[10px] leading-none">{emoji}</span>
  ) : (
  <span className="text-[11px] font-semibold leading-none"
  style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>

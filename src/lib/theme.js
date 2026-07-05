@@ -12,6 +12,7 @@ const THEME_KEY = 'olympia_theme';
 export const CHART = {
   dark: {
     accent: '#f0e4d0',
+    accentOver: '#ffffff', // segunda vuelta del anillo de ritmo
     onAccent: '#2a121a',
     grid: 'rgba(245,237,224,0.08)',
     axis: 'rgba(245,237,224,0.18)',
@@ -24,6 +25,7 @@ export const CHART = {
   },
   light: {
     accent: '#4a1626',
+    accentOver: '#96203f', // vino más intenso y menos oscuro
     onAccent: '#f5ede0',
     grid: 'rgba(42,18,26,0.08)',
     axis: 'rgba(42,18,26,0.2)',

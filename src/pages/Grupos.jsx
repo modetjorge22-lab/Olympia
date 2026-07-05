@@ -510,7 +510,7 @@ export default function Grupos() {
 // Anillo de ritmo — % de horas del miembro respecto a la media del equipo.
 // El arco usa colores JS (CHART[mode]) porque los atributos SVG no resuelven var().
 function PaceRing({ pct, chart }) {
- const R = 26;
+ const R = 30;
  const C = 2 * Math.PI * R;
  const hasData = pct != null;
  // Primera vuelta: 0–100%. Si supera la media, el anillo da una segunda
@@ -519,33 +519,32 @@ function PaceRing({ pct, chart }) {
  const firstDash = hasData ? (Math.max(0, Math.min(pct, 100)) / 100) * C : 0;
  const overDash = overLap ? (Math.min(pct - 100, 100) / 100) * C : 0;
  return (
- <div className="flex flex-col items-center flex-shrink-0" style={{ width: 84 }}>
- <div style={{ position: 'relative', width: 68, height: 68 }}>
- <svg width="68" height="68" viewBox="0 0 68 68">
- <circle cx="34" cy="34" r={R} fill="none" stroke={chart.grid} strokeWidth="6" />
+ <div className="flex-1 flex flex-col items-center">
+ <div style={{ position: 'relative', width: 80, height: 80 }}>
+ <svg width="80" height="80" viewBox="0 0 80 80">
+ <circle cx="40" cy="40" r={R} fill="none" stroke={chart.grid} strokeWidth="6" />
  {hasData && firstDash > 0 && (
  <circle
- cx="34" cy="34" r={R} fill="none"
+ cx="40" cy="40" r={R} fill="none"
  stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
- strokeOpacity={overLap ? 0.35 : 1}
  strokeDasharray={`${firstDash} ${C - firstDash}`}
- transform="rotate(-90 34 34)"
+ transform="rotate(-90 40 40)"
  style={{ transition: 'stroke-dasharray 0.6s ease' }}
  />
  )}
  {overLap && overDash > 0 && (
  <circle
- cx="34" cy="34" r={R} fill="none"
- stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
+ cx="40" cy="40" r={R} fill="none"
+ stroke={chart.accentOver} strokeWidth="6" strokeLinecap="round"
  strokeDasharray={`${overDash} ${C - overDash}`}
- transform="rotate(-90 34 34)"
+ transform="rotate(-90 40 40)"
  style={{ transition: 'stroke-dasharray 0.6s ease' }}
  />
  )}
  </svg>
  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
  {hasData ? (
- <span className="font-bold font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
+ <span className="font-bold font-mono" style={{ fontSize: 16, color: 'rgba(var(--ink),0.95)' }}>
  {pct}<span style={{ fontSize: 9, color: 'rgba(var(--ink),0.5)' }}>%</span>
  </span>
  ) : (
@@ -658,9 +657,9 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
 
  {/* Mini calendario (izquierda) + ritmo vs media (derecha) */}
  <div className="flex items-center gap-2">
- <div className="grid grid-cols-7 gap-x-[2px] gap-y-[3px] flex-1" style={{ maxWidth: 200 }}>
+ <div className="grid grid-cols-7 gap-x-[3px] gap-y-1" style={{ width: '50%', flexShrink: 0 }}>
  {trailing.map(i => (
- <div key={`t-${i}`} className="w-5 h-5 mx-auto" aria-hidden="true" />
+ <div key={`t-${i}`} className="w-6 h-6 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
@@ -680,7 +679,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  return (
  <div key={day}
  onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="w-5 h-5 mx-auto rounded-full flex items-center justify-center"
+ className="w-6 h-6 mx-auto rounded-full flex items-center justify-center"
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
@@ -690,9 +689,9 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  : { background: 'rgba(var(--ink),0.07)' }),
  }}>
  {emoji ? (
- <span className="text-[9px] leading-none">{emoji}</span>
+ <span className="text-[10px] leading-none">{emoji}</span>
  ) : (
- <span className="text-[8px] font-semibold leading-none"
+ <span className="text-[9px] font-semibold leading-none"
  style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {day}
  </span>
