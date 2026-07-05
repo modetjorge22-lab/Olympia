@@ -510,41 +510,56 @@ export default function Grupos() {
 // Anillo de ritmo — % de horas del miembro respecto a la media del equipo.
 // El arco usa colores JS (CHART[mode]) porque los atributos SVG no resuelven var().
 function PaceRing({ pct, chart }) {
- const R = 30;
- const C = 2 * Math.PI * R;
+ // Anillo interior: primera vuelta (0-100% de la media).
+ // Si se supera la media, el exceso crece como un anillo exterior propio
+ // y la primera vuelta se marca como completada con una insignia ✓.
+ const R_IN = 25;
+ const R_OUT = 34;
+ const C_IN = 2 * Math.PI * R_IN;
+ const C_OUT = 2 * Math.PI * R_OUT;
  const hasData = pct != null;
- // Primera vuelta: 0–100%. Si supera la media, el anillo da una segunda
- // vuelta: la primera queda atenuada de fondo y el exceso se dibuja encima.
  const overLap = hasData && pct > 100;
- const firstDash = hasData ? (Math.max(0, Math.min(pct, 100)) / 100) * C : 0;
- const overDash = overLap ? (Math.min(pct - 100, 100) / 100) * C : 0;
+ const firstDash = hasData ? (Math.max(0, Math.min(pct, 100)) / 100) * C_IN : 0;
+ const overDash = overLap ? (Math.min(pct - 100, 100) / 100) * C_OUT : 0;
  return (
  <div className="flex-1 flex flex-col items-center">
- <div style={{ position: 'relative', width: 80, height: 80 }}>
- <svg width="80" height="80" viewBox="0 0 80 80">
- <circle cx="40" cy="40" r={R} fill="none" stroke={chart.grid} strokeWidth="6" />
+ <div style={{ position: 'relative', width: 84, height: 84 }}>
+ <svg width="84" height="84" viewBox="0 0 84 84">
+ {/* pista interior */}
+ <circle cx="42" cy="42" r={R_IN} fill="none" stroke={chart.grid} strokeWidth="6" />
+ {/* primera vuelta */}
  {hasData && firstDash > 0 && (
  <circle
- cx="40" cy="40" r={R} fill="none"
+ cx="42" cy="42" r={R_IN} fill="none"
  stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
- strokeDasharray={`${firstDash} ${C - firstDash}`}
- transform="rotate(-90 40 40)"
+ strokeDasharray={`${firstDash} ${C_IN - firstDash}`}
+ transform="rotate(-90 42 42)"
  style={{ transition: 'stroke-dasharray 0.6s ease' }}
  />
  )}
- {overLap && overDash > 0 && (
+ {/* segunda vuelta — anillo exterior */}
+ {overLap && (
+ <>
+ <circle cx="42" cy="42" r={R_OUT} fill="none" stroke={chart.grid} strokeWidth="4" />
+ {overDash > 0 && (
  <circle
- cx="40" cy="40" r={R} fill="none"
- stroke={chart.accentOver} strokeWidth="6" strokeLinecap="round"
- strokeDasharray={`${overDash} ${C - overDash}`}
- transform="rotate(-90 40 40)"
+ cx="42" cy="42" r={R_OUT} fill="none"
+ stroke={chart.accentOver} strokeWidth="4" strokeLinecap="round"
+ strokeDasharray={`${overDash} ${C_OUT - overDash}`}
+ transform="rotate(-90 42 42)"
  style={{ transition: 'stroke-dasharray 0.6s ease' }}
  />
+ )}
+ </>
+ )}
+ {/* marca de vuelta completada — punto en la costura del anillo (estilo Apple) */}
+ {overLap && (
+ <circle cx="42" cy={42 - R_IN} r="2.4" fill={chart.onAccent} />
  )}
  </svg>
  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
  {hasData ? (
- <span className="font-bold font-mono" style={{ fontSize: 16, color: 'rgba(var(--ink),0.95)' }}>
+ <span className="font-bold font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
  {pct}<span style={{ fontSize: 9, color: 'rgba(var(--ink),0.5)' }}>%</span>
  </span>
  ) : (
@@ -657,9 +672,9 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
 
  {/* Mini calendario (izquierda) + ritmo vs media (derecha) */}
  <div className="flex items-center gap-2">
- <div className="grid grid-cols-7 gap-x-[3px] gap-y-1" style={{ width: '50%', flexShrink: 0 }}>
+ <div className="grid grid-cols-7 gap-x-1 gap-y-1" style={{ width: '75%', flexShrink: 0 }}>
  {trailing.map(i => (
- <div key={`t-${i}`} className="w-6 h-6 mx-auto" aria-hidden="true" />
+ <div key={`t-${i}`} className="w-7 h-7 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
@@ -679,7 +694,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  return (
  <div key={day}
  onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="w-6 h-6 mx-auto rounded-full flex items-center justify-center"
+ className="w-7 h-7 mx-auto rounded-full flex items-center justify-center"
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
