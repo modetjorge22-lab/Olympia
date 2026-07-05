@@ -493,6 +493,7 @@ export default function Grupos() {
  <MiniMemberCard
  key={member.email}
  member={member}
+ teamAvgHours={memberStats.length > 0 ? memberStats.reduce((sum, m) => sum + m.totalHours, 0) / memberStats.length : 0}
  year={year} month={month} daysInMonth={daysInMonth}
  plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
  memberGoals={teamGoals.filter(g => g.user_email === member.email)}
@@ -502,6 +503,59 @@ export default function Grupos() {
  ))}
  </div>
  </div>
+ </div>
+ );
+}
+
+// Anillo de ritmo — % de horas del miembro respecto a la media del equipo.
+// El arco usa colores JS (CHART[mode]) porque los atributos SVG no resuelven var().
+function PaceRing({ pct, chart }) {
+ const R = 26;
+ const C = 2 * Math.PI * R;
+ const hasData = pct != null;
+ // Primera vuelta: 0–100%. Si supera la media, el anillo da una segunda
+ // vuelta: la primera queda atenuada de fondo y el exceso se dibuja encima.
+ const overLap = hasData && pct > 100;
+ const firstDash = hasData ? (Math.max(0, Math.min(pct, 100)) / 100) * C : 0;
+ const overDash = overLap ? (Math.min(pct - 100, 100) / 100) * C : 0;
+ return (
+ <div className="flex flex-col items-center flex-shrink-0" style={{ width: 84 }}>
+ <div style={{ position: 'relative', width: 68, height: 68 }}>
+ <svg width="68" height="68" viewBox="0 0 68 68">
+ <circle cx="34" cy="34" r={R} fill="none" stroke={chart.grid} strokeWidth="6" />
+ {hasData && firstDash > 0 && (
+ <circle
+ cx="34" cy="34" r={R} fill="none"
+ stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
+ strokeOpacity={overLap ? 0.35 : 1}
+ strokeDasharray={`${firstDash} ${C - firstDash}`}
+ transform="rotate(-90 34 34)"
+ style={{ transition: 'stroke-dasharray 0.6s ease' }}
+ />
+ )}
+ {overLap && overDash > 0 && (
+ <circle
+ cx="34" cy="34" r={R} fill="none"
+ stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
+ strokeDasharray={`${overDash} ${C - overDash}`}
+ transform="rotate(-90 34 34)"
+ style={{ transition: 'stroke-dasharray 0.6s ease' }}
+ />
+ )}
+ </svg>
+ <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+ {hasData ? (
+ <span className="font-bold font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
+ {pct}<span style={{ fontSize: 9, color: 'rgba(var(--ink),0.5)' }}>%</span>
+ </span>
+ ) : (
+ <span className="font-bold font-mono" style={{ fontSize: 14, color: 'rgba(var(--ink),0.3)' }}>–%</span>
+ )}
+ </div>
+ </div>
+ <span className="text-[9px] font-semibold uppercase tracking-wider mt-1" style={{ color: 'rgba(var(--ink),0.45)' }}>
+ Ritmo
+ </span>
  </div>
  );
 }
@@ -564,7 +618,9 @@ function SportFilterDropdown({ value, onChange, types }) {
  );
 }
 
-function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set(), activityBreakdown = [] }) {
+function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set(), activityBreakdown = [], teamAvgHours = 0 }) {
+ const { chart } = useTheme();
+ const pacePct = teamAvgHours > 0 ? Math.round((member.totalHours / teamAvgHours) * 100) : null;
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
  const [expandedDay, setExpandedDay] = useState(null);
@@ -600,10 +656,11 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  )}
  </div>
 
- {/* Mini calendario */}
- <div className="grid grid-cols-7 gap-x-[3px] gap-y-1">
+ {/* Mini calendario (izquierda) + ritmo vs media (derecha) */}
+ <div className="flex items-center gap-2">
+ <div className="grid grid-cols-7 gap-x-[2px] gap-y-[3px] flex-1" style={{ maxWidth: 200 }}>
  {trailing.map(i => (
- <div key={`t-${i}`} className="w-6 h-6 mx-auto" aria-hidden="true" />
+ <div key={`t-${i}`} className="w-5 h-5 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
@@ -623,19 +680,19 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  return (
  <div key={day}
  onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="w-6 h-6 mx-auto rounded-full flex items-center justify-center"
+ className="w-5 h-5 mx-auto rounded-full flex items-center justify-center"
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : show ? { background: isExpanded ? 'var(--accent-strong)' : 'var(--accent)', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }
  : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'transparent' }),
+ : { background: 'rgba(var(--ink),0.07)' }),
  }}>
  {emoji ? (
- <span className="text-[11px] leading-none">{emoji}</span>
+ <span className="text-[9px] leading-none">{emoji}</span>
  ) : (
- <span className="text-[9px] font-semibold leading-none"
+ <span className="text-[8px] font-semibold leading-none"
  style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {day}
  </span>
@@ -643,6 +700,8 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </div>
  );
  })}
+ </div>
+ <PaceRing pct={pacePct} chart={chart} />
  </div>
 
  {/* Desglose de actividades del mes */}
