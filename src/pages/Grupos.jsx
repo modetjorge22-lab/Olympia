@@ -514,7 +514,9 @@ function PaceRing({ pct, chart }) {
  // Si se supera la media, el exceso crece como un anillo exterior propio
  // y la primera vuelta se marca como completada con una insignia ✓.
  const R_IN = 25;
- const R_OUT = 34;
+ // Pegado al interior: borde exterior del anillo interno (25+3) + mitad del
+ // grosor del externo (2) = 30 → los dos anillos se tocan sin hueco
+ const R_OUT = 30;
  const C_IN = 2 * Math.PI * R_IN;
  const C_OUT = 2 * Math.PI * R_OUT;
  const hasData = pct != null;
