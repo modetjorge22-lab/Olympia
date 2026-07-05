@@ -14,12 +14,12 @@ export default function LoadingScreen() {
       gap: 18,
     }}>
       <div style={{ animation: 'olympia-breathe 2.2s ease-in-out infinite' }}>
-        <InfinityMark size={28} />
+        <InfinityMark size={34} />
       </div>
       <span style={{
         fontFamily: '"DM Sans", system-ui, sans-serif',
         fontWeight: 400,
-        fontSize: 22,
+        fontSize: 26,
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
         color: 'rgba(var(--ink),0.92)',

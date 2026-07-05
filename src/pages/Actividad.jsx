@@ -820,24 +820,24 @@ export default function Actividad() {
 
  {/* Calendario — mismo marco que la gráfica, comparte el filtro de actividad */}
  <div ref={calendarRef} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
- <div className="flex items-center justify-between mb-4">
- <div className="flex items-center gap-3">
+ <div className="flex items-center justify-between mb-3">
+ <div className="flex items-center gap-2.5">
  {avatarUrl ? (
  <img
  src={avatarUrl}
  alt={userName}
- className="w-11 h-11 rounded-xl object-cover"
+ className="w-8 h-8 rounded-full object-cover"
  style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
  />
  ) : (
- <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[12px]"
+ <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px]"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {initials}
  </div>
  )}
  <div>
- <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
- <p className="text-[12px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
+ <p className="text-[13px] font-semibold leading-tight" style={{ color: TEXT_PRIMARY }}>{userName}</p>
+ <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
  </div>
  </div>
  </div>
@@ -967,18 +967,21 @@ export default function Actividad() {
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ <div className="w-9 h-9 rounded-full flex items-center justify-center"
  style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : d.isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.08)' }}
+ : { background: 'transparent' }}
  >
+ {emoji ? (
+ <span className="text-[14px] leading-none">{emoji}</span>
+ ) : (
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : d.isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ style={{ color: d.isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {d.dayNum}
  </span>
- {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ )}
  </div>
  {d.hasActivity
  ? d.acts.map((act, idx) => {
@@ -1012,17 +1015,19 @@ export default function Actividad() {
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-full aspect-square rounded-lg flex flex-col items-center justify-center"
+ <div className="w-9 h-9 rounded-full flex items-center justify-center"
  style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
  : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : { background: 'rgba(var(--ink),0.08)' }}
+ : { background: 'transparent' }}
  >
- <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : d.hasActivity ? DAY_PALETTE.completed.text : d.hasPlan ? DAY_PALETTE.planned.text : 'rgba(var(--ink),0.4)' }}>
+ {emoji ? (
+ <span className="text-[14px] leading-none">{emoji}</span>
+ ) : (
+ <span className="text-[11px] font-semibold leading-none" style={{ color: 'rgba(var(--ink),0.4)' }}>
  {d.dayNum}
  </span>
- {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ )}
  </div>
  {d.hasActivity
  ? d.acts.map((act, idx) => {
@@ -1334,9 +1339,9 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
 
  return (
  <>
-  <div className="grid grid-cols-7 gap-[5px]">
+  <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
  {trailing.map(i => (
- <div key={`p-${i}`} className="aspect-square" aria-hidden="true" />
+ <div key={`p-${i}`} className="w-8 h-8 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
@@ -1356,7 +1361,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
- className="aspect-square rounded-lg flex flex-col items-center justify-center transition-all relative"
+ className="w-8 h-8 mx-auto rounded-full flex items-center justify-center transition-all relative"
  style={isPR
  ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : show
@@ -1367,13 +1372,16 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday
  ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.08)' }
+ : { background: 'transparent' }
  }>
+ {emoji ? (
+ <span className="text-[14px] leading-none">{emoji}</span>
+ ) : (
  <span className="text-[11px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : show ? DAY_PALETTE.completed.text : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {day}
  </span>
- {emoji && <span className="text-[10px] leading-none mt-0.5">{emoji}</span>}
+ )}
  {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(var(--ink),0.12)' }}>

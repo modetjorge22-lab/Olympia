@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Users, TrendingUp, Zap, Trophy, ChevronDown, Activity } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
@@ -506,6 +506,64 @@ export default function Grupos() {
  );
 }
 
+function SportFilterDropdown({ value, onChange, types }) {
+ const [open, setOpen] = useState(false);
+ const ref = useRef(null);
+
+ useEffect(() => {
+ function handleClick(e) {
+ if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+ }
+ document.addEventListener('mousedown', handleClick);
+ return () => document.removeEventListener('mousedown', handleClick);
+ }, []);
+
+ const label = value
+ ? `${ACTIVITY_TYPES[value]?.emoji || ''} ${ACTIVITY_TYPES[value]?.label || value}`
+ : 'Todos';
+
+ return (
+ <div ref={ref} style={{ position: 'relative' }}>
+ <button
+ onClick={() => setOpen(o => !o)}
+ className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+ style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: value ? TEXT_PRIMARY : TEXT_MUTED }}
+ >
+ {label}
+ <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform"
+ style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: TEXT_MUTED }} />
+ </button>
+ {open && (
+ <div style={{
+ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 50,
+ minWidth: 150,
+ background: 'var(--surface)',
+ border: '1px solid rgba(var(--ink),0.16)',
+ borderRadius: 12, padding: 4,
+ boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+ }}>
+ <button
+ onClick={() => { onChange(null); setOpen(false); }}
+ className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left"
+ style={value === null ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
+ >
+ Todos
+ </button>
+ {types.map(t => (
+ <button key={t}
+ onClick={() => { onChange(t); setOpen(false); }}
+ className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left"
+ style={value === t ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
+ >
+ <span>{ACTIVITY_TYPES[t]?.emoji}</span>{ACTIVITY_TYPES[t]?.label}
+ </button>
+ ))}
+ </div>
+ )}
+ </div>
+ );
+}
+
 function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set(), activityBreakdown = [] }) {
  const now = new Date();
  const [goalsOpen, setGoalsOpen] = useState(false);
@@ -521,46 +579,31 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <div className="rounded-2xl p-4" style={glassCard}>
  {/* Header */}
  <div className="flex items-center justify-between mb-3">
- <div className="flex items-center gap-3">
+ <div className="flex items-center gap-2.5">
  {member.avatar_url ? (
  <img src={member.avatar_url} alt={member.name}
- className="w-9 h-9 rounded-xl object-cover"
+ className="w-8 h-8 rounded-full object-cover"
  style={{ border: '1.5px solid rgba(var(--ink),0.22)' }} />
  ) : (
- <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[11px]"
+ <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px]"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
  <div>
- <p className="text-[13px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>{member.totalHours}h · {member.sessions} sesiones</p>
+ <p className="text-[12px] font-semibold leading-tight" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
+ <p className="text-[10px]" style={{ color: TEXT_SECONDARY }}>{member.totalHours}h · {member.sessions} sesiones</p>
  </div>
  </div>
- </div>
-
- {/* Filtro por actividad */}
  {availableTypes.length > 1 && (
- <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2" style={{ scrollbarWidth: 'none' }}>
- <button onClick={() => setFilterType(null)}
- className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-semibold transition-all"
- style={filterType === null ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED }}>
- Todo
- </button>
- {availableTypes.map(t => (
- <button key={t} onClick={() => setFilterType(f => f === t ? null : t)} title={ACTIVITY_TYPES[t]?.label}
- className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[11px] transition-all"
- style={filterType === t ? { background: ACCENT } : { background: 'rgba(var(--ink),0.07)' }}>
- <span>{ACTIVITY_TYPES[t]?.emoji}</span>
- </button>
- ))}
- </div>
+ <SportFilterDropdown value={filterType} onChange={setFilterType} types={availableTypes} />
  )}
+ </div>
 
  {/* Mini calendario */}
- <div className="grid grid-cols-7 gap-[3px]">
+ <div className="grid grid-cols-7 gap-x-[3px] gap-y-1">
  {trailing.map(i => (
- <div key={`t-${i}`} className="aspect-square" aria-hidden="true" />
+ <div key={`t-${i}`} className="w-6 h-6 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const acts = member.actByDay[day] || [];
@@ -580,20 +623,23 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  return (
  <div key={day}
  onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="aspect-square rounded-md flex flex-col items-center justify-center"
+ className="w-6 h-6 mx-auto rounded-full flex items-center justify-center"
  style={{
  cursor: has ? 'pointer' : 'default',
  ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
  : show ? { background: isExpanded ? 'var(--accent-strong)' : 'var(--accent)', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }
  : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
  : isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.08)' }),
+ : { background: 'transparent' }),
  }}>
- <span className="text-[8px] font-semibold leading-none"
- style={{ color: isPR ? DAY_PALETTE.pr.text : show ? 'var(--on-accent)' : showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ {emoji ? (
+ <span className="text-[11px] leading-none">{emoji}</span>
+ ) : (
+ <span className="text-[9px] font-semibold leading-none"
+ style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
  {day}
  </span>
- {emoji && <span className="text-[7px] leading-none mt-0.5">{emoji}</span>}
+ )}
  </div>
  );
  })}

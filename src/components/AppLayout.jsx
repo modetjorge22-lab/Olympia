@@ -46,11 +46,11 @@ export default function AppLayout({ children }) {
           style={{ height: HEADER_H }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <InfinityMark size={12} />
+            <InfinityMark size={15} />
             <div style={{
               fontFamily: '"DM Sans", system-ui, sans-serif',
               fontWeight: 400,
-              fontSize: 11,
+              fontSize: 13,
               letterSpacing: '0.3em',
               textTransform: 'uppercase',
               color: 'rgba(var(--ink),0.92)',
