@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
@@ -42,8 +42,10 @@ function Field({ icon: Icon, label, ...props }) {
 
 export default function Login() {
   const { signInWithEmail, signInWithGoogle, signUp } = useAuth();
+  const location = useLocation();
+  const fromLanding = location.state?.existing === true;
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
@@ -95,7 +97,9 @@ export default function Login() {
             Olympia
           </h1>
           <p className="mt-2 text-[14px]" style={{ color: 'rgba(var(--ink),0.5)' }}>
-            {isSignUp ? 'Crea tu cuenta' : 'Inicia sesión para continuar'}
+            {fromLanding
+              ? 'Ese email ya tiene cuenta — inicia sesión'
+              : isSignUp ? 'Crea tu cuenta' : 'Inicia sesión para continuar'}
           </p>
         </div>
 

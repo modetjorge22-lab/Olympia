@@ -7,8 +7,11 @@ import { DataProvider } from '@/lib/DataContext';
 import AppLayout from '@/components/AppLayout';
 import LoadingScreen from '@/components/LoadingScreen';
 
+// Landing importada de forma directa (no lazy): debe pintarse al instante,
+// sin splash ni espera de chunk.
+import Landing from '@/pages/Landing';
+
 // Lazy-load para code splitting — cada página en su propio chunk
-const Landing = lazy(() => import('@/pages/Landing'));
 const Login = lazy(() => import('@/pages/Login'));
 const Feed = lazy(() => import('@/pages/Feed'));
 const Actividad = lazy(() => import('@/pages/Actividad'));
@@ -67,6 +70,14 @@ function AuthedLayout() {
   );
 }
 
+// Para la landing: se pinta YA (sin splash ni LoadingScreen). Si el visitante
+// resulta tener sesión, se le redirige en cuanto el auth resuelve.
+function LandingRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (!loading && user) return <Navigate to="/actividad" replace />;
+  return children;
+}
+
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   const splashDone = useMinSplash();
@@ -86,7 +97,7 @@ function AppRoutes() {
         <Route path="/mas" element={<Mas />} />
       </Route>
       {/* Landing pública en la raíz — los usuarios logueados van directos a la app */}
-      <Route path="/" element={<PublicRoute><Suspense fallback={<LoadingScreen />}><Landing /></Suspense></PublicRoute>} />
+      <Route path="/" element={<LandingRoute><Landing /></LandingRoute>} />
       <Route path="*" element={<Navigate to="/actividad" replace />} />
     </Routes>
   );
