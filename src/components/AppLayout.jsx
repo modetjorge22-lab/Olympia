@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useMonth } from '@/lib/MonthContext';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
@@ -30,8 +31,14 @@ const glass = {
 export default function AppLayout({ children }) {
   const location = useLocation();
   const { currentMonth, goBack, goForward } = useMonth();
+  const mainRef = useRef(null);
 
   useStravaAutoSync();
+
+  // Al cambiar de pestaña, cada página arranca desde arriba
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   const monthLabel = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
@@ -89,13 +96,22 @@ export default function AppLayout({ children }) {
       </header>
 
       <main
+        ref={mainRef}
         className="flex-1 overflow-y-auto"
         style={{
           paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H + 16}px)`,
           paddingBottom: `calc(env(safe-area-inset-bottom) + ${NAV_H + 28}px)`,
         }}
       >
-        {children}
+        {/* Transición suave entre pestañas — fundido con leve deslizamiento */}
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          {children}
+        </motion.div>
       </main>
 
       {/* Bottom nav flotante — píldora de vidrio */}
@@ -116,7 +132,7 @@ export default function AppLayout({ children }) {
                 <NavLink
                   key={path}
                   to={path}
-                  className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all relative"
+                  className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-transform duration-150 active:scale-90 relative"
                   style={{ minWidth: 64 }}
                 >
                   {isActive && (

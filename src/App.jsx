@@ -14,7 +14,8 @@ const Actividad = lazy(() => import('@/pages/Actividad'));
 const Grupos = lazy(() => import('@/pages/Grupos'));
 const Mas = lazy(() => import('@/pages/Mas'));
 
-const MIN_SPLASH_MS = 2000;
+// Splash mínimo corto — suficiente para que no parpadee, sin hacer esperar
+const MIN_SPLASH_MS = 700;
 
 function useMinSplash() {
   const [elapsed, setElapsed] = useState(false);
@@ -32,9 +33,24 @@ function PageFallback() {
 
 // Layout único: MonthProvider + DataProvider + AppLayout
 // Se monta UNA vez. Sólo la <Outlet /> cambia al navegar.
+// Precarga los chunks de todas las pestañas en cuanto la app está ociosa,
+// para que el primer cambio de pestaña no muestre un hueco en blanco.
+function usePrefetchPages() {
+  useEffect(() => {
+    const t = setTimeout(() => {
+      import('@/pages/Feed');
+      import('@/pages/Actividad');
+      import('@/pages/Grupos');
+      import('@/pages/Mas');
+    }, 900);
+    return () => clearTimeout(t);
+  }, []);
+}
+
 function AuthedLayout() {
   const { user, loading } = useAuth();
   const splashDone = useMinSplash();
+  usePrefetchPages();
   if (loading || !splashDone) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   return (
