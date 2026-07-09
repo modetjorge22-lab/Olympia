@@ -11,17 +11,39 @@ const BG = '#f8f3ea';        // intermedio entre #f6f0e4 y #faf7f0
 const ACCENT = '#38101d';    // vino más oscuro — botón y manifesto
 const ON_ACCENT = '#f5ede0';
 
+// Textos por idioma
+const T = {
+  es: {
+    cta: 'Solicitar acceso',
+    manifesto: 'Creado para High-performers.',
+    placeholder: 'tu@email.com',
+    done: 'Pronto tendrás noticias.',
+    invalid: 'Escribe un email válido',
+    fail: 'No se pudo enviar. Inténtalo de nuevo.',
+  },
+  en: {
+    cta: 'Request access',
+    manifesto: 'Built for high-performers.',
+    placeholder: 'you@email.com',
+    done: "You'll hear from us soon.",
+    invalid: 'Enter a valid email',
+    fail: "Couldn't send. Try again.",
+  },
+};
+
 export default function Landing() {
   const navigate = useNavigate();
   const [state, setState] = useState('idle'); // idle | form | sending | done
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [lang, setLang] = useState('es');
+  const t = T[lang];
 
   const submit = async (e) => {
     e.preventDefault();
     const clean = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(clean)) {
-      setError('Escribe un email válido');
+      setError(t.invalid);
       return;
     }
     setState('sending');
@@ -40,7 +62,7 @@ export default function Landing() {
     const { error: err } = await supabase.from('waitlist').insert({ email: clean });
     if (err && err.code !== '23505') {
       console.error('waitlist error:', err);
-      setError('No se pudo enviar. Inténtalo de nuevo.');
+      setError(t.fail);
       setState('form');
       return;
     }
@@ -81,7 +103,7 @@ export default function Landing() {
         <div className="flex flex-col items-end flex-shrink-0">
           {state === 'done' ? (
             <p style={{ fontSize: 12, color: `rgba(${INK},0.7)` }}>
-              Pronto tendrás noticias.
+              {t.done}
             </p>
           ) : state === 'idle' ? (
             <button
@@ -89,7 +111,7 @@ export default function Landing() {
               className="px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-transform active:scale-95"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
-              Solicitar acceso
+              {t.cta}
             </button>
           ) : (
             <form onSubmit={submit} className="flex items-center gap-1.5">
@@ -98,7 +120,7 @@ export default function Landing() {
                 autoFocus
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError(''); }}
-                placeholder="tu@email.com"
+                placeholder={t.placeholder}
                 className="w-[160px] px-3 py-2 rounded-lg text-[12px] focus:outline-none"
                 style={{
                   background: 'transparent',
@@ -130,17 +152,44 @@ export default function Landing() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-        className="px-5 w-full"
+        className="px-5 w-full flex items-end justify-between gap-6"
       >
         <p style={{
-          fontSize: 12,
-          lineHeight: 1.7,
+          fontSize: 17,
+          lineHeight: 1.6,
           fontStyle: 'italic',
           color: ACCENT,
-          maxWidth: 260,
+          maxWidth: 340,
+          marginLeft: 28,
+          marginBottom: 44,
         }}>
-          Creado para High-performers.
+          {t.manifesto}
         </p>
+
+        {/* Switch de idioma — Esp / Eng */}
+        <div className="flex items-center gap-1.5 flex-shrink-0" style={{ marginBottom: 44, fontSize: 12 }}>
+          <button
+            onClick={() => setLang('es')}
+            className="transition-opacity"
+            style={{
+              color: lang === 'es' ? ACCENT : `rgba(${INK},0.4)`,
+              fontWeight: lang === 'es' ? 700 : 400,
+            }}
+          >
+            Esp
+          </button>
+          <span style={{ color: `rgba(${INK},0.3)` }}>/</span>
+          <button
+            onClick={() => setLang('en')}
+            className="transition-opacity"
+            style={{
+              color: lang === 'en' ? ACCENT : `rgba(${INK},0.4)`,
+              fontWeight: lang === 'en' ? 700 : 400,
+            }}
+          >
+            Eng
+          </button>
+        </div>
       </motion.div>
     </div>
   );
