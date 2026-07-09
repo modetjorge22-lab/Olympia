@@ -1,7 +1,7 @@
 {
   "name": "Olympia",
   "short_name": "Olympia",
-  "description": "Fitness tracking entre compañeros",
+  "description": "Registra tus horas de entrenamiento y compite cada mes con tu grupo",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

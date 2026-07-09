@@ -435,7 +435,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             style={{ background: ACCENT, color: ON_ACCENT }}
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 rounded-full animate-spin"
+                style={{ borderColor: 'rgba(var(--accent-rgb),0.3)', borderTopColor: 'var(--on-accent)' }} />
             ) : (
               <>
                 {activityType && ACTIVITY_TYPES[activityType]?.emoji}

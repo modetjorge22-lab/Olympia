@@ -8,6 +8,7 @@ import AppLayout from '@/components/AppLayout';
 import LoadingScreen from '@/components/LoadingScreen';
 
 // Lazy-load para code splitting — cada página en su propio chunk
+const Landing = lazy(() => import('@/pages/Landing'));
 const Login = lazy(() => import('@/pages/Login'));
 const Feed = lazy(() => import('@/pages/Feed'));
 const Actividad = lazy(() => import('@/pages/Actividad'));
@@ -84,7 +85,8 @@ function AppRoutes() {
         <Route path="/grupos" element={<Grupos />} />
         <Route path="/mas" element={<Mas />} />
       </Route>
-      <Route path="/" element={<Navigate to="/actividad" replace />} />
+      {/* Landing pública en la raíz — los usuarios logueados van directos a la app */}
+      <Route path="/" element={<PublicRoute><Suspense fallback={<LoadingScreen />}><Landing /></Suspense></PublicRoute>} />
       <Route path="*" element={<Navigate to="/actividad" replace />} />
     </Routes>
   );
