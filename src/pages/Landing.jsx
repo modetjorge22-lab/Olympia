@@ -62,14 +62,14 @@ export default function Landing() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="flex items-center justify-between gap-4 px-6 max-w-3xl mx-auto w-full"
+        className="flex items-center justify-between gap-4 px-5 w-full"
       >
         <div className="flex items-center gap-3">
-          <InfinityMark size={20} color={`rgba(${INK},0.92)`} />
+          <InfinityMark size={24} color={`rgba(${INK},0.92)`} />
           <span style={{
             fontFamily: '"DM Sans", system-ui, sans-serif',
             fontWeight: 400,
-            fontSize: 15,
+            fontSize: 17,
             letterSpacing: '0.32em',
             textTransform: 'uppercase',
             color: `rgba(${INK},0.92)`,
@@ -86,7 +86,7 @@ export default function Landing() {
           ) : state === 'idle' ? (
             <button
               onClick={() => setState('form')}
-              className="px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-transform active:scale-95"
+              className="px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-transform active:scale-95"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
               Solicitar acceso
@@ -99,7 +99,7 @@ export default function Landing() {
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError(''); }}
                 placeholder="tu@email.com"
-                className="w-[170px] px-3.5 py-2.5 rounded-lg text-[13px] focus:outline-none"
+                className="w-[160px] px-3 py-2 rounded-lg text-[12px] focus:outline-none"
                 style={{
                   background: 'transparent',
                   border: `1px solid rgba(${INK},0.25)`,
@@ -109,7 +109,7 @@ export default function Landing() {
               <button
                 type="submit"
                 disabled={state === 'sending'}
-                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 disabled:opacity-60"
+                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 disabled:opacity-60"
                 style={{ background: ACCENT, color: ON_ACCENT }}
                 aria-label="Enviar"
               >
@@ -130,7 +130,7 @@ export default function Landing() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-        className="px-6 max-w-3xl mx-auto w-full"
+        className="px-5 w-full"
       >
         <p style={{
           fontSize: 12,
