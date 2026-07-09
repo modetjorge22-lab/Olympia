@@ -15,8 +15,17 @@ const navItems = [
   { path: '/mas', label: 'Más', icon: MoreHorizontal },
 ];
 
-const HEADER_H = 56;
-const NAV_H = 68;
+const HEADER_H = 52;
+const NAV_H = 60;
+
+// Liquid glass — vidrio translúcido flotante con blur y saturación
+const glass = {
+  background: 'var(--glass-bg)',
+  backdropFilter: 'blur(24px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+  border: '1px solid var(--glass-border)',
+  boxShadow: 'var(--glass-shadow)',
+};
 
 export default function AppLayout({ children }) {
   const location = useLocation();
@@ -30,55 +39,51 @@ export default function AppLayout({ children }) {
     <>
     <FeatureAnnouncement />
     <div className="min-h-screen flex flex-col">
-      {/* Header — fondo vino con blur sutil */}
+      {/* Header flotante — píldora de vidrio */}
       <header
         className="fixed top-0 left-0 right-0 z-50"
-        style={{
-          paddingTop: 'env(safe-area-inset-top)',
-          background: 'var(--header-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(var(--ink),0.08)',
-        }}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 8px)', pointerEvents: 'none' }}
       >
-        <div
-          className="flex items-center justify-between px-4 max-w-lg mx-auto"
-          style={{ height: HEADER_H }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <InfinityMark size={15} />
-            <div style={{
-              fontFamily: '"DM Sans", system-ui, sans-serif',
-              fontWeight: 400,
-              fontSize: 13,
-              letterSpacing: '0.3em',
-              textTransform: 'uppercase',
-              color: 'rgba(var(--ink),0.92)',
-            }}>
-              Olympia
-            </div>
-          </div>
-
+        <div className="mx-auto max-w-lg px-3">
           <div
-            className="flex items-center gap-3 px-3 py-1.5 rounded-xl"
-            style={{
-              background: 'rgba(var(--ink),0.08)',
-              border: '1px solid rgba(var(--ink),0.14)',
-            }}
+            className="flex items-center justify-between pl-4 pr-2"
+            style={{ height: HEADER_H, borderRadius: HEADER_H / 2, pointerEvents: 'auto', ...glass }}
           >
-            <button onClick={goBack} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(var(--ink),0.92)' }}>
-              {monthLabel}
-            </span>
-            <button onClick={goForward} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <InfinityMark size={15} />
+              <div style={{
+                fontFamily: '"DM Sans", system-ui, sans-serif',
+                fontWeight: 400,
+                fontSize: 13,
+                letterSpacing: '0.3em',
+                textTransform: 'uppercase',
+                color: 'rgba(var(--ink),0.92)',
+              }}>
+                Olympia
+              </div>
+            </div>
+
+            <div
+              className="flex items-center gap-3 px-3 py-1.5 rounded-full"
+              style={{
+                background: 'rgba(var(--ink),0.08)',
+                border: '1px solid rgba(var(--ink),0.1)',
+              }}
+            >
+              <button onClick={goBack} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(var(--ink),0.92)' }}>
+                {monthLabel}
+              </span>
+              <button onClick={goForward} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -86,59 +91,55 @@ export default function AppLayout({ children }) {
       <main
         className="flex-1 overflow-y-auto"
         style={{
-          paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H}px)`,
-          paddingBottom: `calc(env(safe-area-inset-bottom) + ${NAV_H}px)`,
+          paddingTop: `calc(env(safe-area-inset-top) + ${HEADER_H + 16}px)`,
+          paddingBottom: `calc(env(safe-area-inset-bottom) + ${NAV_H + 28}px)`,
         }}
       >
         {children}
       </main>
 
-      {/* Bottom nav — fondo vino con blur sutil */}
+      {/* Bottom nav flotante — píldora de vidrio */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50"
-        style={{
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          background: 'var(--header-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(var(--ink),0.08)',
-        }}
+        className="fixed left-0 right-0 z-50"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)', pointerEvents: 'none' }}
       >
-        <div
-          className="flex items-center justify-around px-2 max-w-lg mx-auto"
-          style={{ height: NAV_H }}
-        >
-          {navItems.map(({ path, label, icon: Icon }) => {
-            const isActive = location.pathname === path ||
-              (path === '/actividad' && location.pathname === '/');
+        <div className="mx-auto px-4" style={{ maxWidth: 420 }}>
+          <div
+            className="flex items-center justify-around px-2"
+            style={{ height: NAV_H, borderRadius: NAV_H / 2, pointerEvents: 'auto', ...glass }}
+          >
+            {navItems.map(({ path, label, icon: Icon }) => {
+              const isActive = location.pathname === path ||
+                (path === '/actividad' && location.pathname === '/');
 
-            return (
-              <NavLink
-                key={path}
-                to={path}
-                className="flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all relative"
-                style={{ minWidth: 64 }}
-              >
-                {isActive && (
-                  <div
-                    className="absolute inset-0 rounded-xl"
-                    style={{ background: 'rgba(var(--ink),0.1)' }}
-                  />
-                )}
-                <Icon
-                  className="w-[20px] h-[20px] transition-colors relative z-10"
-                  strokeWidth={isActive ? 2.2 : 1.6}
-                  style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
-                />
-                <span
-                  className="text-[10px] font-medium transition-colors relative z-10"
-                  style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
+              return (
+                <NavLink
+                  key={path}
+                  to={path}
+                  className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-all relative"
+                  style={{ minWidth: 64 }}
                 >
-                  {label}
-                </span>
-              </NavLink>
-            );
-          })}
+                  {isActive && (
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: 'rgba(var(--ink),0.1)' }}
+                    />
+                  )}
+                  <Icon
+                    className="w-[19px] h-[19px] transition-colors relative z-10"
+                    strokeWidth={isActive ? 2.2 : 1.6}
+                    style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
+                  />
+                  <span
+                    className="text-[10px] font-medium transition-colors relative z-10"
+                    style={{ color: isActive ? 'rgba(var(--ink),0.95)' : 'rgba(var(--ink),0.5)' }}
+                  >
+                    {label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </div>
         </div>
       </nav>
     </div>
