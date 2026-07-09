@@ -6,7 +6,7 @@ import InfinityMark from '@/components/InfinityMark';
 
 // Landing minimalista — siempre en claro, independiente del tema de la app.
 const INK = '42,18,26';
-const BG = '#f6f0e4';
+const BG = '#faf7f0';
 const ACCENT = '#4a1626';
 const ON_ACCENT = '#f5ede0';
 
@@ -40,7 +40,7 @@ export default function Landing() {
       style={{
         minHeight: '100dvh',
         background: BG,
-        paddingTop: 'calc(env(safe-area-inset-top) + 48px)',
+        paddingTop: 'calc(env(safe-area-inset-top) + 14vh)',
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 28px)',
       }}
     >
@@ -51,11 +51,11 @@ export default function Landing() {
         transition={{ duration: 0.8, ease: 'easeOut' }}
         className="flex flex-col items-center gap-4"
       >
-        <InfinityMark size={30} color={`rgba(${INK},0.92)`} />
+        <InfinityMark size={38} color={`rgba(${INK},0.92)`} />
         <span style={{
           fontFamily: '"DM Sans", system-ui, sans-serif',
           fontWeight: 400,
-          fontSize: 17,
+          fontSize: 21,
           letterSpacing: '0.38em',
           textTransform: 'uppercase',
           color: `rgba(${INK},0.92)`,
@@ -89,7 +89,7 @@ export default function Landing() {
           ) : state === 'idle' ? (
             <button
               onClick={() => setState('form')}
-              className="px-5 py-2.5 rounded-full text-[13px] font-semibold transition-transform active:scale-95"
+              className="px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-transform active:scale-95"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
               Solicitar acceso
@@ -102,7 +102,7 @@ export default function Landing() {
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError(''); }}
                 placeholder="tu@email.com"
-                className="w-[170px] px-3.5 py-2.5 rounded-full text-[13px] focus:outline-none"
+                className="w-[170px] px-3.5 py-2.5 rounded-lg text-[13px] focus:outline-none"
                 style={{
                   background: 'transparent',
                   border: `1px solid rgba(${INK},0.25)`,
@@ -112,7 +112,7 @@ export default function Landing() {
               <button
                 type="submit"
                 disabled={state === 'sending'}
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 disabled:opacity-60"
+                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 disabled:opacity-60"
                 style={{ background: ACCENT, color: ON_ACCENT }}
                 aria-label="Enviar"
               >
