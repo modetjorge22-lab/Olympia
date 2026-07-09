@@ -135,9 +135,11 @@ export default function Landing() {
         <p style={{
           fontSize: 12,
           lineHeight: 1.7,
+          fontStyle: 'italic',
           color: ACCENT,
           maxWidth: 260,
         }}>
+          Creado para High-performers.
         </p>
       </motion.div>
     </div>
