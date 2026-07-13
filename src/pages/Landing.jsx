@@ -8,14 +8,14 @@ import InfinityMark from '@/components/InfinityMark';
 // Landing minimalista — siempre en claro, independiente del tema de la app.
 const INK = '42,18,26';
 const BG = '#f8f3ea';        // intermedio entre #f6f0e4 y #faf7f0
-const ACCENT = '#38101d';    // vino más oscuro — botón y manifesto
+const ACCENT = '#26070f';    // vino muy oscuro — botón y manifesto
 const ON_ACCENT = '#f5ede0';
 
 // Textos por idioma
 const T = {
   es: {
     cta: 'Solicitar acceso',
-    manifesto: 'Creado para High-performers.',
+    manifesto: 'Creado para High-performers. La idea es que los usuarios tengan una imagen más completa del tiempo que dedican al ejercicio físico. Además, hay un módulo más social donde puedes cruzar datos con tus compañeros y hacer una competición de un buen hábito.',
     placeholder: 'tu@email.com',
     done: 'Pronto tendrás noticias.',
     invalid: 'Escribe un email válido',
@@ -23,7 +23,7 @@ const T = {
   },
   en: {
     cta: 'Request access',
-    manifesto: 'Built for high-performers.',
+    manifesto: 'Built for high-performers. The idea is to give you a more complete picture of the time you devote to physical exercise. There is also a social module where you can compare data with your teammates and turn a good habit into a competition.',
     placeholder: 'you@email.com',
     done: "You'll hear from us soon.",
     invalid: 'Enter a valid email',
@@ -100,7 +100,25 @@ export default function Landing() {
           </span>
         </div>
 
-        <div className="flex flex-col items-end flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0">
+          {/* Switch de idioma — a la izquierda del botón de acceso */}
+          <div className="flex items-center gap-1.5" style={{ fontSize: 12 }}>
+            <button
+              onClick={() => setLang('es')}
+              style={{ color: lang === 'es' ? ACCENT : `rgba(${INK},0.4)`, fontWeight: lang === 'es' ? 700 : 400 }}
+            >
+              Esp
+            </button>
+            <span style={{ color: `rgba(${INK},0.3)` }}>/</span>
+            <button
+              onClick={() => setLang('en')}
+              style={{ color: lang === 'en' ? ACCENT : `rgba(${INK},0.4)`, fontWeight: lang === 'en' ? 700 : 400 }}
+            >
+              Eng
+            </button>
+          </div>
+
+          <div className="flex flex-col items-end flex-shrink-0">
           {state === 'done' ? (
             <p style={{ fontSize: 12, color: `rgba(${INK},0.7)` }}>
               {t.done}
@@ -144,6 +162,7 @@ export default function Landing() {
           {error && (
             <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 6 }}>{error}</p>
           )}
+          </div>
         </div>
       </motion.div>
 
@@ -152,44 +171,20 @@ export default function Landing() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-        className="px-5 w-full flex items-end justify-between gap-6"
+        className="px-5 w-full"
       >
         <p style={{
-          fontSize: 17,
-          lineHeight: 1.6,
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 15,
+          lineHeight: 1.8,
           fontStyle: 'italic',
           color: ACCENT,
-          maxWidth: 340,
+          maxWidth: 460,
           marginLeft: 28,
-          marginBottom: 44,
+          marginBottom: '16vh',
         }}>
           {t.manifesto}
         </p>
-
-        {/* Switch de idioma — Esp / Eng */}
-        <div className="flex items-center gap-1.5 flex-shrink-0" style={{ marginBottom: 44, fontSize: 12 }}>
-          <button
-            onClick={() => setLang('es')}
-            className="transition-opacity"
-            style={{
-              color: lang === 'es' ? ACCENT : `rgba(${INK},0.4)`,
-              fontWeight: lang === 'es' ? 700 : 400,
-            }}
-          >
-            Esp
-          </button>
-          <span style={{ color: `rgba(${INK},0.3)` }}>/</span>
-          <button
-            onClick={() => setLang('en')}
-            className="transition-opacity"
-            style={{
-              color: lang === 'en' ? ACCENT : `rgba(${INK},0.4)`,
-              fontWeight: lang === 'en' ? 700 : 400,
-            }}
-          >
-            Eng
-          </button>
-        </div>
       </motion.div>
     </div>
   );
