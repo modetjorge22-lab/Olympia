@@ -130,11 +130,24 @@ export function DataProvider({ children }) {
 
   // ─── MUTATIONS ───
   const createActivity = useCallback(async (activityData) => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('activities')
       .insert({ ...activityData, user_id: user.id, user_email: user.email })
       .select()
       .single();
+    // Fallback: si la columna muscle_groups no existe aún (migración SQL
+    // pendiente), reintentamos sin ella para no bloquear el registro.
+    if (error && /muscle_groups/i.test(error.message || '')) {
+      console.warn('[Olympia] activities.muscle_groups no existe — ejecuta la migración SQL.');
+      const { muscle_groups, ...rest } = activityData;
+      const retry = await supabase
+        .from('activities')
+        .insert({ ...rest, user_id: user.id, user_email: user.email })
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
     if (error) {
       console.error('createActivity error:', error);
       throw error;
@@ -174,9 +187,9 @@ export function DataProvider({ children }) {
       .single();
     // Fallback: si la columna manually_edited no existe aún (migración SQL
     // pendiente), reintentamos sin ella para no bloquear la edición.
-    if (error && /manually_edited/i.test(error.message || '')) {
+    if (error && /manually_edited|muscle_groups/i.test(error.message || '')) {
       console.warn('[Olympia] activities.manually_edited no existe — ejecuta la migración SQL. Guardando edición sin la marca.');
-      const { manually_edited, ...rest } = patch;
+      const { manually_edited, muscle_groups, ...rest } = patch;
       const retry = await supabase
         .from('activities')
         .update(rest)

@@ -6,7 +6,7 @@ import React from 'react';
 
 // Marco de rayas discontinuas abierto: cuatro segmentos (uno por lado),
 // recortados en los extremos para que delimiten sin cerrar.
-export function DashedFrame({ color, opacity = 0.28, inset = '22%' }) {
+export function DashedFrame({ color, opacity = 0.38, inset = '22%' }) {
   const c = color || `rgba(var(--ink),${opacity})`;
   return (
     <>

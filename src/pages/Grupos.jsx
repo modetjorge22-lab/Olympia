@@ -704,12 +704,12 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  }}>
  {!isToday && (
  <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.7)' : undefined}
- opacity={isFuture ? 0.14 : 0.28}
+ color={showPlan ? 'rgba(var(--accent-rgb),0.75)' : undefined}
+ opacity={isFuture ? 0.2 : 0.38}
  />
  )}
  <span className="text-[8px] font-semibold leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.8)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.25 : 0.45})` }}>
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.85)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.35 : 0.62})` }}>
  {day}
  </span>
  {(show || isPR) && <BrushMark opacity={isExpanded ? 1 : 0.9} />}

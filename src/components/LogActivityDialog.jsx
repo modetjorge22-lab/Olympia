@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Clock, TrendingUp, Calendar as CalendarIcon, Trophy } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
+import { MUSCLE_GROUPS, detectMuscleGroups, muscleLabel } from '@/utils/muscles';
 
 const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
@@ -30,6 +31,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
   const [dateInput, setDateInput] = useState(selectedDate ? formatLocalDate(selectedDate) : '');
   const [loading, setLoading] = useState(false);
   const [matchResult, setMatchResult] = useState(null); // 'win' | 'loss' | 'draw'
+  const [muscleGroups, setMuscleGroups] = useState([]); // respuesta manual si no se reconoce
 
   // Estado para marcas batidas: { [goalId]: newValue (string) }
   const [prBeaten, setPrBeaten] = useState({});
@@ -51,6 +53,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
       setNotes(editActivity.description || '');
       setTrainingType(editActivity.training_type || '');
       setMatchResult(editActivity.match_result?.result || null);
+      setMuscleGroups(Array.isArray(editActivity.muscle_groups) ? editActivity.muscle_groups : []);
     }
   }, [isOpen, editActivity]);
 
@@ -83,6 +86,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     setMode('realized');
     setPrBeaten({});
     setMatchResult(null);
+    setMuscleGroups([]);
   };
 
   // Al cerrar, limpiamos el formulario para no arrastrar datos entre aperturas
@@ -101,6 +105,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           date: dateInput,
           description: notes || null,
           match_result: matchResult ? { result: matchResult } : null,
+          muscle_groups: muscleGroups.length > 0 ? muscleGroups : null,
           manually_edited: true,
         });
       } else if (mode === 'planned') {
@@ -121,6 +126,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           description: notes || null,
           progress_note: showProgressNote ? (progressNote || null) : null,
           match_result: matchResult ? { result: matchResult } : null,
+          muscle_groups: muscleGroups.length > 0 ? muscleGroups : null,
           source: 'manual',
           completed: true,
         });
@@ -426,6 +432,44 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
             />
           </div>
+
+          {/* Grupos musculares — sólo fuerza. Si el texto no deja claro qué se
+              entrenó, preguntamos; si se reconoce, lo mostramos como feedback. */}
+          {mode === 'realized' && activityType === 'strength_training' && (() => {
+            const detected = detectMuscleGroups(`${notes} ${progressNote}`);
+            if (detected.length > 0) {
+              return (
+                <p className="text-[10px] -mt-1" style={{ color: TEXT_MUTED }}>
+                  Detectado: <span style={{ color: TEXT_SECONDARY, fontWeight: 600 }}>{detected.map(muscleLabel).join(', ')}</span>
+                </p>
+              );
+            }
+            return (
+              <div>
+                <label className="block text-[9px] uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>
+                  ¿Qué grupo muscular entrenaste?
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {MUSCLE_GROUPS.map(g => {
+                    const on = muscleGroups.includes(g.key);
+                    return (
+                      <button
+                        key={g.key}
+                        type="button"
+                        onClick={() => setMuscleGroups(prev => on ? prev.filter(k => k !== g.key) : [...prev, g.key])}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all"
+                        style={on
+                          ? { background: ACCENT, color: ON_ACCENT }
+                          : { background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_MUTED }}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Submit */}
           <button

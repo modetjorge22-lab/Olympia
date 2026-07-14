@@ -13,6 +13,7 @@ import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, 
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTheme } from '@/lib/theme';
 import { DashedFrame, BrushMark } from '@/components/sketch';
+import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -29,20 +30,6 @@ const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
 const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const TEXT_FAINT = 'rgba(var(--ink),0.30)';
-
-// Detección de grupos musculares por palabras clave en el nombre/descripción
-// de los entrenos de fuerza. Si un entreno menciona varios grupos, las horas
-// se reparten a partes iguales.
-const MUSCLE_GROUPS = [
- { key: 'pectorales', label: 'Pectorales', kws: ['pecho', 'pectoral', 'banca', 'bench', 'push'] },
- { key: 'espalda', label: 'Espalda', kws: ['espalda', 'dominada', 'remo', 'pull', 'jalon', 'jalón', 'back'] },
- { key: 'piernas', label: 'Piernas', kws: ['pierna', 'sentadilla', 'squat', 'peso muerto', 'deadlift', 'gluteo', 'glúteo', 'femoral', 'cuadriceps', 'cuádriceps', 'leg', 'zancada'] },
- { key: 'hombros', label: 'Hombros', kws: ['hombro', 'militar', 'shoulder', 'ohp', 'deltoide'] },
- { key: 'core', label: 'Core', kws: ['core', 'abs', 'abdominal', 'plancha', 'plank'] },
- // "brazo"/"arm" genérico aparece en ambos → las horas se reparten entre los dos
- { key: 'biceps', label: 'Bíceps', kws: ['bicep', 'bícep', 'curl', 'brazo', 'arm'] },
- { key: 'triceps', label: 'Tríceps', kws: ['tricep', 'trícep', 'fondos', 'frances', 'francés', 'extension', 'extensión', 'brazo', 'arm'] },
-];
 
 const ACTIVITY_COLORS = {
  strength_training: '#6366f1',
@@ -335,21 +322,25 @@ export default function Actividad() {
  return top ? ACTIVITY_TYPES[top[0]] : null;
  }, [myActivities]);
 
- // Volumen de fuerza por grupo muscular (mes navegado)
+ // Volumen de fuerza por grupo muscular (mes navegado).
+ // Prioridad: grupos elegidos por el usuario (muscle_groups) → detección
+ // por palabras clave (push/pull/términos exactos) → sin clasificar.
  const muscleData = useMemo(() => {
- const groups = MUSCLE_GROUPS.map(g => ({ ...g, hours: 0 }));
+ const hours = Object.fromEntries(MUSCLE_GROUPS.map(g => [g.key, 0]));
  let unmatchedMins = 0;
  let strengthCount = 0;
  myActivities.filter(a => a.type === 'strength_training').forEach(a => {
  strengthCount++;
- const text = `${a.title || ''} ${a.description || ''} ${a.progress_note || ''}`.toLowerCase();
- const hit = groups.filter(g => g.kws.some(k => text.includes(k)));
+ const explicit = Array.isArray(a.muscle_groups) ? a.muscle_groups.filter(k => k in hours) : [];
+ const keys = explicit.length > 0
+ ? explicit
+ : detectMuscleGroups(`${a.title || ''} ${a.description || ''} ${a.progress_note || ''}`);
  const mins = a.duration_minutes || 0;
- if (hit.length === 0) { unmatchedMins += mins; return; }
- hit.forEach(g => { g.hours += mins / hit.length / 60; });
+ if (keys.length === 0) { unmatchedMins += mins; return; }
+ keys.forEach(k => { hours[k] += mins / keys.length / 60; });
  });
  return {
- data: groups.map(g => ({ label: g.label, hours: +g.hours.toFixed(1) })),
+ data: MUSCLE_GROUPS.map(g => ({ label: g.label, hours: +hours[g.key].toFixed(1) })),
  unmatchedH: +(unmatchedMins / 60).toFixed(1),
  strengthCount,
  };
@@ -1431,12 +1422,12 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  style={isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 8 } : {}}>
  {!isToday && (
  <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.7)' : undefined}
- opacity={isFuture ? 0.14 : 0.28}
+ color={showPlan ? 'rgba(var(--accent-rgb),0.75)' : undefined}
+ opacity={isFuture ? 0.2 : 0.38}
  />
  )}
  <span className="text-[9px] font-semibold leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.8)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.25 : 0.45})` }}>
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.85)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.35 : 0.62})` }}>
  {day}
  </span>
  {(show || isPR) && <BrushMark opacity={isExp ? 1 : 0.92} />}
