@@ -11,6 +11,7 @@ import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
+import { DashedFrame, BrushMark } from '@/components/sketch';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -686,6 +687,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  const hasPlan = !has && planned.length > 0;
  const showPlan = hasPlan && !filterType;
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
+ const isFuture = new Date(year, month, day) > now;
  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
  const isPR = prDates.has(dateStr) && matchesFilter;
  const emoji = isPR ? '🏆'
@@ -695,23 +697,23 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  return (
  <div key={day}
  onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="w-7 h-7 mx-auto rounded-full flex items-center justify-center"
+ className="w-7 h-7 mx-auto flex items-center justify-center relative"
  style={{
  cursor: has ? 'pointer' : 'default',
- ...(isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : show ? { background: isExpanded ? 'var(--accent-strong)' : 'var(--accent)', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }
- : showPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.07)' }),
+ ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 7 } : {}),
  }}>
- {emoji ? (
- <span className="text-[10px] leading-none">{emoji}</span>
- ) : (
- <span className="text-[9px] font-semibold leading-none"
- style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ {!isToday && (
+ <DashedFrame
+ color={showPlan ? 'rgba(var(--accent-rgb),0.7)' : undefined}
+ opacity={isFuture ? 0.14 : 0.28}
+ />
+ )}
+ <span className="text-[8px] font-semibold leading-none"
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.8)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.25 : 0.45})` }}>
  {day}
  </span>
- )}
+ {(show || isPR) && <BrushMark opacity={isExpanded ? 1 : 0.9} />}
+ {isPR && <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, lineHeight: 1 }}>🏆</span>}
  </div>
  );
  })}

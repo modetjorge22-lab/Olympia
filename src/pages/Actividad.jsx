@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid, ReferenceLine } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid, ReferenceLine, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -9,9 +9,10 @@ import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { useGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon, Dumbbell } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTheme } from '@/lib/theme';
+import { DashedFrame, BrushMark } from '@/components/sketch';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -28,6 +29,20 @@ const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
 const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const TEXT_FAINT = 'rgba(var(--ink),0.30)';
+
+// Detección de grupos musculares por palabras clave en el nombre/descripción
+// de los entrenos de fuerza. Si un entreno menciona varios grupos, las horas
+// se reparten a partes iguales.
+const MUSCLE_GROUPS = [
+ { key: 'pectorales', label: 'Pectorales', kws: ['pecho', 'pectoral', 'banca', 'bench', 'push'] },
+ { key: 'espalda', label: 'Espalda', kws: ['espalda', 'dominada', 'remo', 'pull', 'jalon', 'jalón', 'back'] },
+ { key: 'piernas', label: 'Piernas', kws: ['pierna', 'sentadilla', 'squat', 'peso muerto', 'deadlift', 'gluteo', 'glúteo', 'femoral', 'cuadriceps', 'cuádriceps', 'leg', 'zancada'] },
+ { key: 'hombros', label: 'Hombros', kws: ['hombro', 'militar', 'shoulder', 'ohp', 'deltoide'] },
+ { key: 'core', label: 'Core', kws: ['core', 'abs', 'abdominal', 'plancha', 'plank'] },
+ // "brazo"/"arm" genérico aparece en ambos → las horas se reparten entre los dos
+ { key: 'biceps', label: 'Bíceps', kws: ['bicep', 'bícep', 'curl', 'brazo', 'arm'] },
+ { key: 'triceps', label: 'Tríceps', kws: ['tricep', 'trícep', 'fondos', 'frances', 'francés', 'extension', 'extensión', 'brazo', 'arm'] },
+];
 
 const ACTIVITY_COLORS = {
  strength_training: '#6366f1',
@@ -318,6 +333,26 @@ export default function Actividad() {
  myActivities.forEach(a => { counts[a.type] = (counts[a.type] || 0) + 1; });
  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
  return top ? ACTIVITY_TYPES[top[0]] : null;
+ }, [myActivities]);
+
+ // Volumen de fuerza por grupo muscular (mes navegado)
+ const muscleData = useMemo(() => {
+ const groups = MUSCLE_GROUPS.map(g => ({ ...g, hours: 0 }));
+ let unmatchedMins = 0;
+ let strengthCount = 0;
+ myActivities.filter(a => a.type === 'strength_training').forEach(a => {
+ strengthCount++;
+ const text = `${a.title || ''} ${a.description || ''} ${a.progress_note || ''}`.toLowerCase();
+ const hit = groups.filter(g => g.kws.some(k => text.includes(k)));
+ const mins = a.duration_minutes || 0;
+ if (hit.length === 0) { unmatchedMins += mins; return; }
+ hit.forEach(g => { g.hours += mins / hit.length / 60; });
+ });
+ return {
+ data: groups.map(g => ({ label: g.label, hours: +g.hours.toFixed(1) })),
+ unmatchedH: +(unmatchedMins / 60).toFixed(1),
+ strengthCount,
+ };
  }, [myActivities]);
 
  const padelWinRate = useMemo(() => {
@@ -1218,6 +1253,36 @@ export default function Actividad() {
  )}
  </div>
 
+ {/* ── Fuerza — volumen por grupo muscular ── */}
+ {muscleData.strengthCount > 0 && (
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-center gap-2.5 mb-1">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
+ <Dumbbell className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </div>
+ <div>
+ <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Fuerza</h2>
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>Horas por grupo muscular · según tus descripciones</p>
+ </div>
+ </div>
+ <div className="h-[230px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+ <ResponsiveContainer width="100%" height="100%">
+ <RadarChart data={muscleData.data} cx="50%" cy="50%" outerRadius="72%">
+ <PolarGrid stroke={CH.grid} />
+ <PolarAngleAxis dataKey="label" tick={{ fontSize: 10, fill: CH.tick }} />
+ <Radar dataKey="hours" stroke={CH.accent} strokeWidth={2} fill={CH.accent} fillOpacity={0.25} isAnimationActive={false} />
+ </RadarChart>
+ </ResponsiveContainer>
+ </div>
+ {muscleData.unmatchedH > 0 && (
+ <p className="text-[10px] text-center" style={{ color: TEXT_MUTED }}>
+ {muscleData.unmatchedH}h sin clasificar — menciona el grupo muscular en la descripción para desglosarlas
+ </p>
+ )}
+ </div>
+ )}
+
  {/* Favorito */}
  {favoriteType && (
  <div className="rounded-2xl px-4 py-3" style={glassCard}>
@@ -1354,6 +1419,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  const showPlan = !has && planned.length > 0 && !filterType;
  const isExp = expandedDay === day;
  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+ const isFuture = new Date(year, month, day) > now;
  const isPR = prDates.has(dateStr) && matchesFilter;
  const emoji = isPR ? '🏆'
  : show ? (ACTIVITY_TYPES[filterType || acts[0].type]?.emoji || '🏅')
@@ -1361,27 +1427,20 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
- className="w-8 h-8 mx-auto rounded-full flex items-center justify-center transition-all relative"
- style={isPR
- ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : show
- ? isExp
- ? { background: DAY_PALETTE.completed.bgExpanded, boxShadow: '0 3px 12px rgba(var(--accent-rgb),0.35)', border: '1px solid rgba(255,255,255,0.3)' }
- : { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
- : showPlan
- ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : isToday
- ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.07)' }
- }>
- {emoji ? (
- <span className="text-[10px] leading-none">{emoji}</span>
- ) : (
- <span className="text-[11px] font-semibold leading-none"
- style={{ color: showPlan ? DAY_PALETTE.planned.text : isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ className="w-8 h-8 mx-auto flex items-center justify-center transition-all relative"
+ style={isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 8 } : {}}>
+ {!isToday && (
+ <DashedFrame
+ color={showPlan ? 'rgba(var(--accent-rgb),0.7)' : undefined}
+ opacity={isFuture ? 0.14 : 0.28}
+ />
+ )}
+ <span className="text-[9px] font-semibold leading-none"
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.8)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.25 : 0.45})` }}>
  {day}
  </span>
- )}
+ {(show || isPR) && <BrushMark opacity={isExp ? 1 : 0.92} />}
+ {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, lineHeight: 1 }}>🏆</span>}
  {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(var(--ink),0.12)' }}>
