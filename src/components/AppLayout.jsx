@@ -73,8 +73,8 @@ export default function AppLayout({ children }) {
             <div
               className="flex items-center gap-3 px-3 py-1.5 rounded-full"
               style={{
-                background: 'rgba(var(--ink),0.08)',
-                border: '1px solid rgba(var(--ink),0.1)',
+                background: 'transparent',
+                border: '1px solid var(--glass-border)',
               }}
             >
               <button onClick={goBack} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">

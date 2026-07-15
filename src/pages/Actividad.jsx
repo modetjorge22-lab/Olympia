@@ -34,7 +34,7 @@ const SECTION_TITLE = {
  fontWeight: 400,
  fontSize: 13,
  letterSpacing: '0.14em',
- textTransform: 'lowercase',
+ textTransform: 'none',
  // Valor literal: esta constante se declara antes que TEXT_PRIMARY y
  // referenciarla aquí rompería el módulo en tiempo de carga (TDZ).
  color: 'rgba(var(--ink),0.95)',
@@ -430,6 +430,7 @@ export default function Actividad() {
 
  const MONTH_LABELS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
  const MONTH_NAMES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+ const MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
  // Helper reutilizable para calcular horas en un rango de fechas
  const computeHours = useCallback((startStr, endStr) => {
@@ -865,7 +866,7 @@ export default function Actividad() {
  <div ref={calendarRef} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
  {/* Mes + horas totales — sin perfil: en tu pestaña, ya se da por hecho */}
  <div className="flex items-baseline justify-between mb-3">
- <span style={SECTION_TITLE}>{MONTH_NAMES_SHORT[month]} {year}</span>
+ <span style={SECTION_TITLE}>{MONTHS_FULL[month]} {year}</span>
  <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>
  {totalHours}h
  </span>
@@ -1431,7 +1432,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
 
  return (
  <>
-  <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
+  <div className="grid grid-cols-7 gap-y-1.5 max-w-[340px] mx-auto">
  {/* Iniciales de la semana — deja claro que es un calendario */}
  {['L','M','X','J','V','S','D'].map(d => (
  <span key={`dow-${d}`} className="text-center text-[8px] font-normal"
