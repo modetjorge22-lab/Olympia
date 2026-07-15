@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon, Dumbbell } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTheme } from '@/lib/theme';
-import { DashedFrame, BrushMark } from '@/components/sketch';
+import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
@@ -1500,18 +1500,16 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  return (
  <button key={day} onClick={() => onDayClick(day)}
  className="w-9 h-9 mx-auto flex items-center justify-center transition-all relative"
- style={isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 8 } : {}}>
- {!isToday && (
+ style={{ borderRadius: 9, background: (show || isPR) ? `rgba(var(--accent-rgb),${isExp ? 0.32 : 0.2})` : 'transparent' }}>
  <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
+ color={isToday ? 'var(--accent)' : showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
  opacity={isFuture ? 0.22 : 0.45}
+ thickness={isToday ? 2 : 1}
  />
- )}
  <span className="text-[9px] font-semibold leading-none"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
- {(show || isPR) && <BrushMark opacity={isExp ? 1 : 0.92} />}
  {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, lineHeight: 1 }}>🏆</span>}
  {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"

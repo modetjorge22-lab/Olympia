@@ -11,7 +11,7 @@ import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
-import { DashedFrame, BrushMark } from '@/components/sketch';
+import { DashedFrame } from '@/components/sketch';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -710,19 +710,18 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  className="w-7 h-7 mx-auto flex items-center justify-center relative"
  style={{
  cursor: has ? 'pointer' : 'default',
- ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 7 } : {}),
+ borderRadius: 7,
+ background: (show || isPR) ? `rgba(var(--accent-rgb),${isExpanded ? 0.32 : 0.2})` : 'transparent',
  }}>
- {!isToday && (
  <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
+ color={isToday ? 'var(--accent)' : showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
  opacity={isFuture ? 0.22 : 0.45}
+ thickness={isToday ? 2 : 1}
  />
- )}
  <span className="text-[8px] font-semibold leading-none"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
- {(show || isPR) && <BrushMark opacity={isExpanded ? 1 : 0.9} />}
  {isPR && <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, lineHeight: 1 }}>🏆</span>}
  </div>
  );
