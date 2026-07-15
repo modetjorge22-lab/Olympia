@@ -70,11 +70,14 @@ function AuthedLayout() {
   );
 }
 
-// Para la landing: se pinta YA (sin splash ni LoadingScreen). Si el visitante
-// resulta tener sesión, se le redirige en cuanto el auth resuelve.
+// Para la landing: sin splash ni LoadingScreen. Mientras el auth resuelve
+// (lectura casi instantánea de la sesión local) mostramos un lienzo vacío del
+// color de la landing — así el usuario logueado nunca ve un frame de la
+// landing antes de entrar a la app, y el visitante nuevo no percibe la espera.
 function LandingRoute({ children }) {
   const { user, loading } = useAuth();
-  if (!loading && user) return <Navigate to="/actividad" replace />;
+  if (loading) return <div style={{ minHeight: '100dvh', background: '#f8f3ea' }} />;
+  if (user) return <Navigate to="/actividad" replace />;
   return children;
 }
 

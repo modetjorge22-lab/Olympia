@@ -1483,7 +1483,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
 
  return (
  <>
-  <div className="grid grid-cols-7 gap-y-1 max-w-[252px]">
+  <div className="grid grid-cols-7 gap-y-1 max-w-[288px] mx-auto">
  {/* Iniciales de la semana — deja claro que es un calendario */}
  {['L','M','X','J','V','S','D'].map(d => (
  <span key={`dow-${d}`} className="text-center text-[8px] font-semibold"
@@ -1492,7 +1492,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  </span>
  ))}
  {trailing.map(i => (
- <div key={`p-${i}`} className="w-8 h-8 mx-auto" aria-hidden="true" />
+ <div key={`p-${i}`} className="w-9 h-9 mx-auto" aria-hidden="true" />
  ))}
  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
  const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
@@ -1513,7 +1513,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
- className="w-8 h-8 mx-auto flex items-center justify-center transition-all relative"
+ className="w-9 h-9 mx-auto flex items-center justify-center transition-all relative"
  style={isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 8 } : {}}>
  {!isToday && (
  <DashedFrame

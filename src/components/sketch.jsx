@@ -19,8 +19,8 @@ export function DashedFrame({ color, opacity = 0.38, inset = '22%' }) {
   );
 }
 
-// Garabato de rotulador — zigzag vertical de tres barridos, idéntico en
-// todos los días. Sobresale 2px de la celda: efecto "pintado por encima".
+// Garabato de rotulador — doble trazada en diagonal, compacta y con energía,
+// idéntica en todos los días. Sobresale 2px de la celda: "pintado por encima".
 export function BrushMark({ color = 'var(--accent)', opacity = 0.92 }) {
   return (
     <svg
@@ -35,7 +35,7 @@ export function BrushMark({ color = 'var(--accent)', opacity = 0.92 }) {
       aria-hidden="true"
     >
       <path
-        d="M5 9.5 L20.5 8 L6 17.5 L20.5 16.5"
+        d="M6.5 21 L17 7.5 L11 17 L20.5 5"
         fill="none"
         style={{ stroke: color }}
         strokeWidth="2.4"
