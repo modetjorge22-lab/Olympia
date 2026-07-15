@@ -339,9 +339,11 @@ export default function Actividad() {
  if (keys.length === 0) { unmatchedMins += mins; return; }
  keys.forEach(k => { hours[k] += mins / keys.length / 60; });
  });
+ const classifiedH = Object.values(hours).reduce((s, h) => s + h, 0);
  return {
  data: MUSCLE_GROUPS.map(g => ({ label: g.label, hours: +hours[g.key].toFixed(1) })),
  unmatchedH: +(unmatchedMins / 60).toFixed(1),
+ totalH: +(classifiedH + unmatchedMins / 60).toFixed(1),
  strengthCount,
  };
  }, [myActivities]);
@@ -1258,15 +1260,50 @@ export default function Actividad() {
  </div>
  <div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Fuerza</h2>
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>Horas por grupo muscular · según tus descripciones</p>
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>Horas por grupo muscular · {muscleData.totalH}h este mes</p>
  </div>
  </div>
- <div className="h-[230px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+ <div className="h-[250px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
- <RadarChart data={muscleData.data} cx="50%" cy="50%" outerRadius="72%">
- <PolarGrid stroke={CH.grid} />
- <PolarAngleAxis dataKey="label" tick={{ fontSize: 10, fill: CH.tick }} />
- <Radar dataKey="hours" stroke={CH.accent} strokeWidth={2} fill={CH.accent} fillOpacity={0.25} isAnimationActive={false} />
+ <RadarChart data={muscleData.data} cx="50%" cy="50%" outerRadius="60%">
+ <defs>
+ {/* Relleno radial — mismo lenguaje que el degradado de Mi Actividad */}
+ <radialGradient id="muscleGradient">
+ <stop offset="0%" stopColor={CH.accent} stopOpacity="0.5" />
+ <stop offset="100%" stopColor={CH.accent} stopOpacity="0.1" />
+ </radialGradient>
+ </defs>
+ {/* Anillos discontinuos — eco de las rayas del calendario */}
+ <PolarGrid stroke={CH.axis} strokeDasharray="3 5" radialLines={false} />
+ <PolarAngleAxis
+ dataKey="label"
+ tick={(props) => {
+ const { x, y, textAnchor, payload } = props;
+ const item = muscleData.data.find(d => d.label === payload.value);
+ return (
+ <g>
+ <text x={x} y={y} textAnchor={textAnchor} fontSize="9" fill={CH.tick}
+ fontFamily='"JetBrains Mono", monospace'>
+ {payload.value}
+ </text>
+ <text x={x} y={y + 12} textAnchor={textAnchor} fontSize="10" fontWeight="700" fill={CH.accent}
+ fontFamily='"JetBrains Mono", monospace'>
+ {item && item.hours > 0 ? `${item.hours}h` : '–'}
+ </text>
+ </g>
+ );
+ }}
+ />
+ <Radar
+ dataKey="hours"
+ stroke={CH.accent}
+ strokeWidth={2}
+ strokeLinejoin="round"
+ fill="url(#muscleGradient)"
+ fillOpacity={1}
+ dot={{ r: 2.5, fill: CH.accent, strokeWidth: 0 }}
+ isAnimationActive={false}
+ />
  </RadarChart>
  </ResponsiveContainer>
  </div>
