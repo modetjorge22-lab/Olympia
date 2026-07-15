@@ -26,6 +26,25 @@ const glassCard = {
 
 const ACCENT = 'var(--accent)';
 const ON_ACCENT = 'var(--on-accent)';
+
+// Títulos de sección — misma voz que la marca Olympia: DM Sans regular,
+// espaciado suave, en minúsculas, sin negrita ni iconos.
+const SECTION_TITLE = {
+ fontFamily: '"DM Sans", system-ui, sans-serif',
+ fontWeight: 400,
+ fontSize: 13,
+ letterSpacing: '0.14em',
+ textTransform: 'lowercase',
+ color: TEXT_PRIMARY,
+};
+
+// Barra tipo liquid glass para controles
+const glassBar = {
+ background: 'var(--glass-bg)',
+ backdropFilter: 'blur(24px) saturate(160%)',
+ WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+ border: '1px solid var(--glass-border)',
+};
 const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
 const TEXT_MUTED = 'rgba(var(--ink),0.45)';
@@ -113,21 +132,20 @@ function ActivityDropdown({ value, onChange, types }) {
  ? { label: 'Acumulado' }
  : { ...ACTIVITY_TYPES[value] };
 
- const selColor = ACCENT;
-
  return (
  <div ref={ref} style={{ position: 'relative' }}>
  <button
  onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+ className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] transition-all"
  style={{
- background: 'rgba(var(--ink),0.08)',
- border: '1px solid rgba(var(--ink),0.18)',
+ background: 'var(--glass-bg)',
+ backdropFilter: 'blur(24px) saturate(160%)',
+ WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+ border: '1px solid var(--glass-border)',
  color: TEXT_PRIMARY,
  }}
  >
- <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selColor }} />
- Actividad: {selected.label}
+ {selected.label}
  <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform"
  style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: TEXT_MUTED }} />
  </button>
@@ -726,45 +744,21 @@ export default function Actividad() {
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  {/* Mi Actividad — gráfica de carga */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-start justify-between mb-3">
- <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Mi Actividad</h2>
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ <div className="mb-3">
+ <h2 style={SECTION_TITLE}>Mi Actividad</h2>
+ <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
  Últimas 16 semanas · {chartSubtitle}
  </p>
- </div>
- </div>
-
  </div>
 
  <div className="mb-3 flex items-center gap-2">
  <ActivityDropdown value={actFilter} onChange={setActFilter} types={usedTypes} />
- <button
- onClick={() => setShowSleep(s => !s)}
- className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0"
- style={showSleep ? {
- background: 'rgba(16,185,129,0.18)',
- border: '1px solid rgba(16,185,129,0.4)',
- color: 'var(--success)',
- } : {
- background: 'rgba(var(--ink),0.08)',
- border: '1px solid rgba(var(--ink),0.14)',
- color: TEXT_MUTED,
- }}>
- <Moon className="w-3 h-3" />
- Descanso
- </button>
  </div>
 
  {/* Última semana + comparativa con la media habitual */}
  <div className="mb-3 flex items-baseline gap-3 flex-wrap">
  <div className="flex items-baseline gap-1.5">
- <span className="text-[28px] font-bold font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
+ <span className="text-[28px] font-normal font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
  {lastWeekHours}h
  </span>
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
@@ -781,7 +775,7 @@ export default function Actividad() {
  {lastWeekVsAvgPct >= 0
  ? <TrendingUp className="w-3 h-3" style={{ color: 'var(--success)' }} />
  : <TrendingDown className="w-3 h-3" style={{ color: 'var(--warning)' }} />}
- <span className="text-[10px] font-semibold" style={{ color: lastWeekVsAvgPct >= 0 ? 'var(--success)' : 'var(--warning)' }}>
+ <span className="text-[10px] font-normal" style={{ color: lastWeekVsAvgPct >= 0 ? 'var(--success)' : 'var(--warning)' }}>
  {lastWeekVsAvgPct >= 0 ? '+' : ''}{lastWeekVsAvgPct}% vs media
  </span>
  </div>
@@ -867,29 +861,11 @@ export default function Actividad() {
 
  {/* Calendario — mismo marco que la gráfica, comparte el filtro de actividad */}
  <div ref={calendarRef} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
- <div className="flex items-center justify-between mb-3">
- <div className="flex items-center gap-2.5">
- {avatarUrl ? (
- <img
- src={avatarUrl}
- alt={userName}
- className="w-8 h-8 rounded-full object-cover"
- style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
- />
- ) : (
- <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px]"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
- {initials}
- </div>
- )}
- <div>
- <p className="text-[13px] font-semibold leading-tight" style={{ color: TEXT_PRIMARY }}>{userName}</p>
- <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
- </div>
- </div>
- {/* Mes visible — refuerza que esto es un calendario */}
- <span className="text-[11px] font-bold" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.8)' }}>
- {MONTH_NAMES_SHORT[month]} {year}
+ {/* Mes + horas totales — sin perfil: en tu pestaña, ya se da por hecho */}
+ <div className="flex items-baseline justify-between mb-3">
+ <span style={SECTION_TITLE}>{MONTH_NAMES_SHORT[month]} {year}</span>
+ <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>
+ {totalHours}h
  </span>
  </div>
 
@@ -991,20 +967,14 @@ export default function Actividad() {
  <div className="rounded-2xl p-4" style={glassCard}>
 
  {/* Cabecera del card */}
- <div className="flex items-center gap-2.5 mb-2">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <Calendar className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Planificador</h2>
- </div>
+ <h2 className="mb-2" style={SECTION_TITLE}>Planificador</h2>
 
  {/* — Últimos 7 días — */}
  <div className="flex items-center justify-between mb-1">
- <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
+ <p className="text-[10px] font-normal uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
  <div className="flex items-center gap-1.5">
  <span className="text-[10px] uppercase tracking-wider" style={{ color: TEXT_MUTED }}>Carga</span>
- <span className="text-[12px] font-bold" style={{ color: loadLevel.color }}>{loadLevel.label}</span>
+ <span className="text-[12px] font-normal" style={{ color: loadLevel.color }}>{loadLevel.label}</span>
  </div>
  </div>
 
@@ -1018,21 +988,22 @@ export default function Actividad() {
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-9 h-9 rounded-full flex items-center justify-center"
- style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
- : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : d.isToday ? { background: 'transparent', border: '1.5px solid rgba(var(--accent-rgb),0.9)' }
- : { background: 'rgba(var(--ink),0.07)' }}
+ <div className="w-8 h-8 flex items-center justify-center relative"
+ style={{
+ borderRadius: 8,
+ ...(d.isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
+ background: (d.hasActivity || isPR)
+ ? 'radial-gradient(circle at center, rgba(var(--accent-rgb),0.45) 0%, rgba(var(--accent-rgb),0.03) 78%)'
+ : 'transparent',
+ }}
  >
- {emoji ? (
- <span className="text-[10px] leading-none">{emoji}</span>
- ) : (
- <span className="text-[11px] font-semibold leading-none"
- style={{ color: d.isToday ? TEXT_PRIMARY : 'rgba(var(--ink),0.4)' }}>
+ {!d.isToday && (
+ <DashedFrame color={d.hasPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined} opacity={0.45} />
+ )}
+ <span className="text-[9px] leading-none"
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>
  {d.dayNum}
  </span>
- )}
  </div>
  {d.hasActivity
  ? d.acts.map((act, idx) => {
@@ -1054,7 +1025,7 @@ export default function Actividad() {
  <div style={{ height: 1, background: 'rgba(var(--ink),0.12)', margin: '14px 0 12px' }} />
 
  {/* — Próximos 7 días — */}
- <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
+ <p className="text-[10px] font-normal uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
 
  <div className="grid grid-cols-7 gap-2">
  {next7Days.map((d, i) => {
@@ -1066,19 +1037,19 @@ export default function Actividad() {
  return (
  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
  <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-9 h-9 rounded-full flex items-center justify-center"
- style={isPR ? { background: DAY_PALETTE.pr.bg, boxShadow: DAY_PALETTE.pr.glow }
- : d.hasActivity ? { background: DAY_PALETTE.completed.bg, boxShadow: DAY_PALETTE.completed.glow }
- : d.hasPlan ? { background: DAY_PALETTE.planned.bg, boxShadow: DAY_PALETTE.planned.glow }
- : { background: 'rgba(var(--ink),0.07)' }}
+ <div className="w-8 h-8 flex items-center justify-center relative"
+ style={{
+ borderRadius: 8,
+ background: (d.hasActivity || isPR)
+ ? 'radial-gradient(circle at center, rgba(var(--accent-rgb),0.45) 0%, rgba(var(--accent-rgb),0.03) 78%)'
+ : 'transparent',
+ }}
  >
- {emoji ? (
- <span className="text-[10px] leading-none">{emoji}</span>
- ) : (
- <span className="text-[11px] font-semibold leading-none" style={{ color: 'rgba(var(--ink),0.4)' }}>
+ <DashedFrame color={d.hasPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined} opacity={0.22} />
+ <span className="text-[9px] leading-none"
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.45)' }}>
  {d.dayNum}
  </span>
- )}
  </div>
  {d.hasActivity
  ? d.acts.map((act, idx) => {
@@ -1104,16 +1075,10 @@ export default function Actividad() {
  {/* ── Metas / Marcas personales ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-center justify-between mb-3">
- <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <Trophy className="w-3 h-3" style={{ color: TEXT_PRIMARY }} />
- </div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Metas</h2>
- </div>
+ <h2 style={SECTION_TITLE}>Metas</h2>
  <button
  onClick={() => setShowGoalForm(v => !v)}
- className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+ className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-normal transition-all"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.14)', color: TEXT_PRIMARY }}>
  <Plus className="w-3 h-3" /> Nueva
  </button>
@@ -1170,7 +1135,7 @@ export default function Actividad() {
  <button
  onClick={handleCreateGoal}
  disabled={!goalTitle.trim()}
- className="flex-1 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-40"
+ className="flex-1 py-2 rounded-lg text-[12px] font-normal disabled:opacity-40"
  style={{ background: ACCENT, color: ON_ACCENT }}>
  Guardar meta
  </button>
@@ -1196,11 +1161,11 @@ export default function Actividad() {
  style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.1)' }}>
  <div className="flex items-start justify-between gap-2">
  <div className="min-w-0">
- <p className="text-[13px] font-semibold truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
+ <p className="text-[13px] font-normal truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
  <div className="flex items-baseline gap-1.5 mt-0.5">
  {goal.current_value != null ? (
  <>
- <span className="text-[20px] font-bold font-mono leading-none" style={{ color: ACCENT }}>
+ <span className="text-[20px] font-normal font-mono leading-none" style={{ color: ACCENT }}>
  {goal.current_value}
  </span>
  <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
@@ -1272,25 +1237,20 @@ export default function Actividad() {
  {/* ── Fuerza — volumen por grupo muscular ── */}
  {muscleData.strengthCount > 0 && (
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-start justify-between mb-1">
- <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <Dumbbell className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
+ <div className="flex items-start justify-between gap-3 mb-1">
  <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Fuerza</h2>
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
- {muscleData.totalH}h · {muscleTF === '1m' ? 'este mes' : muscleTF === '3m' ? 'últimos 3 meses' : 'últimos 6 meses'}
+ <h2 style={SECTION_TITLE}>Entrenamientos de fuerza</h2>
+ <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
+ {muscleData.totalH}h · {muscleTF === '1m' ? 'último mes' : muscleTF === '3m' ? 'últimos 3 meses' : 'últimos 6 meses'}
  </p>
  </div>
- </div>
- <div className="flex items-center gap-1 rounded-lg p-1 flex-shrink-0"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
- {[['1m', 'M'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
+ {[['1m', 'Último mes'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
  <button key={key} onClick={() => setMuscleTF(key)}
- className="px-2 py-1 rounded-md text-[10px] font-semibold transition-all"
- style={muscleTF === key ? { background: ACCENT, color: ON_ACCENT } : { color: TEXT_MUTED }}>
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ style={muscleTF === key
+ ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
+ : { color: TEXT_MUTED }}>
  {lbl}
  </button>
  ))}
@@ -1354,7 +1314,7 @@ export default function Actividad() {
  <div className="flex items-center gap-2">
  <Sparkles className="w-4 h-4" style={{ color: 'var(--info)' }} />
  <span className="text-[13px]" style={{ color: TEXT_SECONDARY }}>
- Favorito: <span className="font-semibold" style={{ color: TEXT_PRIMARY }}>{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
+ Favorito: <span className="font-normal" style={{ color: TEXT_PRIMARY }}>{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
  </span>
  </div>
  </div>
@@ -1403,7 +1363,7 @@ function StatBox({ icon, value, label, sub }) {
  return (
  <div className="rounded-2xl p-4 flex flex-col items-center" style={glassCard}>
  {icon}
- <span className="text-[22px] font-bold font-mono mt-1.5" style={{ color: TEXT_PRIMARY }}>{value}</span>
+ <span className="text-[22px] font-normal font-mono mt-1.5" style={{ color: TEXT_PRIMARY }}>{value}</span>
  <span className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>{label}</span>
  {sub && <span className="text-[9px]" style={{ color: TEXT_MUTED }}>{sub}</span>}
  </div>
@@ -1472,7 +1432,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
   <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
  {/* Iniciales de la semana — deja claro que es un calendario */}
  {['L','M','X','J','V','S','D'].map(d => (
- <span key={`dow-${d}`} className="text-center text-[8px] font-semibold"
+ <span key={`dow-${d}`} className="text-center text-[8px] font-normal"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
  {d}
  </span>
@@ -1513,7 +1473,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  opacity={isFuture ? 0.22 : 0.45}
  />
  )}
- <span className="text-[9px] font-semibold leading-none"
+ <span className="text-[9px] font-normal leading-none"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
@@ -1521,13 +1481,13 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  {show && matchCount > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(var(--ink),0.12)' }}>
- <span className="text-[7px] font-bold" style={{ color: '#1c2620' }}>{matchCount}</span>
+ <span className="text-[7px] font-normal" style={{ color: '#1c2620' }}>{matchCount}</span>
  </div>
  )}
  {showPlan && planned.length > 1 && (
  <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
  style={{ background: '#fff', border: '1px solid rgba(125,107,167,0.4)' }}>
- <span className="text-[7px] font-bold" style={{ color: DAY_PALETTE.planned.text }}>{planned.length}</span>
+ <span className="text-[7px] font-normal" style={{ color: DAY_PALETTE.planned.text }}>{planned.length}</span>
  </div>
  )}
  </button>
