@@ -229,6 +229,7 @@ export default function Actividad() {
  const [selectedDate, setSelectedDate] = useState(new Date());
  const [expandedDay, setExpandedDay] = useState(null);
  const loadTF = 'weeks'; // vista fija semanal (se eliminó el toggle de días)
+ const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
  const [actFilter, setActFilter] = useState('accumulated');
 
  // ── Metas / Marcas personales ──
@@ -322,31 +323,49 @@ export default function Actividad() {
  return top ? ACTIVITY_TYPES[top[0]] : null;
  }, [myActivities]);
 
- // Volumen de fuerza por grupo muscular (mes navegado).
+ // Volumen de fuerza por grupo muscular en el periodo elegido (M/3M/6M,
+ // anclado al mes navegado) + periodo anterior como comparación fantasma.
  // Prioridad: grupos elegidos por el usuario (muscle_groups) → detección
  // por palabras clave (push/pull/términos exactos) → sin clasificar.
  const muscleData = useMemo(() => {
- const hours = Object.fromEntries(MUSCLE_GROUPS.map(g => [g.key, 0]));
+ const n = muscleTF === '1m' ? 1 : muscleTF === '3m' ? 3 : 6;
+ const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+ const sStr = fmt(new Date(year, month - (n - 1), 1));
+ const eStr = fmt(new Date(year, month + 1, 0));
+ const psStr = fmt(new Date(year, month - (2 * n - 1), 1));
+ const peStr = fmt(new Date(year, month - (n - 1), 0));
+
+ const cur = Object.fromEntries(MUSCLE_GROUPS.map(g => [g.key, 0]));
+ const prev = Object.fromEntries(MUSCLE_GROUPS.map(g => [g.key, 0]));
  let unmatchedMins = 0;
  let strengthCount = 0;
- myActivities.filter(a => a.type === 'strength_training').forEach(a => {
- strengthCount++;
- const explicit = Array.isArray(a.muscle_groups) ? a.muscle_groups.filter(k => k in hours) : [];
+ myAllActivities.filter(a => a.type === 'strength_training').forEach(a => {
+ const ds = a.date?.slice(0, 10);
+ if (!ds) return;
+ const inCur = ds >= sStr && ds <= eStr;
+ const inPrev = ds >= psStr && ds <= peStr;
+ if (!inCur && !inPrev) return;
+ const explicit = Array.isArray(a.muscle_groups) ? a.muscle_groups.filter(k => k in cur) : [];
  const keys = explicit.length > 0
  ? explicit
  : detectMuscleGroups(`${a.title || ''} ${a.description || ''} ${a.progress_note || ''}`);
  const mins = a.duration_minutes || 0;
+ if (inCur) {
+ strengthCount++;
  if (keys.length === 0) { unmatchedMins += mins; return; }
- keys.forEach(k => { hours[k] += mins / keys.length / 60; });
+ keys.forEach(k => { cur[k] += mins / keys.length / 60; });
+ } else if (keys.length > 0) {
+ keys.forEach(k => { prev[k] += mins / keys.length / 60; });
+ }
  });
- const classifiedH = Object.values(hours).reduce((s, h) => s + h, 0);
+ const classifiedH = Object.values(cur).reduce((s, h) => s + h, 0);
  return {
- data: MUSCLE_GROUPS.map(g => ({ label: g.label, hours: +hours[g.key].toFixed(1) })),
+ data: MUSCLE_GROUPS.map(g => ({ label: g.label, hours: +cur[g.key].toFixed(1), prev: +prev[g.key].toFixed(1) })),
  unmatchedH: +(unmatchedMins / 60).toFixed(1),
  totalH: +(classifiedH + unmatchedMins / 60).toFixed(1),
  strengthCount,
  };
- }, [myActivities]);
+ }, [myAllActivities, muscleTF, year, month]);
 
  const padelWinRate = useMemo(() => {
  const games = myAllActivities.filter(a => a.type === 'padel' && a.match_result?.result);
@@ -1253,14 +1272,28 @@ export default function Actividad() {
  {/* ── Fuerza — volumen por grupo muscular ── */}
  {muscleData.strengthCount > 0 && (
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center gap-2.5 mb-1">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+ <div className="flex items-start justify-between mb-1">
+ <div className="flex items-center gap-2.5">
+ <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
  style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
  <Dumbbell className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </div>
  <div>
  <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Fuerza</h2>
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>Horas por grupo muscular · {muscleData.totalH}h este mes</p>
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
+ {muscleData.totalH}h · {muscleTF === '1m' ? 'este mes' : muscleTF === '3m' ? 'últimos 3 meses' : 'últimos 6 meses'}
+ </p>
+ </div>
+ </div>
+ <div className="flex items-center gap-1 rounded-lg p-1 flex-shrink-0"
+ style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
+ {[['1m', 'M'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
+ <button key={key} onClick={() => setMuscleTF(key)}
+ className="px-2 py-1 rounded-md text-[10px] font-semibold transition-all"
+ style={muscleTF === key ? { background: ACCENT, color: ON_ACCENT } : { color: TEXT_MUTED }}>
+ {lbl}
+ </button>
+ ))}
  </div>
  </div>
  <div className="h-[250px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
@@ -1275,6 +1308,17 @@ export default function Actividad() {
  </defs>
  {/* Anillos discontinuos — eco de las rayas del calendario */}
  <PolarGrid stroke={CH.axis} strokeDasharray="3 5" radialLines={false} />
+ {/* Fantasma del periodo anterior — discontinua gris muy suave */}
+ <Radar
+ dataKey="prev"
+ stroke="rgba(150,150,150,0.45)"
+ strokeWidth={1.5}
+ strokeDasharray="4 4"
+ fill="transparent"
+ fillOpacity={0}
+ dot={false}
+ isAnimationActive={false}
+ />
  <PolarAngleAxis
  dataKey="label"
  tick={(props) => {
@@ -1307,6 +1351,9 @@ export default function Actividad() {
  </RadarChart>
  </ResponsiveContainer>
  </div>
+ <p className="text-[9px] text-center" style={{ color: TEXT_MUTED }}>
+ - - - {muscleTF === '1m' ? 'mes anterior' : muscleTF === '3m' ? '3 meses anteriores' : '6 meses anteriores'}
+ </p>
  {muscleData.unmatchedH > 0 && (
  <p className="text-[10px] text-center" style={{ color: TEXT_MUTED }}>
  {muscleData.unmatchedH}h sin clasificar — menciona el grupo muscular en la descripción para desglosarlas
@@ -1436,7 +1483,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
 
  return (
  <>
-  <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
+  <div className="grid grid-cols-7 gap-y-1 max-w-[252px]">
  {/* Iniciales de la semana — deja claro que es un calendario */}
  {['L','M','X','J','V','S','D'].map(d => (
  <span key={`dow-${d}`} className="text-center text-[8px] font-semibold"
@@ -1475,7 +1522,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  />
  )}
  <span className="text-[9px] font-semibold leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--accent-rgb),0.95)' : isToday ? TEXT_PRIMARY : `rgba(var(--accent-rgb),${isFuture ? 0.4 : 0.8})` }}>
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
  {(show || isPR) && <BrushMark opacity={isExp ? 1 : 0.92} />}

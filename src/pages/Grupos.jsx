@@ -678,7 +678,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <p className="text-[9px] font-bold mb-1" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.7)' }}>
  {MONTHS_ES[month]} {year}
  </p>
- <div className="grid grid-cols-7 gap-x-1 gap-y-1">
+ <div className="grid grid-cols-7 gap-y-[3px]" style={{ maxWidth: 206 }}>
  {['L','M','X','J','V','S','D'].map(d => (
  <span key={`dow-${d}`} className="text-center text-[7px] font-semibold"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
@@ -719,7 +719,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  />
  )}
  <span className="text-[8px] font-semibold leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--accent-rgb),0.95)' : isToday ? TEXT_PRIMARY : `rgba(var(--accent-rgb),${isFuture ? 0.4 : 0.8})` }}>
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
  {(show || isPR) && <BrushMark opacity={isExpanded ? 1 : 0.9} />}
