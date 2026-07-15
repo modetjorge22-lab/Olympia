@@ -1308,17 +1308,6 @@ export default function Actividad() {
  </defs>
  {/* Anillos discontinuos — eco de las rayas del calendario */}
  <PolarGrid stroke={CH.axis} strokeDasharray="3 5" radialLines={false} />
- {/* Fantasma del periodo anterior — discontinua gris muy suave */}
- <Radar
- dataKey="prev"
- stroke="rgba(150,150,150,0.45)"
- strokeWidth={1.5}
- strokeDasharray="4 4"
- fill="transparent"
- fillOpacity={0}
- dot={false}
- isAnimationActive={false}
- />
  <PolarAngleAxis
  dataKey="label"
  tick={(props) => {
@@ -1351,9 +1340,6 @@ export default function Actividad() {
  </RadarChart>
  </ResponsiveContainer>
  </div>
- <p className="text-[9px] text-center" style={{ color: TEXT_MUTED }}>
- - - - {muscleTF === '1m' ? 'mes anterior' : muscleTF === '3m' ? '3 meses anteriores' : '6 meses anteriores'}
- </p>
  {muscleData.unmatchedH > 0 && (
  <p className="text-[10px] text-center" style={{ color: TEXT_MUTED }}>
  {muscleData.unmatchedH}h sin clasificar — menciona el grupo muscular en la descripción para desglosarlas

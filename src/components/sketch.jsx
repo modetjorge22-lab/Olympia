@@ -35,7 +35,7 @@ export function BrushMark({ color = 'var(--accent)', opacity = 0.92 }) {
       aria-hidden="true"
     >
       <path
-        d="M6.5 21 L17 7.5 L11 17 L20.5 5"
+        d="M5 8.5 L15.5 5 L6.5 14.5 L18 11.5 L9 21.5 L20.5 18"
         fill="none"
         style={{ stroke: color }}
         strokeWidth="2.4"
