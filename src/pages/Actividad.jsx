@@ -866,6 +866,10 @@ export default function Actividad() {
  <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>{totalHours}h este mes</p>
  </div>
  </div>
+ {/* Mes visible — refuerza que esto es un calendario */}
+ <span className="text-[11px] font-bold" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.8)' }}>
+ {MONTH_NAMES_SHORT[month]} {year}
+ </span>
  </div>
 
  <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} filterType={actFilter === 'accumulated' ? null : actFilter} />
@@ -1396,6 +1400,13 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  return (
  <>
   <div className="grid grid-cols-7 gap-x-[5px] gap-y-1.5">
+ {/* Iniciales de la semana — deja claro que es un calendario */}
+ {['L','M','X','J','V','S','D'].map(d => (
+ <span key={`dow-${d}`} className="text-center text-[8px] font-semibold"
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
+ {d}
+ </span>
+ ))}
  {trailing.map(i => (
  <div key={`p-${i}`} className="w-8 h-8 mx-auto" aria-hidden="true" />
  ))}
@@ -1422,12 +1433,12 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  style={isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)', borderRadius: 8 } : {}}>
  {!isToday && (
  <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.75)' : undefined}
- opacity={isFuture ? 0.2 : 0.38}
+ color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
+ opacity={isFuture ? 0.22 : 0.45}
  />
  )}
  <span className="text-[9px] font-semibold leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--ink),0.85)' : isToday ? TEXT_PRIMARY : `rgba(var(--ink),${isFuture ? 0.35 : 0.62})` }}>
+ style={{ fontFamily: '"JetBrains Mono", monospace', color: showPlan ? 'rgba(var(--accent-rgb),0.95)' : isToday ? TEXT_PRIMARY : `rgba(var(--accent-rgb),${isFuture ? 0.4 : 0.8})` }}>
  {day}
  </span>
  {(show || isPR) && <BrushMark opacity={isExp ? 1 : 0.92} />}
