@@ -35,7 +35,9 @@ const SECTION_TITLE = {
  fontSize: 13,
  letterSpacing: '0.14em',
  textTransform: 'lowercase',
- color: TEXT_PRIMARY,
+ // Valor literal: esta constante se declara antes que TEXT_PRIMARY y
+ // referenciarla aquí rompería el módulo en tiempo de carga (TDZ).
+ color: 'rgba(var(--ink),0.95)',
 };
 
 // Barra tipo liquid glass para controles
