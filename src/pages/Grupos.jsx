@@ -678,7 +678,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <p className="text-[9px] font-bold mb-1" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.7)' }}>
  {MONTHS_ES[month]} {year}
  </p>
- <div className="grid grid-cols-7 gap-y-[3px]" style={{ maxWidth: 206 }}>
+ <div className="grid grid-cols-7 gap-x-1 gap-y-1">
  {['L','M','X','J','V','S','D'].map(d => (
  <span key={`dow-${d}`} className="text-center text-[7px] font-semibold"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
@@ -711,13 +711,17 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  style={{
  cursor: has ? 'pointer' : 'default',
  borderRadius: 7,
- background: (show || isPR) ? `rgba(var(--accent-rgb),${isExpanded ? 0.32 : 0.2})` : 'transparent',
+ ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
+ background: (show || isPR)
+ ? `radial-gradient(circle at center, rgba(var(--accent-rgb),${isExpanded ? 0.55 : 0.45}) 0%, rgba(var(--accent-rgb),0.03) 78%)`
+ : 'transparent',
  }}>
+ {!isToday && (
  <DashedFrame
- color={isToday ? 'var(--accent)' : showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
+ color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
  opacity={isFuture ? 0.22 : 0.45}
- thickness={isToday ? 2 : 1}
  />
+ )}
  <span className="text-[8px] font-semibold leading-none"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
