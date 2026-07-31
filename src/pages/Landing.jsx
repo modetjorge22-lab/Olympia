@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +20,7 @@ const T = {
     done: 'Pronto tendrás noticias.',
     invalid: 'Escribe un email válido',
     fail: 'No se pudo enviar. Inténtalo de nuevo.',
+    login: 'Ya tengo cuenta',
   },
   en: {
     cta: 'Request access',
@@ -28,6 +29,7 @@ const T = {
     done: "You'll hear from us soon.",
     invalid: 'Enter a valid email',
     fail: "Couldn't send. Try again.",
+    login: 'I already have an account',
   },
 };
 
@@ -53,11 +55,17 @@ export default function Landing() {
     try {
       const { data: registered, error: rpcErr } = await supabase
         .rpc('email_is_registered', { check_email: clean });
-      if (!rpcErr && registered === true) {
+      if (rpcErr) {
+        // Diagnóstico visible: si la función SQL no existe o no tiene permisos,
+        // aquí se ve el motivo en lugar de caer en silencio al waitlist.
+        console.error('[Olympia] email_is_registered falló:', rpcErr.message || rpcErr);
+      } else if (registered === true) {
         navigate('/login', { state: { email: clean, existing: true } });
         return;
       }
-    } catch { /* sin detección disponible — continuamos al waitlist */ }
+    } catch (e) {
+      console.error('[Olympia] email_is_registered excepción:', e);
+    }
 
     const { error: err } = await supabase.from('waitlist').insert({ email: clean });
     if (err && err.code !== '23505') {
@@ -161,6 +169,12 @@ export default function Landing() {
           )}
           {error && (
             <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 6 }}>{error}</p>
+          )}
+          {/* Acceso para quien ya tiene cuenta (p.ej. entra desde otro dispositivo) */}
+          {state !== 'done' && (
+            <Link to="/login" style={{ fontSize: 10.5, color: `rgba(${INK},0.5)`, marginTop: 5 }}>
+              {t.login}
+            </Link>
           )}
           </div>
         </div>
