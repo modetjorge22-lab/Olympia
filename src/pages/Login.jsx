@@ -41,7 +41,8 @@ function Field({ icon: Icon, label, ...props }) {
 }
 
 export default function Login() {
-  const { signInWithEmail, signInWithGoogle, signUp } = useAuth();
+  const { signInWithEmail, signInWithGoogle, signUp, sendPasswordReset } = useAuth();
+  const [resetSent, setResetSent] = useState(false);
   const location = useLocation();
   const fromLanding = location.state?.existing === true;
   const [isSignUp, setIsSignUp] = useState(false);
@@ -173,6 +174,35 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          {/* Recuperar contraseña */}
+          {!isSignUp && (
+            <div className="mt-3 text-center">
+              {resetSent ? (
+                <p className="text-[12px]" style={{ color: 'var(--success)' }}>
+                  Te hemos enviado un email para restablecerla
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) { setError('Escribe tu email arriba y vuelve a pulsar'); return; }
+                    try {
+                      await sendPasswordReset(email);
+                      setResetSent(true);
+                      setError('');
+                    } catch (err) {
+                      setError(err.message);
+                    }
+                  }}
+                  className="text-[12px] transition-opacity hover:opacity-80"
+                  style={{ color: 'rgba(var(--ink),0.5)' }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="mt-5 pt-4 text-center" style={{ borderTop: '1px solid rgba(var(--ink),0.1)' }}>
             <button

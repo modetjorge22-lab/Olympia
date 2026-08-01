@@ -62,6 +62,20 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  // Envía el email de recuperación; el enlace devuelve al usuario a /reset
+  const sendPasswordReset = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset',
+    });
+    if (error) throw error;
+  };
+
+  // Fija la nueva contraseña (con la sesión de recuperación ya activa)
+  const updatePassword = async (password) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   const value = {
     user,
     loading,
@@ -69,6 +83,8 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signUp,
     signOut,
+    sendPasswordReset,
+    updatePassword,
   };
 
   return (

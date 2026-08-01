@@ -13,6 +13,7 @@ import Landing from '@/pages/Landing';
 
 // Lazy-load para code splitting — cada página en su propio chunk
 const Login = lazy(() => import('@/pages/Login'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Feed = lazy(() => import('@/pages/Feed'));
 const Actividad = lazy(() => import('@/pages/Actividad'));
 const Grupos = lazy(() => import('@/pages/Grupos'));
@@ -76,7 +77,8 @@ function AuthedLayout() {
 // landing antes de entrar a la app, y el visitante nuevo no percibe la espera.
 function LandingRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ minHeight: '100dvh', background: '#f8f3ea' }} />;
+  // Mismo fondo que la landing para que no haya destello al resolver la sesión
+  if (loading) return <div style={{ minHeight: '100dvh', background: '#fffdf5' }} />;
   if (user) return <Navigate to="/actividad" replace />;
   return children;
 }
@@ -93,6 +95,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><Suspense fallback={<LoadingScreen />}><Login /></Suspense></PublicRoute>} />
+      {/* Fuera de PublicRoute: el enlace de recuperación abre ya con sesión activa */}
+      <Route path="/reset" element={<Suspense fallback={<LoadingScreen />}><ResetPassword /></Suspense>} />
       <Route element={<AuthedLayout />}>
         <Route path="/feed" element={<Feed />} />
         <Route path="/actividad" element={<Actividad />} />

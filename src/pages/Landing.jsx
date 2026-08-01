@@ -7,7 +7,7 @@ import InfinityMark from '@/components/InfinityMark';
 
 // Landing minimalista — siempre en claro, independiente del tema de la app.
 const INK = '42,18,26';
-const BG = '#f8f3ea';        // intermedio entre #f6f0e4 y #faf7f0
+const BG = '#fffdf5';        // marfil cálido casi blanco
 const ACCENT = '#26070f';    // vino muy oscuro — botón y manifesto
 const ON_ACCENT = '#f5ede0';
 
