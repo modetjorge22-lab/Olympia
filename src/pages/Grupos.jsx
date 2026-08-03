@@ -288,7 +288,7 @@ export default function Grupos() {
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
  {/* Carrera mensual */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-start justify-between gap-3 mb-4">
+ <div className="flex items-start justify-between gap-3 mb-2">
  <div>
  <h2 style={SECTION_TITLE}>Carrera mensual</h2>
  <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
@@ -310,9 +310,9 @@ export default function Grupos() {
  ))}
  </div>
  </div>
- <div className="h-[340px] -mx-1">
+ <div className="h-[230px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
- <LineChart data={chartData} margin={{ top: 16, right: 28, bottom: 0, left: 0 }}>
+ <LineChart data={chartData} margin={{ top: 14, right: 26, bottom: 0, left: 0 }}>
  <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} />
  <XAxis dataKey="day" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={24} />
