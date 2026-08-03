@@ -768,7 +768,7 @@ export default function Actividad() {
  {/* Última semana + comparativa con la media habitual */}
  <div className="mb-3 flex items-baseline gap-3 flex-wrap">
  <div className="flex items-baseline gap-1.5">
- <span className="text-[28px] font-normal font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
+ <span className="text-[22px] font-normal font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
  {lastWeekHours}h
  </span>
  <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
@@ -854,8 +854,9 @@ export default function Actividad() {
  strokeWidth={2.5}
  fill="url(#cargaGradient)"
  dot={{
- r: 3,
+ r: 2.2,
  fill: CH.accent,
+ fillOpacity: 1,
  strokeWidth: 0,
  }}
  activeDot={{
@@ -979,7 +980,7 @@ export default function Actividad() {
  <div>
  <h2 style={SECTION_TITLE}>Ritmo estacional</h2>
  <div className="flex items-baseline gap-2 mt-1.5">
- <span className="text-[24px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ <span className="text-[20px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
  {formatHours(seasonal.totalH)}
  </span>
  <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_MUTED }}>

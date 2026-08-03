@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, Zap, Trophy, ChevronDown, Activity } from 'lucide-react';
+import { Users, Trophy, ChevronDown } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
@@ -76,6 +76,22 @@ const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const ACCENT = 'var(--accent)';
 const ON_ACCENT = 'var(--on-accent)';
 
+// Títulos de sección — misma voz que en "Tú": DM Sans regular, sin negrita ni iconos
+const SECTION_TITLE = {
+ fontFamily: '"DM Sans", system-ui, sans-serif',
+ fontWeight: 400,
+ fontSize: 13,
+ letterSpacing: '0.14em',
+ color: 'rgba(var(--ink),0.95)',
+};
+
+const glassBar = {
+ background: 'var(--glass-bg)',
+ backdropFilter: 'blur(24px) saturate(160%)',
+ WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+ border: '1px solid var(--glass-border)',
+};
+
 function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h' }) {
  if (!active || !payload?.length) return null;
  return (
@@ -112,8 +128,6 @@ export default function Grupos() {
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
- const [showAllActs, setShowAllActs] = useState(false);
- const [expandedActType, setExpandedActType] = useState(null);
  const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
 
@@ -236,25 +250,6 @@ export default function Grupos() {
  return { chartData: data, memberStats: stats };
  }, [allActivities, members, year, month, daysInMonth, raceMetric]);
 
- // Horas del equipo por actividad (mes navegado) — suma por deporte + desglose por miembro
- const teamActivityBreakdown = useMemo(() => {
- const byType = {};
- memberStats.forEach(m => {
- (m.activityBreakdown || []).forEach(({ type, label, emoji, hours }) => {
- if (hours <= 0) return;
- if (!byType[type]) byType[type] = { type, label, emoji, hours: 0, contributors: [] };
- byType[type].hours += hours;
- byType[type].contributors.push({ email: m.email, name: m.name, avatar_url: m.avatar_url, hours });
- });
- });
- return Object.values(byType)
- .map(t => ({
- ...t,
- hours: +t.hours.toFixed(1),
- contributors: [...t.contributors].sort((a, b) => b.hours - a.hours),
- }))
- .sort((a, b) => b.hours - a.hours);
- }, [memberStats]);
 
  // Burbuja al final de cada línea (todas en lastDay).
  // Las distintas alturas de cada miembro las separan visualmente en vertical.
@@ -283,7 +278,7 @@ export default function Grupos() {
  style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
  <Users className="w-6 h-6" style={{ color: 'rgba(var(--ink),0.75)' }} />
  </div>
- <h2 className="text-[15px] font-semibold mb-1" style={{ color: 'rgba(var(--ink),0.92)' }}>Sin actividad de equipo</h2>
+ <h2 className="text-[15px] font-normal mb-1" style={{ color: 'rgba(var(--ink),0.92)' }}>Sin actividad de equipo</h2>
  <p className="text-[13px] text-center" style={{ color: 'rgba(var(--ink),0.5)' }}>Los datos del grupo aparecerán aquí</p>
  </div>
  );
@@ -291,28 +286,24 @@ export default function Grupos() {
 
  return (
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
- {/* Carrera mensual + horas por actividad (mismo marco) */}
+ {/* Carrera mensual */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center justify-between mb-4">
- <div className="flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <TrendingUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
+ <div className="flex items-start justify-between gap-3 mb-4">
  <div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Carrera mensual</h2>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}</p>
+ <h2 style={SECTION_TITLE}>Carrera mensual</h2>
+ <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
+ {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}
+ </p>
  </div>
- </div>
- <div className="flex gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(var(--ink),0.07)' }}>
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
  {[['hours', 'Horas'], ['count', 'Nº']].map(([key, lbl]) => (
  <button
  key={key}
  onClick={() => setRaceMetric(key)}
- className="px-2 py-1 rounded-md text-[10px] font-semibold transition-all"
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all"
  style={raceMetric === key
- ? { background: ACCENT, color: ON_ACCENT }
- : { background: 'transparent', color: TEXT_MUTED }}
+ ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
+ : { color: TEXT_MUTED }}
  >
  {lbl}
  </button>
@@ -360,97 +351,15 @@ export default function Grupos() {
  </ResponsiveContainer>
  </div>
 
- {/* Horas por actividad — debajo de la carrera, dentro del mismo marco */}
- {teamActivityBreakdown.length > 0 && (() => {
- const maxHours = teamActivityBreakdown[0].hours || 1;
- const visible = showAllActs ? teamActivityBreakdown : teamActivityBreakdown.slice(0, 5);
- const hiddenCount = teamActivityBreakdown.length - 5;
- return (
- <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.12)' }}>
- <div className="flex items-center gap-2 mb-3">
- <Activity className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: TEXT_MUTED }}>Horas por actividad · equipo</p>
- </div>
- <div className="space-y-2.5">
- {visible.map(({ type, label, hours, contributors }) => {
- const pct = (hours / maxHours) * 100;
- const isOpen = expandedActType === type;
- return (
- <div key={type}>
- <button
- onClick={() => setExpandedActType(o => o === type ? null : type)}
- className="w-full flex items-center gap-2"
- >
- <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
- style={{ color: TEXT_MUTED, transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between mb-1">
- <span className="text-[12px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
- <span className="text-[12px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
- </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
- </div>
- </div>
- </button>
- {isOpen && contributors.length > 0 && (
- <div className="mt-2 ml-[22px] space-y-1.5">
- {contributors.map(c => {
- const cpct = hours > 0 ? (c.hours / hours) * 100 : 0;
- return (
- <div key={c.email} className="flex items-center gap-2">
- {c.avatar_url ? (
- <img src={c.avatar_url} alt={c.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0"
- style={{ border: '1px solid rgba(var(--ink),0.22)' }} />
- ) : (
- <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[8px] flex-shrink-0"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
- {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
- </div>
- )}
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between mb-0.5">
- <span className="text-[11px] truncate" style={{ color: TEXT_SECONDARY }}>{c.name}</span>
- <span className="text-[11px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{c.hours}h</span>
- </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${cpct}%`, background: 'rgba(var(--accent-rgb),0.55)' }} />
- </div>
- </div>
- </div>
- );
- })}
- </div>
- )}
- </div>
- );
- })}
- </div>
- {hiddenCount > 0 && (
- <button
- onClick={() => setShowAllActs(v => !v)}
- className="w-full flex items-center justify-center gap-1.5 mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}
- >
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
- {showAllActs ? 'Ver menos' : `Ver ${hiddenCount} más`}
- </span>
- <ChevronDown className="w-3.5 h-3.5 transition-transform"
- style={{ color: TEXT_MUTED, transform: showAllActs ? 'rotate(180deg)' : 'rotate(0deg)' }} />
- </button>
- )}
- </div>
- );
- })()}
  </div>
 
  {/* Ritmo estacional del grupo — media por participante vs periodo anterior */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between gap-3 mb-3">
  <div>
- <h2 className="text-[13px]" style={{ letterSpacing: '0.14em', color: TEXT_PRIMARY }}>Ritmo estacional</h2>
+ <h2 style={SECTION_TITLE}>Ritmo estacional</h2>
  <div className="flex items-baseline gap-2 mt-1.5">
- <span className="text-[22px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ <span className="text-[20px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
  {formatHours(seasonal.totalH)}
  </span>
  <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_MUTED }}>
@@ -461,13 +370,7 @@ export default function Grupos() {
  Media por participante · {memberStats.length} {memberStats.length === 1 ? 'miembro' : 'miembros'}
  </p>
  </div>
- <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0"
- style={{
- background: 'var(--glass-bg)',
- backdropFilter: 'blur(24px) saturate(160%)',
- WebkitBackdropFilter: 'blur(24px) saturate(160%)',
- border: '1px solid var(--glass-border)',
- }}>
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
  {[['1m', 'Último mes'], ['3m', '3M']].map(([key, lbl]) => (
  <button key={key} onClick={() => setSeasonTF(key)}
  className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
@@ -508,20 +411,16 @@ export default function Grupos() {
 
  {/* Ranking */}
  <div className="rounded-2xl overflow-hidden" style={glassCard}>
- <div className="px-4 pt-4 pb-2 flex items-center gap-2.5">
- <div className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.12)', border: '1px solid rgba(var(--ink),0.16)' }}>
- <Zap className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
- </div>
- <h2 className="text-[13px] font-bold" style={{ color: TEXT_PRIMARY }}>Ranking · {MONTHS_ES[month]}</h2>
+ <div className="pt-4 pb-2">
+ <h2 style={SECTION_TITLE}>Ranking · {MONTHS_ES[month]}</h2>
  </div>
  {memberStats.map((member, idx) => {
  const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
  const rankColor = rankingWine(idx, memberStats.length, CH);
  return (
- <div key={member.email} className={`px-4 py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
+ <div key={member.email} className={`py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
  <div className="flex items-center gap-3">
- <span className="text-[12px] font-bold w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
+ <span className="text-[12px] font-normal w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
  {member.avatar_url ? (
  <img
  src={member.avatar_url}
@@ -530,15 +429,15 @@ export default function Grupos() {
  style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
  />
  ) : (
- <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px]"
+ <div className="w-8 h-8 rounded-xl flex items-center justify-center font-normal text-[10px]"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
  <div className="flex-1">
  <div className="flex items-center justify-between mb-1.5">
- <p className="text-[12px] font-semibold" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <span className="text-[12px] font-bold font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
+ <p className="text-[12px] font-normal" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
+ <span className="text-[12px] font-normal font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
  </div>
  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
  <div
@@ -559,7 +458,7 @@ export default function Grupos() {
 
  {/* Member cards */}
  <div>
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(var(--ink),0.5)' }}>Miembros</p>
+ <p className="text-[11px] font-normal uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(var(--ink),0.5)' }}>Miembros</p>
  <div className="space-y-3">
  {memberStats.map((member, idx) => (
  <MiniMemberCard
@@ -632,15 +531,15 @@ function PaceRing({ pct, chart }) {
  </svg>
  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
  {hasData ? (
- <span className="font-bold font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
+ <span className="font-normal font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
  {pct}<span style={{ fontSize: 9, color: 'rgba(var(--ink),0.5)' }}>%</span>
  </span>
  ) : (
- <span className="font-bold font-mono" style={{ fontSize: 14, color: 'rgba(var(--ink),0.3)' }}>–%</span>
+ <span className="font-normal font-mono" style={{ fontSize: 14, color: 'rgba(var(--ink),0.3)' }}>–%</span>
  )}
  </div>
  </div>
- <span className="text-[9px] font-semibold uppercase tracking-wider mt-1" style={{ color: 'rgba(var(--ink),0.45)' }}>
+ <span className="text-[9px] font-normal uppercase tracking-wider mt-1" style={{ color: 'rgba(var(--ink),0.45)' }}>
  Ritmo
  </span>
  </div>
@@ -667,7 +566,7 @@ function SportFilterDropdown({ value, onChange, types }) {
  <div ref={ref} style={{ position: 'relative' }}>
  <button
  onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+ className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-normal transition-all"
  style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: value ? TEXT_PRIMARY : TEXT_MUTED }}
  >
  {label}
@@ -728,13 +627,13 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  className="w-8 h-8 rounded-full object-cover"
  style={{ border: '1.5px solid rgba(var(--ink),0.22)' }} />
  ) : (
- <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px]"
+ <div className="w-8 h-8 rounded-full flex items-center justify-center font-normal text-[10px]"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
  {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
  </div>
  )}
  <div>
- <p className="text-[12px] font-semibold leading-tight" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
+ <p className="text-[12px] font-normal leading-tight" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
  <p className="text-[10px]" style={{ color: TEXT_SECONDARY }}>{member.totalHours}h · {member.sessions} sesiones</p>
  </div>
  </div>
@@ -746,12 +645,12 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {/* Mini calendario (izquierda) + ritmo vs media (derecha) */}
  <div className="flex items-center gap-2">
  <div style={{ width: '75%', flexShrink: 0 }}>
- <p className="text-[9px] font-bold mb-1" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.7)' }}>
+ <p className="text-[9px] font-normal mb-1" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.7)' }}>
  {MONTHS_ES[month]} {year}
  </p>
  <div className="grid grid-cols-7 gap-x-1 gap-y-1">
  {['L','M','X','J','V','S','D'].map(d => (
- <span key={`dow-${d}`} className="text-center text-[7px] font-semibold"
+ <span key={`dow-${d}`} className="text-center text-[7px] font-normal"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
  {d}
  </span>
@@ -793,7 +692,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  opacity={isFuture ? 0.22 : 0.45}
  />
  )}
- <span className="text-[8px] font-semibold leading-none"
+ <span className="text-[8px] font-normal leading-none"
  style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
  {day}
  </span>
@@ -809,7 +708,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {/* Desglose de actividades del mes */}
  {activityBreakdown.length > 0 && (
  <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
- <p className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: TEXT_MUTED }}>
+ <p className="text-[9px] uppercase tracking-widest font-normal mb-2" style={{ color: TEXT_MUTED }}>
  Desglose del mes
  </p>
  <div className="space-y-1.5">
@@ -821,7 +720,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between mb-0.5">
  <span className="text-[10px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
- <span className="text-[10px] font-bold font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
+ <span className="text-[10px] font-normal font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
  </div>
  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
@@ -837,7 +736,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  {/* Entrenos del día expandido */}
  {expandedDay && member.actByDay[expandedDay]?.length > 0 && (
  <div className="mt-2 space-y-1.5">
- <p className="text-[9px] uppercase tracking-widest font-semibold px-0.5" style={{ color: TEXT_MUTED }}>
+ <p className="text-[9px] uppercase tracking-widest font-normal px-0.5" style={{ color: TEXT_MUTED }}>
  {expandedDay} {['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][month]}
  </p>
  {member.actByDay[expandedDay].map((act, idx) => (
@@ -853,7 +752,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  )}
  </div>
  {act.match_result?.result && (
- <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+ <span className="text-[10px] font-normal px-1.5 py-0.5 rounded"
  style={{
  background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(var(--ink),0.08)',
  color: act.match_result.result === 'win' ? 'var(--success)' : act.match_result.result === 'loss' ? 'var(--danger)' : TEXT_MUTED,
@@ -874,7 +773,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  >
  <div className="flex items-center gap-1.5">
  <Trophy className="w-3 h-3" style={{ color: TEXT_MUTED }} />
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
+ <span className="text-[10px] font-normal uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
  Metas {memberGoals.length > 0 ? `(${memberGoals.length})` : ''}
  </span>
  </div>
@@ -902,7 +801,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  </div>
  {goal.current_value != null && (
  <div className="text-right flex-shrink-0 ml-2">
- <span className="text-[16px] font-bold font-mono" style={{ color: ACCENT }}>
+ <span className="text-[16px] font-normal font-mono" style={{ color: ACCENT }}>
  {goal.current_value}
  </span>
  <span className="text-[10px] ml-0.5" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
