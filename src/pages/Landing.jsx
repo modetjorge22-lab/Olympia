@@ -170,12 +170,6 @@ export default function Landing() {
           {error && (
             <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 6 }}>{error}</p>
           )}
-          {/* Acceso para quien ya tiene cuenta (p.ej. entra desde otro dispositivo) */}
-          {state !== 'done' && (
-            <Link to="/login" style={{ fontSize: 10.5, color: `rgba(${INK},0.5)`, marginTop: 5 }}>
-              {t.login}
-            </Link>
-          )}
           </div>
         </div>
       </motion.div>
@@ -194,7 +188,7 @@ export default function Landing() {
           fontStyle: 'italic',
           color: ACCENT,
           maxWidth: 460,
-          marginLeft: 28,
+          marginLeft: 0, // alineado en la misma vertical que el logo de arriba
           marginBottom: '16vh',
         }}>
           {t.manifesto}

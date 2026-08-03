@@ -71,14 +71,22 @@ function AuthedLayout() {
   );
 }
 
-// Para la landing: sin splash ni LoadingScreen. Mientras el auth resuelve
-// (lectura casi instantánea de la sesión local) mostramos un lienzo vacío del
-// color de la landing — así el usuario logueado nunca ve un frame de la
-// landing antes de entrar a la app, y el visitante nuevo no percibe la espera.
+// ¿Hay sesión de Supabase guardada en este dispositivo? Se comprueba de forma
+// sincrónica (antes de que el auth resuelva) para decidir qué mostrar primero.
+function hasStoredSession() {
+  try {
+    return Object.keys(localStorage).some(k => /^sb-.*-auth-token$/.test(k));
+  } catch {
+    return false;
+  }
+}
+
+// Raíz: quien tiene sesión guardada ve la pantalla de carga (con el fondo de su
+// tema) y entra directo a la app — nunca un frame de la landing. Quien no la
+// tiene ve la landing al instante, sin pantalla de carga.
 function LandingRoute({ children }) {
   const { user, loading } = useAuth();
-  // Mismo fondo que la landing para que no haya destello al resolver la sesión
-  if (loading) return <div style={{ minHeight: '100dvh', background: '#fffdf5' }} />;
+  if (loading && hasStoredSession()) return <LoadingScreen />;
   if (user) return <Navigate to="/actividad" replace />;
   return children;
 }
