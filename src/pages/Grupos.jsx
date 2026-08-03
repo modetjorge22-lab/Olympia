@@ -6,12 +6,13 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
+import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -114,6 +115,7 @@ export default function Grupos() {
  const [showAllActs, setShowAllActs] = useState(false);
  const [expandedActType, setExpandedActType] = useState(null);
  const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
+ const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
 
  // PR achievements del equipo para colorear mini calendarios
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
@@ -266,6 +268,13 @@ export default function Grupos() {
  }, [memberStats, raceMetric]);
 
  const raceUnit = raceMetric === 'count' ? '' : 'h';
+
+ // Ritmo estacional del grupo — acumulado medio por participante
+ const seasonal = useMemo(() => buildSeasonalSeries(allActivities, {
+ year, month,
+ months: seasonTF === '1m' ? 1 : 3,
+ divisor: Math.max(memberStats.length, 1),
+ }), [allActivities, year, month, seasonTF, memberStats.length]);
 
  if (memberStats.length === 0) {
  return (
@@ -433,6 +442,68 @@ export default function Grupos() {
  </div>
  );
  })()}
+ </div>
+
+ {/* Ritmo estacional del grupo — media por participante vs periodo anterior */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-start justify-between gap-3 mb-3">
+ <div>
+ <h2 className="text-[13px]" style={{ letterSpacing: '0.14em', color: TEXT_PRIMARY }}>Ritmo estacional</h2>
+ <div className="flex items-baseline gap-2 mt-1.5">
+ <span className="text-[22px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ {formatHours(seasonal.totalH)}
+ </span>
+ <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_MUTED }}>
+ vs {formatHours(seasonal.prevTotalH)}
+ </span>
+ </div>
+ <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
+ Media por participante · {memberStats.length} {memberStats.length === 1 ? 'miembro' : 'miembros'}
+ </p>
+ </div>
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0"
+ style={{
+ background: 'var(--glass-bg)',
+ backdropFilter: 'blur(24px) saturate(160%)',
+ WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+ border: '1px solid var(--glass-border)',
+ }}>
+ {[['1m', 'Último mes'], ['3m', '3M']].map(([key, lbl]) => (
+ <button key={key} onClick={() => setSeasonTF(key)}
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ style={seasonTF === key
+ ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
+ : { color: TEXT_MUTED }}>
+ {lbl}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ <div className="h-[170px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+ <ResponsiveContainer width="100%" height="100%">
+ <AreaChart data={seasonal.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+ <defs>
+ <linearGradient id="seasonGradientTeam" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0%" stopColor={CH.accent} stopOpacity="0.45" />
+ <stop offset="100%" stopColor={CH.accent} stopOpacity="0.05" />
+ </linearGradient>
+ </defs>
+ <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+ <XAxis dataKey="label" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }}
+ tickLine={false} interval={Math.max(1, Math.floor(seasonal.data.length / 4)) - 1} minTickGap={20} />
+ <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false}
+ width={26} tickFormatter={(v) => `${v}h`} />
+ <Tooltip content={<CustomTooltip isTeam unit="h" />}
+ cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }} />
+ <Area type="monotone" dataKey="prev" stroke={CH.tick} strokeWidth={1.5}
+ fill="transparent" dot={false} isAnimationActive={false} connectNulls name="Periodo anterior" />
+ <Area type="monotone" dataKey="cur" stroke={CH.accent} strokeWidth={2.5}
+ fill="url(#seasonGradientTeam)" dot={{ r: 2, fill: CH.accent, strokeWidth: 0 }}
+ activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} name="Ahora" />
+ </AreaChart>
+ </ResponsiveContainer>
+ </div>
  </div>
 
  {/* Ranking */}

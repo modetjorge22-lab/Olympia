@@ -14,6 +14,7 @@ import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisp
 import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
+import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -250,6 +251,7 @@ export default function Actividad() {
  const [expandedDay, setExpandedDay] = useState(null);
  const loadTF = 'weeks'; // vista fija semanal (se eliminó el toggle de días)
  const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
+ const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
  const [actFilter, setActFilter] = useState('accumulated');
 
  // ── Metas / Marcas personales ──
@@ -386,6 +388,11 @@ export default function Actividad() {
  strengthCount,
  };
  }, [myAllActivities, muscleTF, year, month]);
+
+ // Ritmo estacional — horas acumuladas vs el periodo anterior equivalente
+ const seasonal = useMemo(() => buildSeasonalSeries(myAllActivities, {
+ year, month, months: seasonTF === '1m' ? 1 : 3,
+ }), [myAllActivities, year, month, seasonTF]);
 
  const padelWinRate = useMemo(() => {
  const games = myAllActivities.filter(a => a.type === 'padel' && a.match_result?.result);
@@ -963,6 +970,69 @@ export default function Actividad() {
  </div>
  )}
  </AnimatePresence>
+ </div>
+ </div>
+
+ {/* ── Ritmo estacional — acumulado vs periodo anterior ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-start justify-between gap-3 mb-3">
+ <div>
+ <h2 style={SECTION_TITLE}>Ritmo estacional</h2>
+ <div className="flex items-baseline gap-2 mt-1.5">
+ <span className="text-[24px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ {formatHours(seasonal.totalH)}
+ </span>
+ <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_MUTED }}>
+ vs {formatHours(seasonal.prevTotalH)}
+ </span>
+ </div>
+ </div>
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
+ {[['1m', 'Último mes'], ['3m', '3M']].map(([key, lbl]) => (
+ <button key={key} onClick={() => setSeasonTF(key)}
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ style={seasonTF === key
+ ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
+ : { color: TEXT_MUTED }}>
+ {lbl}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ <div className="h-[170px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+ <ResponsiveContainer width="100%" height="100%">
+ <AreaChart data={seasonal.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+ <defs>
+ <linearGradient id="seasonGradient" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0%" stopColor={CH.accent} stopOpacity="0.45" />
+ <stop offset="100%" stopColor={CH.accent} stopOpacity="0.05" />
+ </linearGradient>
+ </defs>
+ <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+ <XAxis dataKey="label" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }}
+ tickLine={false} interval={Math.max(1, Math.floor(seasonal.data.length / 4)) - 1} minTickGap={20} />
+ <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false}
+ width={26} tickFormatter={(v) => `${v}h`} />
+ <Tooltip
+ cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
+ content={(props) => {
+ const payload = (props.payload || []).map(p => ({
+ ...p,
+ tooltipName: p.dataKey === 'prev' ? 'Periodo anterior' : 'Ahora',
+ }));
+ return <ChartTooltip {...props} payload={payload} />;
+ }}
+ />
+ {/* Periodo anterior — línea de referencia apagada */}
+ <Area type="monotone" dataKey="prev" stroke={CH.tick} strokeWidth={1.5}
+ fill="transparent" dot={false} isAnimationActive={false} connectNulls />
+ {/* Periodo actual — acento con relleno y puntos */}
+ <Area type="monotone" dataKey="cur" stroke={CH.accent} strokeWidth={2.5}
+ fill="url(#seasonGradient)" dot={{ r: 2, fill: CH.accent, strokeWidth: 0 }}
+ activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} />
+ </AreaChart>
+ </ResponsiveContainer>
  </div>
  </div>
 
