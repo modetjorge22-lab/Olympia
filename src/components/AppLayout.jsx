@@ -2,12 +2,10 @@ import React, { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
-import { useMonth } from '@/lib/MonthContext';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import InfinityMark from './InfinityMark';
 import FeatureAnnouncement from './FeatureAnnouncement';
 
-const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 const navItems = [
   { path: '/feed', label: 'Feed', icon: Newspaper },
@@ -30,7 +28,6 @@ const glass = {
 
 export default function AppLayout({ children }) {
   const location = useLocation();
-  const { currentMonth, goBack, goForward } = useMonth();
   const mainRef = useRef(null);
 
   useStravaAutoSync();
@@ -40,7 +37,6 @@ export default function AppLayout({ children }) {
     mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
 
-  const monthLabel = `${MONTHS[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   return (
     <>
@@ -53,7 +49,7 @@ export default function AppLayout({ children }) {
       >
         <div className="mx-auto max-w-lg px-3">
           <div
-            className="flex items-center justify-between pl-4 pr-2"
+            className="flex items-center justify-start px-4"
             style={{ height: HEADER_H, borderRadius: HEADER_H / 2, pointerEvents: 'auto', ...glass }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -70,27 +66,6 @@ export default function AppLayout({ children }) {
               </div>
             </div>
 
-            <div
-              className="flex items-center gap-3 px-3 py-1.5 rounded-full"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--glass-border)',
-              }}
-            >
-              <button onClick={goBack} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <span className="text-[12px] font-semibold min-w-[72px] text-center tracking-wide" style={{ color: 'rgba(var(--ink),0.92)' }}>
-                {monthLabel}
-              </span>
-              <button onClick={goForward} style={{ color: 'rgba(var(--ink),0.55)' }} className="hover:opacity-100 transition-opacity">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
       </header>

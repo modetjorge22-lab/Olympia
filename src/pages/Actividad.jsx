@@ -15,7 +15,7 @@ import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
-import { WeekStrip, MonthScroller, CategoryLegend, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
+import { TrainingSection, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import DayDetailSheet from '@/components/DayDetailSheet';
 
@@ -1047,26 +1047,16 @@ export default function Actividad() {
 
  return (
  <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
- {/* ── Entrenamiento — semana deslizable (pasado ← → planificado) ── */}
+ {/* ── Entrenamiento — semana ↔ mes completo, con filtro por actividad ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <h2 className="mb-3" style={SECTION_TITLE}>Entrenamiento</h2>
- <WeekStrip
+ <TrainingSection
  activitiesByDate={activitiesByDateStr}
  plansByDate={plansByDateStr}
  prDates={prDates}
  onDayClick={setDetailDate}
+ usedTypes={usedTypes.map(t => t.key)}
+ typeLabels={Object.fromEntries(Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label]))}
  />
- </div>
-
- {/* ── Calendario — meses con scroll vertical ── */}
- <div className="rounded-2xl p-4" style={glassCard}>
- <MonthScroller
- activitiesByDate={activitiesByDateStr}
- plansByDate={plansByDateStr}
- prDates={prDates}
- onDayClick={setDetailDate}
- />
- <div className="mt-2"><CategoryLegend /></div>
  </div>
 
  {/* ── Carga muscular ── */}
