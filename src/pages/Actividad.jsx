@@ -256,7 +256,6 @@ export default function Actividad() {
  const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
  const [detailDate, setDetailDate] = useState(null); // día abierto en la hoja de detalle
- const [visibleRange, setVisibleRange] = useState(null); // [inicio, fin] de la semana visible
  const [editCards, setEditCards] = useState(false);
  const [cardOrder, setCardOrder] = useState(() => {
  try {
@@ -793,13 +792,6 @@ export default function Actividad() {
  return map;
  }, [myAllActivities]);
 
- const visibleWeekLabel = (() => {
- if (!visibleRange) return null;
- const mid = new Date(visibleRange[0] + 'T12:00:00'); mid.setDate(mid.getDate() + 3);
- const ms = tcDateStr(mid);
- return weeklyData.find(w => ms >= w.startStr && ms <= w.endStr)?.label || null;
- })();
-
  // Tarjetas de gráficas reordenables (orden persistido por dispositivo)
  const chartCards = {
  ritmo: (<>
@@ -956,10 +948,25 @@ export default function Actividad() {
  typeLabels={Object.fromEntries(Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label]))}
  filter={typeFilter}
  onFilterChange={(t) => setActFilter(t || 'accumulated')}
- onVisibleChange={(a, b) => setVisibleRange([tcDateStr(a), tcDateStr(b)])}
  >
- {/* Tendencia — 16 semanas; la línea vertical sigue a la semana visible */}
- <div className="mt-4">
+ {/* Snapshot fijo — últimos 7 días vs media y tendencia de 16 semanas */}
+ <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
+ <div className="flex items-end justify-between mb-2">
+ <div>
+ <p className="text-[20px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ {formatHours(lastWeekHours)}
+ </p>
+ <p className="text-[10px] mt-1.5" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
+ </div>
+ {avgWeeklyHours > 0 && (
+ <div className="text-right">
+ <p className="text-[12px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: lastWeekHours >= avgWeeklyHours ? 'var(--accent)' : TEXT_MUTED }}>
+ {lastWeekHours >= avgWeeklyHours ? '↑' : '↓'} {formatHours(Math.abs(lastWeekHours - avgWeeklyHours))}
+ </p>
+ <p className="text-[10px]" style={{ color: TEXT_MUTED }}>vs tu media semanal</p>
+ </div>
+ )}
+ </div>
  <p className="text-[10px] mb-1" style={{ color: TEXT_MUTED }}>
  Últimas 16 semanas{typeFilter ? ` · ${ACTIVITY_TYPES[typeFilter]?.label}` : ''}
  </p>
@@ -981,15 +988,9 @@ export default function Actividad() {
  cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
  content={(props) => <ChartTooltip {...props} payload={(props.payload || []).map(p => ({ ...p, tooltipName: 'Entrenamiento' }))} />}
  />
- {visibleWeekLabel && (
- <ReferenceLine x={visibleWeekLabel} stroke={CH.accent} strokeOpacity={0.35} strokeWidth={8} />
- )}
  <Area type="monotone" dataKey="hours" stroke={CH.accent} strokeWidth={2}
  fill="url(#cargaGradient)"
- dot={(p) => {
- const on = p.payload?.label === visibleWeekLabel;
- return <circle key={p.index} cx={p.cx} cy={p.cy} r={on ? 4 : 2} fill={CH.accent} />;
- }}
+ dot={{ r: 2.2, fill: CH.accent, fillOpacity: 1, strokeWidth: 0 }}
  activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} />
  </AreaChart>
  </ResponsiveContainer>

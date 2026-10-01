@@ -231,45 +231,11 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
                 onClick={onDayClick}
                 todayMark={false}
               />
-              {/* Barra del día — minutos apilados por familia de actividad */}
-              <button onClick={() => onDayClick?.(d)} className="flex flex-col-reverse items-center justify-start mt-1"
-                style={{ height: BAR_H, width: 8 }} aria-label="Ver día">
-                {acts.length === 0 ? (
-                  <span style={{ width: 8, height: 2, borderRadius: 1, background: 'rgba(var(--ink),0.08)' }} />
-                ) : acts.map((a, k) => (
-                  <span key={k} style={{
-                    width: 8,
-                    height: Math.max(3, ((a.duration_minutes || 0) / maxMins) * BAR_H),
-                    background: `rgba(var(--cat-${categoryOf(a.type)}),0.85)`,
-                    borderRadius: k === acts.length - 1 ? '3px 3px 0 0' : 0,
-                    marginTop: k === acts.length - 1 ? 0 : 1,
-                  }} />
-                ))}
-              </button>
             </div>
           );
         })}
       </div>
 
-      {/* Resumen de la semana visible */}
-      <div className="flex items-end justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
-        <div>
-          <p className="text-[20px] leading-none" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.95)' }}>
-            {fmtMins(summary.visMins)}
-          </p>
-          <p className="text-[10px] mt-1.5" style={{ color: 'rgba(var(--ink),0.45)' }}>
-            {first && last ? `${short(first)} – ${short(last)}` : ''} · {summary.sessions} {summary.sessions === 1 ? 'sesión' : 'sesiones'}
-          </p>
-        </div>
-        {summary.delta !== null && (
-          <div className="text-right">
-            <p className="text-[12px]" style={{ fontFamily: MONO, color: summary.delta >= 0 ? 'var(--accent)' : 'rgba(var(--ink),0.5)' }}>
-              {summary.delta >= 0 ? '↑' : '↓'} {fmtMins(Math.round(Math.abs(summary.delta)))}
-            </p>
-            <p className="text-[10px]" style={{ color: 'rgba(var(--ink),0.45)' }}>vs tu media semanal</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
