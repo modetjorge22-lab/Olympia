@@ -134,7 +134,7 @@ export function CategoryLegend() {
 // y una pequeña línea roja desde arriba marca el día de hoy.
 const DOW_BY_JS = ['D','L','M','X','J','V','S'];
 
-export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, weeksBack = 26, weeksForward = 12 }) {
+export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, onVisibleChange, weeksBack = 26, weeksForward = 12 }) {
   const scrollRef = useRef(null);
   const [colW, setColW] = useState(0);
   const [firstIdx, setFirstIdx] = useState(weeksBack * 7);
@@ -151,16 +151,17 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
   const todayIdx = days.findIndex(d => toDateStr(d) === todayStr);
   const homeIdx = weeksBack * 7; // lunes de la semana actual
 
-  // Ancho de columna = 1/7 del contenedor; posición inicial en la semana actual
+  // Minutos por día y escala común de las barras
+  const dayMins = useMemo(() => days.map(d =>
+    (activitiesByDate[toDateStr(d)] || []).reduce((s, a) => s + (a.duration_minutes || 0), 0)), [days, activitiesByDate]);
+  const maxMins = Math.max(60, ...dayMins);
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const measure = () => {
-      const w = el.clientWidth / 7;
-      setColW(w);
-      el.scrollLeft = homeIdx * w;
-    };
-    measure();
+    const w = el.clientWidth / 7;
+    setColW(w);
+    el.scrollLeft = homeIdx * w;
     const ro = new ResizeObserver(() => setColW(el.clientWidth / 7));
     ro.observe(el);
     return () => ro.disconnect();
@@ -169,42 +170,32 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || !colW) return;
-    setFirstIdx(Math.round(el.scrollLeft / colW));
+    setFirstIdx(Math.max(0, Math.min(days.length - 7, Math.round(el.scrollLeft / colW))));
   };
 
-  const visible = days.slice(firstIdx, firstIdx + 7);
+  // Avisa al padre del rango visible (para marcarlo en la tendencia)
+  useEffect(() => {
+    if (onVisibleChange && days[firstIdx]) onVisibleChange(days[firstIdx], days[firstIdx + 6]);
+  }, [firstIdx]);
+
+  // Resumen de los 7 días visibles vs media semanal de las 12 semanas previas
   const summary = useMemo(() => {
-    let mins = 0, sessions = 0, plannedN = 0;
-    visible.forEach(d => {
-      const ds = toDateStr(d);
-      const acts = activitiesByDate[ds] || [];
-      sessions += acts.length;
-      mins += acts.reduce((s, a) => s + (a.duration_minutes || 0), 0);
-      if (!acts.length) plannedN += (plansByDate[ds] || []).length;
-    });
-    return { mins, sessions, plannedN };
-  }, [firstIdx, activitiesByDate, plansByDate]);
+    const visMins = dayMins.slice(firstIdx, firstIdx + 7).reduce((s, m) => s + m, 0);
+    const sessions = days.slice(firstIdx, firstIdx + 7)
+      .reduce((s, d) => s + (activitiesByDate[toDateStr(d)] || []).length, 0);
+    const from = Math.max(0, firstIdx - 84);
+    const prevSpan = firstIdx - from;
+    const prevMins = dayMins.slice(from, firstIdx).reduce((s, m) => s + m, 0);
+    const avgWeek = prevSpan >= 7 ? prevMins / (prevSpan / 7) : 0;
+    return { visMins, sessions, avgWeek, delta: avgWeek > 0 ? visMins - avgWeek : null };
+  }, [firstIdx, dayMins, days, activitiesByDate]);
 
-  const first = visible[0], last = visible[visible.length - 1];
+  const first = days[firstIdx], last = days[firstIdx + 6];
   const short = d => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3).toLowerCase()}`;
-  const awayFromToday = todayIdx >= 0 && (todayIdx < firstIdx || todayIdx > firstIdx + 6);
-
-  const goHome = () => scrollRef.current?.scrollTo({ left: homeIdx * colW, behavior: 'smooth' });
+  const BAR_H = 30;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[12px]" style={{ color: 'rgba(var(--ink),0.9)' }}>
-          {first && last ? `${short(first)} – ${short(last)}` : ''}
-        </p>
-        {awayFromToday && (
-          <button onClick={goHome} className="text-[10px] px-3 py-1 rounded-full"
-            style={{ border: '1px solid var(--glass-border)', color: 'rgba(var(--ink),0.6)' }}>
-            Hoy
-          </button>
-        )}
-      </div>
-
       <div
         ref={scrollRef}
         onScroll={onScroll}
@@ -214,6 +205,7 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
         {days.map((d, i) => {
           const ds = toDateStr(d);
           const isToday = i === todayIdx;
+          const acts = activitiesByDate[ds] || [];
           return (
             <div key={ds} className="relative flex flex-col items-center gap-1 flex-shrink-0 pt-3.5"
               style={{ width: colW || '14.2857%' }}>
@@ -232,16 +224,51 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
               </span>
               <DayCell
                 date={d}
-                acts={activitiesByDate[ds]}
+                acts={acts}
                 plans={plansByDate[ds]}
                 isPR={prDates.has(ds)}
                 size={40}
                 onClick={onDayClick}
                 todayMark={false}
               />
+              {/* Barra del día — minutos apilados por familia de actividad */}
+              <button onClick={() => onDayClick?.(d)} className="flex flex-col-reverse items-center justify-start mt-1"
+                style={{ height: BAR_H, width: 8 }} aria-label="Ver día">
+                {acts.length === 0 ? (
+                  <span style={{ width: 8, height: 2, borderRadius: 1, background: 'rgba(var(--ink),0.08)' }} />
+                ) : acts.map((a, k) => (
+                  <span key={k} style={{
+                    width: 8,
+                    height: Math.max(3, ((a.duration_minutes || 0) / maxMins) * BAR_H),
+                    background: `rgba(var(--cat-${categoryOf(a.type)}),0.85)`,
+                    borderRadius: k === acts.length - 1 ? '3px 3px 0 0' : 0,
+                    marginTop: k === acts.length - 1 ? 0 : 1,
+                  }} />
+                ))}
+              </button>
             </div>
           );
         })}
+      </div>
+
+      {/* Resumen de la semana visible */}
+      <div className="flex items-end justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
+        <div>
+          <p className="text-[20px] leading-none" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.95)' }}>
+            {fmtMins(summary.visMins)}
+          </p>
+          <p className="text-[10px] mt-1.5" style={{ color: 'rgba(var(--ink),0.45)' }}>
+            {first && last ? `${short(first)} – ${short(last)}` : ''} · {summary.sessions} {summary.sessions === 1 ? 'sesión' : 'sesiones'}
+          </p>
+        </div>
+        {summary.delta !== null && (
+          <div className="text-right">
+            <p className="text-[12px]" style={{ fontFamily: MONO, color: summary.delta >= 0 ? 'var(--accent)' : 'rgba(var(--ink),0.5)' }}>
+              {summary.delta >= 0 ? '↑' : '↓'} {fmtMins(Math.round(Math.abs(summary.delta)))}
+            </p>
+            <p className="text-[10px]" style={{ color: 'rgba(var(--ink),0.45)' }}>vs tu media semanal</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -288,11 +315,11 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
         return (
           <div key={`${y}-${mo}`} ref={isCurrent ? currentRef : null}
             style={{ height: MONTH_H, scrollSnapAlign: 'start', scrollSnapStop: 'always', overflow: 'hidden' }}>
-            <div className="text-center mb-2">
+            <div className="flex items-baseline justify-between mb-2">
               <span style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)' }}>
                 {MONTHS_FULL[mo]} {y}
               </span>
-              <span className="text-[10px] ml-2" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMins(mins)}</span>
+              <span className="text-[11px]" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMins(mins)}</span>
             </div>
             <div className="grid grid-cols-7 gap-y-1.5 max-w-[340px] mx-auto">
               {DOW.map(d => (
@@ -311,6 +338,7 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
                       isPR={prDates.has(ds)}
                       size={36}
                       onClick={onDayClick}
+                      todayMark={false}
                     />
                   </div>
                 );
@@ -326,7 +354,7 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
 // ── Sección de Entrenamiento (semana) ──
 // Título centrado; a la derecha el filtro por actividad, que gobierna toda la
 // pestaña (semana, calendario, Mi Actividad, Ritmo estacional).
-export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange }) {
+export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange, onVisibleChange, children }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -379,7 +407,8 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
         </div>
       </div>
 
-      <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} />
+      <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} onVisibleChange={onVisibleChange} />
+      {children}
     </div>
   );
 }

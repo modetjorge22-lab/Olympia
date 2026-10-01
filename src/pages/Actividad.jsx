@@ -256,13 +256,17 @@ export default function Actividad() {
  const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
  const [detailDate, setDetailDate] = useState(null); // día abierto en la hoja de detalle
+ const [visibleRange, setVisibleRange] = useState(null); // [inicio, fin] de la semana visible
  const [editCards, setEditCards] = useState(false);
  const [cardOrder, setCardOrder] = useState(() => {
  try {
  const saved = JSON.parse(localStorage.getItem('olympia_tu_cards'));
- if (Array.isArray(saved) && saved.length === 3) return saved;
+ if (Array.isArray(saved)) {
+ const valid = saved.filter(k => k === 'ritmo' || k === 'fuerza');
+ if (valid.length === 2) return valid;
+ }
  } catch { /* noop */ }
- return ['actividad', 'ritmo', 'fuerza'];
+ return ['ritmo', 'fuerza'];
  });
  useEffect(() => {
  try { localStorage.setItem('olympia_tu_cards', JSON.stringify(cardOrder)); } catch { /* noop */ }
@@ -488,6 +492,7 @@ export default function Actividad() {
  ? +(sleepInWeek.reduce((s, r) => s + (r.duration_minutes || 0), 0) / sleepInWeek.length / 60).toFixed(1)
  : null;
  return {
+ startStr, endStr,
  label: `${start.getDate()}/${start.getMonth() + 1}`,
  monthLabel: showLabel ? MONTH_LABELS_SHORT[start.getMonth()] : '',
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
@@ -788,126 +793,15 @@ export default function Actividad() {
  return map;
  }, [myAllActivities]);
 
+ const visibleWeekLabel = (() => {
+ if (!visibleRange) return null;
+ const mid = new Date(visibleRange[0] + 'T12:00:00'); mid.setDate(mid.getDate() + 3);
+ const ms = tcDateStr(mid);
+ return weeklyData.find(w => ms >= w.startStr && ms <= w.endStr)?.label || null;
+ })();
+
  // Tarjetas de gráficas reordenables (orden persistido por dispositivo)
  const chartCards = {
- actividad: (<>
- {/* Mi Actividad — gráfica de carga */}
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="mb-3">
- <h2 style={SECTION_TITLE}>Mi Actividad</h2>
- <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
- Últimas 16 semanas · {chartSubtitle}
- </p>
- </div>
-
-
-
- {/* Última semana + comparativa con la media habitual */}
- <div className="mb-3 flex items-baseline gap-3 flex-wrap">
- <div className="flex items-baseline gap-1.5">
- <span className="text-[22px] font-normal font-mono leading-none" style={{ color: TEXT_PRIMARY }}>
- {lastWeekHours}h
- </span>
- <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
- últ. 7 días
- </span>
- </div>
- {lastWeekVsAvgPct !== null && (
- <div
- className="flex items-center gap-1 px-2 py-0.5 rounded-md"
- style={{
- background: lastWeekVsAvgPct >= 0 ? 'rgba(52,211,153,0.14)' : 'rgba(251,191,36,0.14)',
- }}
- >
- {lastWeekVsAvgPct >= 0
- ? <TrendingUp className="w-3 h-3" style={{ color: 'var(--success)' }} />
- : <TrendingDown className="w-3 h-3" style={{ color: 'var(--warning)' }} />}
- <span className="text-[10px] font-normal" style={{ color: lastWeekVsAvgPct >= 0 ? 'var(--success)' : 'var(--warning)' }}>
- {lastWeekVsAvgPct >= 0 ? '+' : ''}{lastWeekVsAvgPct}% vs media
- </span>
- </div>
- )}
- {avgWeeklyHours > 0 && (
- <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
- (media: {avgWeeklyHours}h/sem)
- </span>
- )}
- </div>
-
- {/* user-select:none previene la selección de texto nativa en long-press */}
- <div className="h-[160px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
- <ResponsiveContainer width="100%" height="100%">
- <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
- <defs>
- <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor={CH.accent} stopOpacity="0.5" />
- <stop offset="100%" stopColor={CH.accent} stopOpacity="0.08" />
- </linearGradient>
- </defs>
- <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
- {/* minTickGap evita que las etiquetas de mes se solapen en móvil */}
- <XAxis dataKey="monthLabel" tick={{ fontSize: 10, fill: CH.tick, fontWeight: 600 }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={0} minTickGap={18} />
- <YAxis
- tick={{ fontSize: 9, fill: CH.tick }}
- axisLine={false}
- tickLine={false}
- width={26}
- domain={yDomain}
- ticks={yTicks}
- tickFormatter={(v) => `${v}h`}
- />
- <Tooltip
- cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
- content={(props) => {
- const payload = (props.payload || []).map(p => ({
- ...p,
- tooltipName: p.dataKey === 'sleepHours' ? 'Sueño/noche' : 'Entrenamiento',
- }));
- return <ChartTooltip {...props} payload={payload} />;
- }}
- />
-
- {/* Área de sueño — detrás del ejercicio */}
- {showSleep && (
- <Area
- type="monotone"
- dataKey="sleepHours"
- stroke="rgba(16,185,129,0.5)"
- strokeWidth={1}
- fill="rgba(16,185,129,0.18)"
- dot={false}
- activeDot={{ r: 4, fill: 'rgba(16,185,129,0.7)', strokeWidth: 0 }}
- isAnimationActive={false}
- connectNulls={false}
- name="Sueño"
- />
- )}
-
- {/* Área principal: período actual con puntos */}
- <Area
- type="monotone"
- dataKey="hours"
- stroke={CH.accent}
- strokeWidth={2.5}
- fill="url(#cargaGradient)"
- dot={{
- r: 2.2,
- fill: CH.accent,
- fillOpacity: 1,
- strokeWidth: 0,
- }}
- activeDot={{
- r: 5,
- fill: CH.accent,
- strokeWidth: 0,
- }}
- isAnimationActive={false}
- />
- </AreaChart>
- </ResponsiveContainer>
- </div>
- </div>
- </>),
  ritmo: (<>
  {/* ── Ritmo estacional — acumulado vs periodo anterior ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
@@ -1062,7 +956,46 @@ export default function Actividad() {
  typeLabels={Object.fromEntries(Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label]))}
  filter={typeFilter}
  onFilterChange={(t) => setActFilter(t || 'accumulated')}
+ onVisibleChange={(a, b) => setVisibleRange([tcDateStr(a), tcDateStr(b)])}
+ >
+ {/* Tendencia — 16 semanas; la línea vertical sigue a la semana visible */}
+ <div className="mt-4">
+ <p className="text-[10px] mb-1" style={{ color: TEXT_MUTED }}>
+ Últimas 16 semanas{typeFilter ? ` · ${ACTIVITY_TYPES[typeFilter]?.label}` : ''}
+ </p>
+ <div className="h-[120px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+ <ResponsiveContainer width="100%" height="100%">
+ <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+ <defs>
+ <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0%" stopColor={CH.accent} stopOpacity="0.4" />
+ <stop offset="100%" stopColor={CH.accent} stopOpacity="0.04" />
+ </linearGradient>
+ </defs>
+ <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+ <XAxis dataKey="label" tickFormatter={(v) => chartData.find(d => d.label === v)?.monthLabel || ''}
+ tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={0} minTickGap={18} />
+ <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={26}
+ domain={yDomain} ticks={yTicks} tickFormatter={(v) => `${v}h`} />
+ <Tooltip
+ cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
+ content={(props) => <ChartTooltip {...props} payload={(props.payload || []).map(p => ({ ...p, tooltipName: 'Entrenamiento' }))} />}
  />
+ {visibleWeekLabel && (
+ <ReferenceLine x={visibleWeekLabel} stroke={CH.accent} strokeOpacity={0.35} strokeWidth={8} />
+ )}
+ <Area type="monotone" dataKey="hours" stroke={CH.accent} strokeWidth={2}
+ fill="url(#cargaGradient)"
+ dot={(p) => {
+ const on = p.payload?.label === visibleWeekLabel;
+ return <circle key={p.index} cx={p.cx} cy={p.cy} r={on ? 4 : 2} fill={CH.accent} />;
+ }}
+ activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} />
+ </AreaChart>
+ </ResponsiveContainer>
+ </div>
+ </div>
+ </TrainingSection>
  </div>
 
  {/* ── Calendario — meses con scroll vertical ── */}
