@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { CalendarDays, Rows3, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import { DashedFrame } from '@/components/sketch';
 import { iconFor, categoryOf, CATEGORIES } from '@/utils/activityIcons';
 
@@ -31,7 +31,8 @@ const fmtMins = m => {
 
 // ── Celda de día compartida ──
 // Completado → marco continuo + tinte del color de su familia (fuerza, cardio…).
-//   Dos familias el mismo día → la celda se parte en diagonal, un color por mitad.
+//   Dos familias el mismo día → la celda se parte en vertical, un color y un
+//   símbolo en cada mitad.
 // Planificado → marco discontinuo abierto (firma Olympia) + símbolo atenuado.
 // Hoy → pequeña línea roja que cae desde arriba.
 const TODAY_RED = '#e5484d';
@@ -42,7 +43,7 @@ function cellBackground(types) {
   if (cats.length === 1) {
     return `radial-gradient(circle at center, rgba(var(--cat-${cats[0]}),0.42) 0%, rgba(var(--cat-${cats[0]}),0.06) 82%)`;
   }
-  return `linear-gradient(135deg, rgba(var(--cat-${cats[0]}),0.36) 0 50%, rgba(var(--cat-${cats[1]}),0.36) 50% 100%)`;
+  return `linear-gradient(90deg, rgba(var(--cat-${cats[0]}),0.38) 0 50%, rgba(var(--cat-${cats[1]}),0.38) 50% 100%)`;
 }
 
 export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true }) {
@@ -79,7 +80,7 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
       )}
       {showNumber && (
         <span style={{
-          position: 'absolute', top: 3, left: 0, right: 0, textAlign: 'center',
+          position: 'absolute', top: 5, left: 0, right: 0, textAlign: 'center',
           fontFamily: MONO, fontSize: 7, lineHeight: 1,
           color: isToday ? TODAY_RED : isFuture && !planned ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
           opacity: trained ? 0.75 : 1,
@@ -88,14 +89,13 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
         </span>
       )}
       {uniq.length > 0 && (
-        <span className="flex items-center gap-[2px]" style={{ marginTop: 7 }}>
+        <span className="flex items-center w-full" style={{ marginTop: 8, justifyContent: uniq.length > 1 ? 'space-around' : 'center' }}>
           {uniq.map(t => {
             const Icon = iconFor(t);
-            const s2 = uniq.length > 1 ? 10 : 12;
             return (
               <Icon key={t}
                 style={{
-                  width: s2, height: s2,
+                  width: 10, height: 10,
                   color: trained ? `rgb(var(--cat-${categoryOf(t)}))` : 'var(--accent)',
                   opacity: planned ? 0.6 : 1,
                   filter: trained ? 'brightness(0.75)' : 'none',
@@ -288,11 +288,11 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
         return (
           <div key={`${y}-${mo}`} ref={isCurrent ? currentRef : null}
             style={{ height: MONTH_H, scrollSnapAlign: 'start', scrollSnapStop: 'always', overflow: 'hidden' }}>
-            <div className="flex items-baseline justify-between mb-2">
+            <div className="text-center mb-2">
               <span style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)' }}>
                 {MONTHS_FULL[mo]} {y}
               </span>
-              <span className="text-[11px]" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMins(mins)}</span>
+              <span className="text-[10px] ml-2" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMins(mins)}</span>
             </div>
             <div className="grid grid-cols-7 gap-y-1.5 max-w-[340px] mx-auto">
               {DOW.map(d => (
@@ -323,12 +323,10 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
   );
 }
 
-// ── Sección completa de Entrenamiento ──
-// Cabecera: [vista semana/mes] · "Entrenamiento" centrado · [filtro].
-// El filtro se aplica a la semana y al calendario por igual.
-export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {} }) {
-  const [view, setView] = useState('week'); // 'week' | 'month'
-  const [filter, setFilter] = useState(null); // tipo de actividad o null (todas)
+// ── Sección de Entrenamiento (semana) ──
+// Título centrado; a la derecha el filtro por actividad, que gobierna toda la
+// pestaña (semana, calendario, Mi Actividad, Ritmo estacional).
+export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -338,31 +336,17 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!filter) return { acts: activitiesByDate, plans: plansByDate };
-    const pick = (map, key) => Object.fromEntries(
-      Object.entries(map).map(([d, list]) => [d, list.filter(x => x[key] === filter)]).filter(([, l]) => l.length));
-    return { acts: pick(activitiesByDate, 'type'), plans: pick(plansByDate, 'activity_type') };
-  }, [filter, activitiesByDate, plansByDate]);
-
   const btn = {
     background: 'var(--glass-bg)',
     backdropFilter: 'blur(24px) saturate(160%)',
     WebkitBackdropFilter: 'blur(24px) saturate(160%)',
     border: '1px solid var(--glass-border)',
   };
-  const ViewIcon = view === 'week' ? CalendarDays : Rows3;
   const FilterIcon = filter ? iconFor(filter) : SlidersHorizontal;
 
   return (
     <div>
-      <div className="relative flex items-center justify-between mb-3">
-        <button onClick={() => setView(v => v === 'week' ? 'month' : 'week')}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
-          style={btn} aria-label={view === 'week' ? 'Ver mes completo' : 'Ver semana'}>
-          <ViewIcon className="w-3.5 h-3.5" style={{ color: 'rgba(var(--ink),0.75)' }} />
-        </button>
-
+      <div className="relative flex items-center justify-end mb-3" style={{ minHeight: 32 }}>
         <h2 className="absolute left-1/2 -translate-x-1/2"
           style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)', fontWeight: 400 }}>
           Entrenamiento
@@ -376,13 +360,13 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
             <FilterIcon className="w-3.5 h-3.5" style={{ color: filter ? 'var(--accent)' : 'rgba(var(--ink),0.75)' }} />
           </button>
           {open && (
-            <div className="absolute right-0 z-50 mt-1.5 p-1 min-w-[170px]"
+            <div className="absolute right-0 z-50 mt-1.5 p-1 min-w-[180px]"
               style={{ background: 'var(--surface)', border: '1px solid rgba(var(--ink),0.12)', borderRadius: 14, boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
               {[null, ...usedTypes].map(t => {
                 const Icon = t ? iconFor(t) : SlidersHorizontal;
                 const on = filter === t;
                 return (
-                  <button key={t || 'all'} onClick={() => { setFilter(t); setOpen(false); }}
+                  <button key={t || 'all'} onClick={() => { onFilterChange?.(t); setOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[12px]"
                     style={on ? { background: 'rgba(var(--ink),0.07)', color: 'rgba(var(--ink),0.95)' } : { color: 'rgba(var(--ink),0.65)' }}>
                     <Icon className="w-3.5 h-3.5" style={{ color: t ? `rgb(var(--cat-${categoryOf(t)}))` : 'rgba(var(--ink),0.5)' }} />
@@ -395,14 +379,7 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
         </div>
       </div>
 
-      {view === 'week' ? (
-        <WeekStrip activitiesByDate={filtered.acts} plansByDate={filtered.plans} prDates={prDates} onDayClick={onDayClick} />
-      ) : (
-        <>
-          <MonthScroller activitiesByDate={filtered.acts} plansByDate={filtered.plans} prDates={prDates} onDayClick={onDayClick} />
-          <div className="mt-2"><CategoryLegend /></div>
-        </>
-      )}
+      <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} />
     </div>
   );
 }
