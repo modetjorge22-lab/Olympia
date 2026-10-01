@@ -9,12 +9,15 @@ import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { useGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon, Dumbbell } from 'lucide-react';
+import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon, Dumbbell, ChevronUp } from 'lucide-react';
 import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
+import { WeekStrip, MonthScroller, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
+import MuscleLoad from '@/components/MuscleLoad';
+import DayDetailSheet from '@/components/DayDetailSheet';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -252,6 +255,24 @@ export default function Actividad() {
  const loadTF = 'weeks'; // vista fija semanal (se eliminó el toggle de días)
  const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
+ const [detailDate, setDetailDate] = useState(null); // día abierto en la hoja de detalle
+ const [editCards, setEditCards] = useState(false);
+ const [cardOrder, setCardOrder] = useState(() => {
+ try {
+ const saved = JSON.parse(localStorage.getItem('olympia_tu_cards'));
+ if (Array.isArray(saved) && saved.length === 3) return saved;
+ } catch { /* noop */ }
+ return ['actividad', 'ritmo', 'fuerza'];
+ });
+ useEffect(() => {
+ try { localStorage.setItem('olympia_tu_cards', JSON.stringify(cardOrder)); } catch { /* noop */ }
+ }, [cardOrder]);
+ const moveCard = (i, d) => setCardOrder(o => {
+ const n = [...o]; const j = i + d;
+ if (j < 0 || j >= n.length) return o;
+ [n[i], n[j]] = [n[j], n[i]];
+ return n;
+ });
  const [actFilter, setActFilter] = useState('accumulated');
 
  // ── Metas / Marcas personales ──
@@ -739,6 +760,17 @@ export default function Actividad() {
  }, [prAchievements]);
 
  // Fecha YYYY-MM-DD → actividades reales registradas (rico, para mostrar resumen)
+ // Fecha YYYY-MM-DD → planes
+ const plansByDateStr = useMemo(() => {
+ const map = {};
+ weeklyPlans.forEach(p => {
+ const ds = p.date?.slice(0, 10);
+ if (!ds) return;
+ (map[ds] = map[ds] || []).push(p);
+ });
+ return map;
+ }, [weeklyPlans]);
+
  const activitiesByDateStr = useMemo(() => {
  const map = {};
  myAllActivities.forEach(a => {
@@ -750,8 +782,9 @@ export default function Actividad() {
  return map;
  }, [myAllActivities]);
 
- return (
- <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
+ // Tarjetas de gráficas reordenables (orden persistido por dispositivo)
+ const chartCards = {
+ actividad: (<>
  {/* Mi Actividad — gráfica de carga */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="mb-3">
@@ -869,111 +902,9 @@ export default function Actividad() {
  </AreaChart>
  </ResponsiveContainer>
  </div>
-
- {/* Calendario — mismo marco que la gráfica, comparte el filtro de actividad */}
- <div ref={calendarRef} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
- {/* Mes + horas totales — sin perfil: en tu pestaña, ya se da por hecho */}
- <div className="flex items-baseline justify-between mb-3">
- <span style={SECTION_TITLE}>{MONTHS_FULL[month]} {year}</span>
- <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>
- {totalHours}h
- </span>
  </div>
-
- <CalendarGrid year={year} month={month} activitiesByDate={activitiesByDate} plansByDayOfMonth={plansByDayOfMonth} prDates={prDates} onDayClick={handleDayClick} expandedDay={expandedDay} filterType={actFilter === 'accumulated' ? null : actFilter} />
-
- <AnimatePresence>
- {expandedDay && (activitiesByDate[expandedDay]?.length || plansByDayOfMonth[expandedDay]?.length) && (
- <div exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-1.5 overflow-hidden">
-
- {/* Actividades realizadas */}
- {(activitiesByDate[expandedDay] || []).map(act => (
- <div key={act.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.12)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <span className="text-[15px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
- <div className="min-w-0">
- <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{ACTIVITY_TYPES[act.type]?.label || act.type}</p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min{act.description ? ` · ${act.description}` : ''}</p>
- </div>
- </div>
- <div className="flex items-center gap-0.5 flex-shrink-0">
- <button onClick={e => { e.stopPropagation(); setEditActivity(act); }} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
- <Pencil className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- <button onClick={e => { e.stopPropagation(); deleteActivity(act.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
- <Trash2 className="w-3.5 h-3.5 transition-colors" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- </div>
- ))}
-
- {/* Entrenamientos planificados */}
- {(plansByDayOfMonth[expandedDay] || []).map(plan => (
- <div key={plan.id} className="rounded-xl px-3 py-2.5"
- style={{ background: DAY_PALETTE.planned.bg === 'transparent' ? 'rgba(var(--ink),0.05)' : DAY_PALETTE.planned.bg, border: '1.5px solid rgba(var(--ink),0.28)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <span className="text-[15px]">{ACTIVITY_TYPES[plan.activity_type]?.emoji || '📅'}</span>
- <div className="min-w-0">
- <p className="text-[13px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
- {ACTIVITY_TYPES[plan.activity_type]?.label || plan.activity_type}
- <span className="ml-1.5 text-[10px] font-normal" style={{ color: TEXT_MUTED }}>planificado</span>
- </p>
- {plan.notes && <p className="text-[11px] truncate" style={{ color: TEXT_MUTED }}>{plan.notes}</p>}
- {plan.duration_minutes > 0 && <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{plan.duration_minutes} min</p>}
- </div>
- </div>
- <div className="flex items-center gap-0.5 flex-shrink-0">
- <button onClick={e => { e.stopPropagation(); setConvertPlan(plan); }} title="Marcar como realizada" className="p-1.5 rounded-lg hover:bg-black/5 transition-colors">
- <Check className="w-3.5 h-3.5" style={{ color: ACCENT }} />
- </button>
- <button onClick={e => { e.stopPropagation(); removePlan(plan.id); }} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors">
- <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- </div>
- ))}
-
- {/* PR achievements del día — borrables */}
- {(() => {
- const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(expandedDay).padStart(2,'0')}`;
- return (prAchievementsByDate[ds] || []).map(pr => (
- <div key={pr.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2.5 min-w-0">
- <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
- <div className="min-w-0">
- <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{pr.goal_title}</p>
- <p className="text-[11px]" style={{ color: ACCENT }}>
- {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
- </p>
- </div>
- </div>
- <button onClick={e => { e.stopPropagation(); deletePrAchievement(pr.id); }}
- className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex-shrink-0">
- <Trash2 className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
- ));
- })()}
-
- <button onClick={() => { setSelectedDate(new Date(year, month, expandedDay)); setShowLogDialog(true); }}
- className="w-full rounded-xl px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] transition-colors"
- style={{ background: 'rgba(var(--ink),0.05)', border: '1px dashed rgba(var(--ink),0.22)', color: TEXT_MUTED }}>
- <Plus className="w-3.5 h-3.5" /> Añadir actividad
- </button>
- </div>
- )}
- </AnimatePresence>
- </div>
- </div>
-
+ </>),
+ ritmo: (<>
  {/* ── Ritmo estacional — acumulado vs periodo anterior ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between gap-3 mb-3">
@@ -1036,115 +967,143 @@ export default function Actividad() {
  </ResponsiveContainer>
  </div>
  </div>
-
- {/* ── Planificador ── */}
+ </>),
+ fuerza: (<>
+ {/* ── Fuerza — volumen por grupo muscular ── */}
+ {muscleData.strengthCount > 0 && (
  <div className="rounded-2xl p-4" style={glassCard}>
-
- {/* Cabecera del card */}
- <h2 className="mb-2" style={SECTION_TITLE}>Planificador</h2>
-
- {/* — Últimos 7 días — */}
- <div className="flex items-center justify-between mb-1">
- <p className="text-[10px] font-normal uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
- <div className="flex items-center gap-1.5">
- <span className="text-[10px] uppercase tracking-wider" style={{ color: TEXT_MUTED }}>Carga</span>
- <span className="text-[12px] font-normal" style={{ color: loadLevel.color }}>{loadLevel.label}</span>
+ <div className="flex items-start justify-between gap-3 mb-1">
+ <div>
+ <h2 style={SECTION_TITLE}>Entrenamientos de fuerza</h2>
+ <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
+ {muscleData.totalH}h · {muscleTF === '1m' ? 'último mes' : muscleTF === '3m' ? 'últimos 3 meses' : 'últimos 6 meses'}
+ </p>
+ </div>
+ <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
+ {[['1m', 'Último mes'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
+ <button key={key} onClick={() => setMuscleTF(key)}
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ style={muscleTF === key
+ ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
+ : { color: TEXT_MUTED }}>
+ {lbl}
+ </button>
+ ))}
  </div>
  </div>
-
- <div className="grid grid-cols-7 gap-2">
- {last7Days.map((d, i) => {
- const ds = toDateStr(d.date);
- const isPR = prDates.has(ds);
- const emoji = isPR ? '🏆'
- : d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
- : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
+ <div className="h-[250px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+ <ResponsiveContainer width="100%" height="100%">
+ <RadarChart data={muscleData.data} cx="50%" cy="50%" outerRadius="60%">
+ <defs>
+ {/* Relleno radial — mismo lenguaje que el degradado de Mi Actividad */}
+ <radialGradient id="muscleGradient">
+ <stop offset="0%" stopColor={CH.accent} stopOpacity="0.5" />
+ <stop offset="100%" stopColor={CH.accent} stopOpacity="0.1" />
+ </radialGradient>
+ </defs>
+ {/* Anillos discontinuos — eco de las rayas del calendario */}
+ <PolarGrid stroke={CH.axis} strokeDasharray="3 5" radialLines={false} />
+ <PolarAngleAxis
+ dataKey="label"
+ tick={(props) => {
+ const { x, y, textAnchor, payload } = props;
+ const item = muscleData.data.find(d => d.label === payload.value);
  return (
- <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
- <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-8 h-8 flex items-center justify-center relative"
- style={{
- borderRadius: 8,
- ...(d.isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
- background: (d.hasActivity || isPR)
- ? 'radial-gradient(circle at center, rgba(var(--accent-rgb),0.45) 0%, rgba(var(--accent-rgb),0.03) 78%)'
- : 'transparent',
+ <g>
+ <text x={x} y={y} textAnchor={textAnchor} fontSize="9" fill={CH.tick}
+ fontFamily='"JetBrains Mono", monospace'>
+ {payload.value}
+ </text>
+ <text x={x} y={y + 12} textAnchor={textAnchor} fontSize="10" fontWeight="700" fill={CH.accent}
+ fontFamily='"JetBrains Mono", monospace'>
+ {item && item.hours > 0 ? `${item.hours}h` : '–'}
+ </text>
+ </g>
+ );
  }}
- >
- {!d.isToday && (
- <DashedFrame color={d.hasPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined} opacity={0.45} />
+ />
+ <Radar
+ dataKey="hours"
+ stroke={CH.accent}
+ strokeWidth={2}
+ strokeLinejoin="round"
+ fill="url(#muscleGradient)"
+ fillOpacity={1}
+ dot={{ r: 2.5, fill: CH.accent, strokeWidth: 0 }}
+ isAnimationActive={false}
+ />
+ </RadarChart>
+ </ResponsiveContainer>
+ </div>
+ {muscleData.unmatchedH > 0 && (
+ <p className="text-[10px] text-center" style={{ color: TEXT_MUTED }}>
+ {muscleData.unmatchedH}h sin clasificar — menciona el grupo muscular en la descripción para desglosarlas
+ </p>
  )}
- <span className="text-[9px] leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>
- {d.dayNum}
- </span>
  </div>
- {d.hasActivity
- ? d.acts.map((act, idx) => {
- const s = getActivitySummary(act, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
- })
- : d.hasPlan
- ? d.plans.map((plan, idx) => {
- const s = getPlanSummary(plan, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
- })
- : null}
- </div>
- );
- })}
- </div>
+ )}
+ </>),
+ };
 
- {/* Separador */}
- <div style={{ height: 1, background: 'rgba(var(--ink),0.12)', margin: '14px 0 12px' }} />
-
- {/* — Próximos 7 días — */}
- <p className="text-[10px] font-normal uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Próximos 7 días</p>
-
- <div className="grid grid-cols-7 gap-2">
- {next7Days.map((d, i) => {
- const ds = toDateStr(d.date);
- const isPR = prDates.has(ds);
- const emoji = isPR ? '🏆'
- : d.hasActivity ? (ACTIVITY_TYPES[d.acts[0].type]?.emoji || '🏅')
- : d.hasPlan ? (ACTIVITY_TYPES[d.plans[0].activity_type]?.emoji || '🏅') : null;
  return (
- <div key={i} className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => syncDayToCalendar(d.date)}>
- <span className="text-[9px] font-medium uppercase" style={{ color: TEXT_MUTED }}>{d.dayName}</span>
- <div className="w-8 h-8 flex items-center justify-center relative"
- style={{
- borderRadius: 8,
- background: (d.hasActivity || isPR)
- ? 'radial-gradient(circle at center, rgba(var(--accent-rgb),0.45) 0%, rgba(var(--accent-rgb),0.03) 78%)'
- : 'transparent',
- }}
- >
- <DashedFrame color={d.hasPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined} opacity={0.22} />
- <span className="text-[9px] leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.45)' }}>
- {d.dayNum}
- </span>
- </div>
- {d.hasActivity
- ? d.acts.map((act, idx) => {
- const s = getActivitySummary(act, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.completed} /> : null;
- })
- : d.hasPlan
- ? d.plans.map((plan, idx) => {
- const s = getPlanSummary(plan, ACTIVITY_TYPES);
- return s ? <DaySummaryDrop key={idx} summary={s} palette={DAY_PALETTE.planned} /> : null;
- })
- : null}
- </div>
- );
- })}
- </div>
- {/* Buffer para drops de dobles entrenos */}
- <div style={{ minHeight: 12 }} />
-
+ <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
+ {/* ── Entrenamiento — semana deslizable (pasado ← → planificado) ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <h2 className="mb-3" style={SECTION_TITLE}>Entrenamiento</h2>
+ <WeekStrip
+ activitiesByDate={activitiesByDateStr}
+ plansByDate={plansByDateStr}
+ prDates={prDates}
+ onDayClick={setDetailDate}
+ />
  </div>
 
+ {/* ── Calendario — meses con scroll vertical ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <MonthScroller
+ activitiesByDate={activitiesByDateStr}
+ plansByDate={plansByDateStr}
+ prDates={prDates}
+ onDayClick={setDetailDate}
+ />
+ </div>
+
+ {/* ── Carga muscular ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <h2 style={SECTION_TITLE}>Carga muscular</h2>
+ <div className="-mt-6">
+ <MuscleLoad activities={myAllActivities} />
+ </div>
+ </div>
+
+ {/* ── Tus gráficas — tarjetas reordenables ── */}
+ <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(var(--ink),0.12)' }}>
+ <h2 style={SECTION_TITLE}>Tus gráficas</h2>
+ <button onClick={() => setEditCards(v => !v)}
+ className="text-[10px] px-3 py-1 rounded-full"
+ style={{ ...glassBar, color: editCards ? 'var(--accent)' : TEXT_MUTED }}>
+ {editCards ? 'Hecho' : 'Ordenar'}
+ </button>
+ </div>
+ {cardOrder.map((key, idx) => (
+ <motion.div key={key} layout transition={{ duration: 0.25 }} className="relative">
+ {editCards && (
+ <div className="absolute right-0 top-3 z-10 flex gap-1">
+ <button disabled={idx === 0} onClick={() => moveCard(idx, -1)}
+ className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30" style={glassBar} aria-label="Subir">
+ <ChevronUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </button>
+ <button disabled={idx === cardOrder.length - 1} onClick={() => moveCard(idx, 1)}
+ className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30" style={glassBar} aria-label="Bajar">
+ <ChevronDown className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
+ </button>
+ </div>
+ )}
+ <div style={editCards ? { opacity: 0.85, pointerEvents: 'none' } : undefined}>
+ {chartCards[key]}
+ </div>
+ </motion.div>
+ ))}
 
  {/* ── Metas / Marcas personales ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
@@ -1308,80 +1267,6 @@ export default function Actividad() {
  )}
  </div>
 
- {/* ── Fuerza — volumen por grupo muscular ── */}
- {muscleData.strengthCount > 0 && (
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-start justify-between gap-3 mb-1">
- <div>
- <h2 style={SECTION_TITLE}>Entrenamientos de fuerza</h2>
- <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
- {muscleData.totalH}h · {muscleTF === '1m' ? 'último mes' : muscleTF === '3m' ? 'últimos 3 meses' : 'últimos 6 meses'}
- </p>
- </div>
- <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
- {[['1m', 'Último mes'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
- <button key={key} onClick={() => setMuscleTF(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
- style={muscleTF === key
- ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
- : { color: TEXT_MUTED }}>
- {lbl}
- </button>
- ))}
- </div>
- </div>
- <div className="h-[250px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
- <ResponsiveContainer width="100%" height="100%">
- <RadarChart data={muscleData.data} cx="50%" cy="50%" outerRadius="60%">
- <defs>
- {/* Relleno radial — mismo lenguaje que el degradado de Mi Actividad */}
- <radialGradient id="muscleGradient">
- <stop offset="0%" stopColor={CH.accent} stopOpacity="0.5" />
- <stop offset="100%" stopColor={CH.accent} stopOpacity="0.1" />
- </radialGradient>
- </defs>
- {/* Anillos discontinuos — eco de las rayas del calendario */}
- <PolarGrid stroke={CH.axis} strokeDasharray="3 5" radialLines={false} />
- <PolarAngleAxis
- dataKey="label"
- tick={(props) => {
- const { x, y, textAnchor, payload } = props;
- const item = muscleData.data.find(d => d.label === payload.value);
- return (
- <g>
- <text x={x} y={y} textAnchor={textAnchor} fontSize="9" fill={CH.tick}
- fontFamily='"JetBrains Mono", monospace'>
- {payload.value}
- </text>
- <text x={x} y={y + 12} textAnchor={textAnchor} fontSize="10" fontWeight="700" fill={CH.accent}
- fontFamily='"JetBrains Mono", monospace'>
- {item && item.hours > 0 ? `${item.hours}h` : '–'}
- </text>
- </g>
- );
- }}
- />
- <Radar
- dataKey="hours"
- stroke={CH.accent}
- strokeWidth={2}
- strokeLinejoin="round"
- fill="url(#muscleGradient)"
- fillOpacity={1}
- dot={{ r: 2.5, fill: CH.accent, strokeWidth: 0 }}
- isAnimationActive={false}
- />
- </RadarChart>
- </ResponsiveContainer>
- </div>
- {muscleData.unmatchedH > 0 && (
- <p className="text-[10px] text-center" style={{ color: TEXT_MUTED }}>
- {muscleData.unmatchedH}h sin clasificar — menciona el grupo muscular en la descripción para desglosarlas
- </p>
- )}
- </div>
- )}
-
  {/* Favorito */}
  {favoriteType && (
  <div className="rounded-2xl px-4 py-3" style={glassCard}>
@@ -1416,6 +1301,22 @@ export default function Actividad() {
  }}>
  <Plus className="w-5 h-5" style={{ color: ON_ACCENT }} />
  </button>
+
+ {detailDate && (
+ <DayDetailSheet
+ date={detailDate}
+ activities={activitiesByDateStr[tcDateStr(detailDate)] || []}
+ plans={(activitiesByDateStr[tcDateStr(detailDate)] || []).length ? [] : (plansByDateStr[tcDateStr(detailDate)] || [])}
+ prs={prAchievementsByDate[tcDateStr(detailDate)] || []}
+ onClose={() => setDetailDate(null)}
+ onEdit={(act) => { setDetailDate(null); setEditActivity(act); }}
+ onDelete={(id) => deleteActivity(id)}
+ onCompletePlan={(plan) => { setDetailDate(null); setConvertPlan(plan); }}
+ onRemovePlan={(id) => removePlan(id)}
+ onDeletePr={(id) => deletePrAchievement(id)}
+ onAdd={(d) => { setDetailDate(null); setSelectedDate(d); setShowLogDialog(true); }}
+ />
+ )}
 
  <LogActivityDialog
  isOpen={showLogDialog || !!editActivity || !!convertPlan}
