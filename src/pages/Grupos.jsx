@@ -1,10 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Trophy, ChevronDown } from 'lucide-react';
+import { Users, Trophy, ChevronDown, Flame, CalendarCheck, Zap, Timer, Layers, Shuffle, Repeat, Sun, AudioWaveform, Target, Sunrise, Medal } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
-import { useMonth } from '@/lib/MonthContext';
 import { useAuth } from '@/lib/AuthContext';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { DAY_PALETTE } from '@/utils/dayDisplay';
@@ -13,6 +12,10 @@ import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
+import ActivityFilterButton from '@/components/ActivityFilterButton';
+import MemberSheet from '@/components/MemberSheet';
+import { categoryOf } from '@/utils/activityIcons';
+import { computeTeamRecords } from '@/utils/teamRecords';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -120,158 +123,227 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  );
 }
 
+// Ventanas de la carrera: semana (7 días), mes en curso y 3 meses móviles
+// (90 días que avanzan cada día: entra hoy, sale el día más antiguo).
+const SNAPSHOTS = [
+ { key: 'week', label: 'Semana' },
+ { key: 'month', label: 'Mes' },
+ { key: '90d', label: '3M' },
+];
+
+function windowFor(key) {
+ const end = new Date(); end.setHours(0, 0, 0, 0);
+ const start = new Date(end);
+ if (key === 'week') start.setDate(end.getDate() - 6);
+ else if (key === 'month') start.setDate(1);
+ else start.setDate(end.getDate() - 89);
+ return { start, end };
+}
+
+const dstr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// Anillo pequeño para las filas de miembros (con segunda vuelta si supera 100%)
+function MiniRing({ pct, chart, size = 30 }) {
+ const r = size / 2 - 3.5, c = 2 * Math.PI * r;
+ const p = pct == null ? 0 : pct;
+ const first = Math.min(p, 100) / 100 * c;
+ const over = p > 100 ? Math.min(p - 100, 100) / 100 * c : 0;
+ return (
+ <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+ <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={chart.grid} strokeWidth="3" />
+ {first > 0 && <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={chart.accent} strokeWidth="3" strokeLinecap="round"
+ strokeDasharray={`${first} ${c - first}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />}
+ {over > 0 && <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={chart.accentOver} strokeWidth="3" strokeLinecap="round"
+ strokeDasharray={`${over} ${c - over}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />}
+ </svg>
+ );
+}
+
+function Avatar({ m, size = 32, ring }) {
+ const initials = m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+ const style = { width: size, height: size, ...(ring ? { boxShadow: `0 0 0 2px ${ring}` } : {}) };
+ return m.avatar_url
+ ? <img src={m.avatar_url} alt={m.name} className="rounded-full object-cover flex-shrink-0" style={style} />
+ : <div className="rounded-full flex items-center justify-center flex-shrink-0"
+ style={{ ...style, background: 'rgba(var(--ink),0.08)', color: TEXT_PRIMARY, fontSize: size * 0.32 }}>{initials}</div>;
+}
+
+// ── Tarjeta de récords del equipo ──
+const RECORD_ICONS = {
+ flame: Flame, calendarCheck: CalendarCheck, zap: Zap, timer: Timer, layers: Layers,
+ shuffle: Shuffle, repeat: Repeat, sun: Sun, metronome: AudioWaveform, target: Target,
+ sunrise: Sunrise, trophy: Trophy, medal: Medal,
+};
+
+function RecordsCard({ records, onOpenMember }) {
+ const [all, setAll] = useState(false);
+ if (!records.length) return null;
+ const list = all ? records : records.slice(0, 6);
+ return (
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-baseline justify-between mb-1">
+ <h2 style={SECTION_TITLE}>Récords</h2>
+ <span className="text-[9.5px]" style={{ color: TEXT_MUTED }}>todo el histórico</span>
+ </div>
+ {list.map((r, i) => {
+ const Icon = RECORD_ICONS[r.icon] || Trophy;
+ return (
+ <motion.button key={r.key} layout onClick={() => onOpenMember(r.holder.email)}
+ className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-60"
+ style={{ borderTop: i ? '1px solid rgba(var(--ink),0.06)' : 'none' }}>
+ <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+ style={{ background: 'rgba(var(--accent-rgb),0.1)' }}>
+ <Icon className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
+ </div>
+ <div className="flex-1 min-w-0">
+ <p className="text-[12px]" style={{ color: TEXT_PRIMARY }}>{r.title}</p>
+ <p className="text-[10px] truncate" style={{ color: TEXT_MUTED }}>{r.desc}</p>
+ </div>
+ <div className="flex flex-col items-end flex-shrink-0">
+ <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>{r.value}</span>
+ <span className="flex items-center gap-1 mt-0.5">
+ <Avatar m={r.holder} size={14} />
+ <span className="text-[10px]" style={{ color: TEXT_SECONDARY }}>{r.holder.name.split(' ')[0]}</span>
+ </span>
+ </div>
+ </motion.button>
+ );
+ })}
+ {records.length > 6 && (
+ <button onClick={() => setAll(v => !v)} className="w-full mt-1 pt-2 text-[10.5px]"
+ style={{ borderTop: '1px solid rgba(var(--ink),0.06)', color: TEXT_MUTED }}>
+ {all ? 'Ver menos' : `Ver los ${records.length} récords`}
+ </button>
+ )}
+ </div>
+ );
+}
+
 export default function Grupos() {
  const { chart: CH } = useTheme();
- const { currentMonth } = useMonth();
  const { user } = useAuth();
- const { allActivities } = useActivities(currentMonth);
+ const { allActivities } = useActivities(new Date());
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
  const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
- const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
+ const [snapshot, setSnapshot] = useState('month'); // 'week' | 'month' | '90d'
+ const [seasonTF, setSeasonTF] = useState('1m');
+ const [typeFilter, setTypeFilter] = useState(null);
+ const [openMember, setOpenMember] = useState(null);
 
- // PR achievements del equipo para colorear mini calendarios
+ const now = new Date();
+ const year = now.getFullYear();
+ const month = now.getMonth();
+
+ // PR achievements del equipo
  const [teamPrAchievements, setTeamPrAchievements] = useState([]);
  useEffect(() => {
  supabase.from('pr_achievements').select('user_email, date')
  .then(({ data }) => { if (data) setTeamPrAchievements(data); });
  }, []);
-
- // Map email → Set de fechas PR
  const memberPrDates = useMemo(() => {
  const map = {};
- teamPrAchievements.forEach(pr => {
- if (!map[pr.user_email]) map[pr.user_email] = new Set();
- map[pr.user_email].add(pr.date);
- });
+ teamPrAchievements.forEach(pr => { (map[pr.user_email] = map[pr.user_email] || new Set()).add(pr.date); });
  return map;
  }, [teamPrAchievements]);
 
- const year = currentMonth.getFullYear();
- const month = currentMonth.getMonth();
- const daysInMonth = new Date(year, month + 1, 0).getDate();
+ // Filtro global de la pestaña
+ const acts = useMemo(() => typeFilter ? allActivities.filter(a => a.type === typeFilter) : allActivities,
+ [allActivities, typeFilter]);
+ const usedTypes = useMemo(() => Object.keys(ACTIVITY_TYPES).filter(t => allActivities.some(a => a.type === t)), [allActivities]);
+ const typeLabels = Object.fromEntries(Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label]));
 
- // Día del mes navegado → planes propios (sólo del usuario actual; los planes de otros son privados)
- const myPlansByDayOfMonth = useMemo(() => {
- const map = {};
- if (!user?.email) return map;
- weeklyPlans.forEach(p => {
- const d = new Date(p.date + 'T00:00:00');
- if (d.getFullYear() === year && d.getMonth() === month) {
- const day = d.getDate();
- if (!map[day]) map[day] = [];
- map[day].push(p);
- }
- });
- return map;
- }, [weeklyPlans, year, month, user?.email]);
-
- const { chartData, memberStats } = useMemo(() => {
- const emails = members.length > 0
+ const emails = useMemo(() => members.length > 0
  ? members.map(m => m.email)
- : [...new Set(allActivities.map(a => a.user_email))];
+ : [...new Set(allActivities.map(a => a.user_email))], [members, allActivities]);
+
+ // ── Carrera + podio para la ventana elegida ──
+ const { chartData, memberStats } = useMemo(() => {
+ const { start, end } = windowFor(snapshot);
+ const days = [];
+ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+ const sStr = dstr(start), eStr = dstr(end);
 
  const stats = emails.map((email, idx) => {
  const member = members.find(m => m.email === email);
- const monthActs = allActivities.filter(a => {
- const d = new Date(a.date);
- return a.user_email === email && d.getFullYear() === year && d.getMonth() === month;
+ const win = acts.filter(a => a.user_email === email && a.date?.slice(0, 10) >= sStr && a.date?.slice(0, 10) <= eStr);
+ const byDay = {};
+ win.forEach(a => {
+ const k = a.date.slice(0, 10);
+ byDay[k] = byDay[k] || { mins: 0, n: 0 };
+ byDay[k].mins += a.duration_minutes || 0;
+ byDay[k].n += 1;
  });
- const totalMins = monthActs.reduce((s, a) => s + (a.duration_minutes || 0), 0);
-
- const dailyMins = {};
- const dailyCount = {};
- monthActs.forEach(a => {
- const day = new Date(a.date).getDate();
- dailyMins[day] = (dailyMins[day] || 0) + (a.duration_minutes || 0);
- dailyCount[day] = (dailyCount[day] || 0) + 1;
- });
-
- let cum = 0;
- let cumC = 0;
- const cumByDay = {};       // horas acumuladas
- const cumByDayCount = {};  // nº de actividades acumuladas
- for (let d = 1; d <= daysInMonth; d++) {
- cum += (dailyMins[d] || 0);
- cumC += (dailyCount[d] || 0);
- cumByDay[d] = +(cum / 60).toFixed(1);
- cumByDayCount[d] = cumC;
- }
-
- const actByDay = {};
- monthActs.forEach(a => {
- const day = new Date(a.date).getDate();
- if (!actByDay[day]) actByDay[day] = [];
- actByDay[day].push(a);
- });
-
- // Desglose por tipo de actividad
- const byType = {};
- monthActs.forEach(a => {
- if (!byType[a.type]) byType[a.type] = 0;
- byType[a.type] += a.duration_minutes || 0;
- });
- const activityBreakdown = Object.entries(byType)
- .map(([type, mins]) => ({
- type,
- label: ACTIVITY_TYPES[type]?.label || type,
- emoji: ACTIVITY_TYPES[type]?.emoji || '🏅',
- hours: +(mins / 60).toFixed(1),
- }))
- .sort((a, b) => b.hours - a.hours);
-
+ let cm = 0, cn = 0;
+ const cum = days.map(d => { const b = byDay[dstr(d)]; cm += b?.mins || 0; cn += b?.n || 0; return { h: +(cm / 60).toFixed(1), n: cn }; });
+ const totalMins = win.reduce((s, a) => s + (a.duration_minutes || 0), 0);
  return {
  email,
  name: member?.full_name || email.split('@')[0],
  avatar_url: member?.avatar_url || null,
- totalHours: +(totalMins / 60).toFixed(1),
- totalMins, sessions: monthActs.length,
+ totalMins, totalHours: +(totalMins / 60).toFixed(1), sessions: win.length,
  color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
- cumByDay, cumByDayCount, actByDay, activityBreakdown,
+ cum,
  };
- }).sort((a, b) => b.totalMins - a.totalMins);
+ }).sort((a, b) => raceMetric === 'count' ? b.sessions - a.sessions : b.totalMins - a.totalMins);
 
- const today = new Date();
- const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
- const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
-
- const data = [];
- // Punto inicial en 0 (origen del mes) para que el progreso arranque desde 0
- // y la línea ya se vea el día 1 aunque sólo haya un día con actividad.
- const zeroPoint = { day: 0 };
- stats.forEach(m => { zeroPoint[m.email] = 0; });
- data.push(zeroPoint);
- for (let d = 1; d <= lastDay; d++) {
- const point = { day: d };
- stats.forEach(m => { point[m.email] = raceMetric === 'count' ? m.cumByDayCount[d] : m.cumByDay[d]; });
- data.push(point);
- }
+ const data = [{ i: 0, label: '' }];
+ stats.forEach(m => { data[0][m.email] = 0; });
+ days.forEach((d, i) => {
+ const p = { i: i + 1, label: `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}` };
+ stats.forEach(m => { p[m.email] = raceMetric === 'count' ? m.cum[i].n : m.cum[i].h; });
+ data.push(p);
+ });
  return { chartData: data, memberStats: stats };
- }, [allActivities, members, year, month, daysInMonth, raceMetric]);
+ }, [acts, emails, members, snapshot, raceMetric]);
 
-
- // Burbuja al final de cada línea (todas en lastDay).
- // Las distintas alturas de cada miembro las separan visualmente en vertical.
- const lastDay = chartData.length > 0 ? chartData[chartData.length - 1].day : daysInMonth;
-
- // Media del equipo para la línea de referencia
- const teamAverage = useMemo(() => {
- if (memberStats.length === 0) return null;
- const total = memberStats.reduce((s, m) => s + (raceMetric === 'count' ? m.sessions : m.totalHours), 0);
- return +(total / memberStats.length).toFixed(1);
- }, [memberStats, raceMetric]);
-
+ const lastIdx = chartData.length - 1;
+ const metricOf = m => raceMetric === 'count' ? m.sessions : m.totalHours;
+ const teamAverage = memberStats.length ? +(memberStats.reduce((s, m) => s + metricOf(m), 0) / memberStats.length).toFixed(1) : null;
  const raceUnit = raceMetric === 'count' ? '' : 'h';
+ const podium = memberStats.slice(0, 3).filter(m => metricOf(m) > 0);
 
- // Ritmo estacional del grupo — acumulado medio por participante
- const seasonal = useMemo(() => buildSeasonalSeries(allActivities, {
- year, month,
- months: seasonTF === '1m' ? 1 : 3,
- divisor: Math.max(memberStats.length, 1),
- }), [allActivities, year, month, seasonTF, memberStats.length]);
+ // ── Ritmo estacional del grupo ──
+ const seasonal = useMemo(() => buildSeasonalSeries(acts, {
+ year, month, months: seasonTF === '1m' ? 1 : 3, divisor: Math.max(emails.length, 1),
+ }), [acts, year, month, seasonTF, emails.length]);
 
- if (memberStats.length === 0) {
+ // ── Filas de miembros: semana actual + ritmo (horas del mes vs media) ──
+ const weekDays = useMemo(() => {
+ const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - ((s.getDay() + 6) % 7));
+ return Array.from({ length: 7 }, (_, i) => { const d = new Date(s); d.setDate(s.getDate() + i); return d; });
+ }, []);
+ const monthStats = useMemo(() => {
+ const sStr = dstr(new Date(year, month, 1));
+ const rows = emails.map(email => {
+ const member = members.find(m => m.email === email);
+ const mine = acts.filter(a => a.user_email === email);
+ const monthMins = mine.filter(a => a.date?.slice(0, 10) >= sStr).reduce((s, a) => s + (a.duration_minutes || 0), 0);
+ const week = weekDays.map(d => mine.filter(a => a.date?.slice(0, 10) === dstr(d)));
+ return {
+ email, name: member?.full_name || email.split('@')[0], avatar_url: member?.avatar_url || null,
+ monthMins, week,
+ };
+ });
+ const avg = rows.reduce((s, r) => s + r.monthMins, 0) / Math.max(rows.length, 1);
+ return rows.map(r => ({ ...r, pace: avg > 0 ? Math.round(r.monthMins / avg * 100) : null }))
+ .sort((a, b) => b.monthMins - a.monthMins);
+ }, [acts, emails, members, weekDays, year, month]);
+
+ // Récords — histórico completo, sin filtro de actividad
+ const records = useMemo(() => computeTeamRecords({
+ activities: allActivities,
+ people: emails.map(email => {
+ const m = members.find(x => x.email === email);
+ return { email, name: m?.full_name || email.split('@')[0], avatar_url: m?.avatar_url || null };
+ }),
+ prs: teamPrAchievements,
+ typeLabels,
+ }), [allActivities, emails, members, teamPrAchievements]);
+
+ if (emails.length === 0) {
  return (
  <div className="px-4 py-5 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[50vh]">
  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
@@ -284,76 +356,90 @@ export default function Grupos() {
  );
  }
 
- return (
- <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
- {/* Carrera mensual */}
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-start justify-between gap-3 mb-2">
- <div>
- <h2 style={SECTION_TITLE}>Carrera mensual</h2>
- <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
- {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {MONTHS_ES[month]} {year}
- </p>
- </div>
+ const pill = (opts, value, set) => (
  <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
- {[['hours', 'Horas'], ['count', 'Nº']].map(([key, lbl]) => (
- <button
- key={key}
- onClick={() => setRaceMetric(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all"
- style={raceMetric === key
- ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
- : { color: TEXT_MUTED }}
- >
+ {opts.map(([key, lbl]) => (
+ <button key={key} onClick={() => set(key)}
+ className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ style={value === key ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY } : { color: TEXT_MUTED }}>
  {lbl}
  </button>
  ))}
  </div>
+ );
+
+ const snapLabel = snapshot === 'week' ? 'últimos 7 días' : snapshot === 'month' ? `${MONTHS_ES[month]} ${year}` : 'últimos 3 meses, ventana móvil';
+ const openData = openMember && monthStats.find(m => m.email === openMember);
+
+ return (
+ <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
+ {/* ── Carrera — semana / mes / 3 meses móviles ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="relative flex items-center justify-end mb-2" style={{ minHeight: 32 }}>
+ <h2 className="absolute left-1/2 -translate-x-1/2" style={SECTION_TITLE}>Carrera</h2>
+ <ActivityFilterButton value={typeFilter} onChange={setTypeFilter} types={usedTypes} labels={typeLabels} />
  </div>
+ <div className="flex items-center justify-between gap-2 mb-1">
+ {pill(SNAPSHOTS.map(s => [s.key, s.label]), snapshot, setSnapshot)}
+ {pill([['hours', 'Horas'], ['count', 'Nº']], raceMetric, setRaceMetric)}
+ </div>
+ <p className="text-[10px] mb-2" style={{ color: TEXT_MUTED }}>
+ {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {snapLabel}
+ {typeFilter ? ` · ${typeLabels[typeFilter]}` : ''}
+ </p>
  <div className="h-[230px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 14, right: 26, bottom: 0, left: 0 }}>
- <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} />
- <XAxis dataKey="day" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={Math.floor(daysInMonth / 4) - 1} />
+ <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+ <XAxis dataKey="label" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false}
+ interval={Math.max(0, Math.floor(chartData.length / 4) - 1)} minTickGap={16} />
  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={24} />
- <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} />} />
- {teamAverage !== null && teamAverage > 0 && (
- <ReferenceLine
- y={teamAverage}
- stroke={CH.ref}
- strokeDasharray="4 4"
- strokeWidth={1}
- label={{
- value: raceMetric === 'count' ? `Media ${teamAverage} act` : `Media ${teamAverage}h`,
- position: 'insideTopLeft',
- fill: CH.refLabel,
- fontSize: 9,
- offset: 6,
- }}
- />
+ <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} isTeam />} />
+ {teamAverage > 0 && (
+ <ReferenceLine y={teamAverage} stroke={CH.ref} strokeDasharray="4 4" strokeWidth={1}
+ label={{ value: `Media ${teamAverage}${raceMetric === 'count' ? ' act' : 'h'}`, position: 'insideTopLeft', fill: CH.refLabel, fontSize: 9, offset: 6 }} />
  )}
  {memberStats.map((m, idx) => {
  const lineColor = rankingWine(idx, memberStats.length, CH);
  return (
- <Line
- key={m.email}
- type="monotone"
- dataKey={m.email}
- stroke={lineColor}
+ <Line key={m.email} type="monotone" dataKey={m.email} stroke={lineColor}
  strokeWidth={idx === 0 ? 2.5 : 2}
- dot={makeMemberDot({ ...m, color: lineColor }, lastDay, CH.onAccent)}
- activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }}
- isAnimationActive={false}
- />
+ dot={(p) => p.index === lastIdx ? makeMemberDot({ ...m, color: lineColor }, lastIdx, CH.onAccent)({ ...p, payload: { day: lastIdx } }) : null}
+ activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }} isAnimationActive={false} />
  );
  })}
  </LineChart>
  </ResponsiveContainer>
  </div>
 
+ {/* Podio — sigue a la ventana elegida */}
+ {podium.length > 0 && (
+ <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
+ <div className="flex items-end justify-center gap-2.5">
+ {[podium[1], podium[0], podium[2]].map((m, slot) => {
+ if (!m) return <div key={slot} style={{ width: 84 }} />;
+ const place = slot === 1 ? 1 : slot === 0 ? 2 : 3;
+ const h = place === 1 ? 54 : place === 2 ? 38 : 26;
+ return (
+ <motion.div key={m.email} layout className="flex flex-col items-center" style={{ width: 84 }}>
+ <Avatar m={m} size={place === 1 ? 42 : 34} ring={place === 1 ? 'var(--accent)' : undefined} />
+ <p className="text-[10.5px] mt-1 truncate max-w-full" style={{ color: TEXT_PRIMARY }}>{m.name.split(' ')[0]}</p>
+ <motion.div layout className="w-full mt-1.5 flex flex-col items-center justify-start pt-1.5"
+ style={{ height: h, borderRadius: '10px 10px 0 0', background: `rgba(var(--accent-rgb),${place === 1 ? 0.2 : place === 2 ? 0.12 : 0.07})` }}>
+ <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>{place}</span>
+ <span className="text-[9.5px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>
+ {metricOf(m)}{raceMetric === 'count' ? '' : 'h'}
+ </span>
+ </motion.div>
+ </motion.div>
+ );
+ })}
+ </div>
+ </div>
+ )}
  </div>
 
- {/* Ritmo estacional del grupo — media por participante vs periodo anterior */}
+ {/* ── Ritmo estacional del grupo ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="flex items-start justify-between gap-3 mb-3">
  <div>
@@ -367,22 +453,11 @@ export default function Grupos() {
  </span>
  </div>
  <p className="text-[10px] mt-1" style={{ color: TEXT_MUTED }}>
- Media por participante · {memberStats.length} {memberStats.length === 1 ? 'miembro' : 'miembros'}
+ Media por participante · {emails.length} {emails.length === 1 ? 'miembro' : 'miembros'}
  </p>
  </div>
- <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
- {[['1m', 'Último mes'], ['3m', '3M']].map(([key, lbl]) => (
- <button key={key} onClick={() => setSeasonTF(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
- style={seasonTF === key
- ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
- : { color: TEXT_MUTED }}>
- {lbl}
- </button>
- ))}
+ {pill([['1m', 'Último mes'], ['3m', '3M']], seasonTF, setSeasonTF)}
  </div>
- </div>
-
  <div className="h-[170px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
  <AreaChart data={seasonal.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -395,85 +470,72 @@ export default function Grupos() {
  <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
  <XAxis dataKey="label" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }}
  tickLine={false} interval={Math.max(1, Math.floor(seasonal.data.length / 4)) - 1} minTickGap={20} />
- <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false}
- width={26} tickFormatter={(v) => `${v}h`} />
- <Tooltip content={<CustomTooltip isTeam unit="h" />}
- cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }} />
- <Area type="monotone" dataKey="prev" stroke={CH.tick} strokeWidth={1.5}
- fill="transparent" dot={false} isAnimationActive={false} connectNulls name="Periodo anterior" />
- <Area type="monotone" dataKey="cur" stroke={CH.accent} strokeWidth={2.5}
- fill="url(#seasonGradientTeam)" dot={{ r: 2, fill: CH.accent, strokeWidth: 0 }}
- activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} name="Ahora" />
+ <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={26} tickFormatter={(v) => `${v}h`} />
+ <Tooltip content={<CustomTooltip isTeam unit="h" />} cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }} />
+ <Area type="monotone" dataKey="prev" stroke={CH.tick} strokeWidth={1.5} fill="transparent" dot={false} isAnimationActive={false} connectNulls name="Periodo anterior" />
+ <Area type="monotone" dataKey="cur" stroke={CH.accent} strokeWidth={2.5} fill="url(#seasonGradientTeam)"
+ dot={{ r: 2, fill: CH.accent, strokeWidth: 0 }} activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} name="Ahora" />
  </AreaChart>
  </ResponsiveContainer>
  </div>
  </div>
 
- {/* Ranking */}
- <div className="rounded-2xl overflow-hidden" style={glassCard}>
- <div className="pt-4 pb-2">
- <h2 style={SECTION_TITLE}>Ranking · {MONTHS_ES[month]}</h2>
+ <RecordsCard records={records} onOpenMember={setOpenMember} />
+
+ {/* ── Miembros — filas compactas; al tocar, su snapshot ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-baseline justify-between mb-2">
+ <h2 style={SECTION_TITLE}>Miembros</h2>
+ <span className="text-[9.5px]" style={{ color: TEXT_MUTED }}>esta semana · ritmo del mes</span>
  </div>
- {memberStats.map((member, idx) => {
- const pct = memberStats[0].totalHours > 0 ? (member.totalHours / memberStats[0].totalHours) * 100 : 0;
- const rankColor = rankingWine(idx, memberStats.length, CH);
+ {monthStats.map((m, i) => (
+ <button key={m.email} onClick={() => setOpenMember(m.email)}
+ className="w-full flex items-center gap-3 py-2.5 text-left transition-opacity active:opacity-60"
+ style={{ borderTop: i ? '1px solid rgba(var(--ink),0.06)' : 'none' }}>
+ <Avatar m={m} size={32} />
+ <div className="flex-1 min-w-0">
+ <div className="flex items-baseline justify-between">
+ <p className="text-[12px] truncate" style={{ color: TEXT_PRIMARY }}>{m.name}</p>
+ <span className="text-[10.5px] ml-2" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>{formatHours(m.monthMins / 60)}</span>
+ </div>
+ {/* La semana en 7 cuadraditos con el color de cada actividad */}
+ <div className="flex gap-[3px] mt-1.5">
+ {m.week.map((day, k) => {
+ const cats = [...new Set(day.map(a => `rgba(var(--cat-${categoryOf(a.type)}),0.75)`))];
+ const isToday = dstr(weekDays[k]) === dstr(new Date());
  return (
- <div key={member.email} className={`py-3 ${idx < memberStats.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
- <div className="flex items-center gap-3">
- <span className="text-[12px] font-normal w-5" style={{ color: TEXT_MUTED }}>#{idx + 1}</span>
- {member.avatar_url ? (
- <img
- src={member.avatar_url}
- alt={member.name}
- className="w-8 h-8 rounded-xl object-cover"
- style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
- />
- ) : (
- <div className="w-8 h-8 rounded-xl flex items-center justify-center font-normal text-[10px]"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
- {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
- </div>
- )}
- <div className="flex-1">
- <div className="flex items-center justify-between mb-1.5">
- <p className="text-[12px] font-normal" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <span className="text-[12px] font-normal font-mono" style={{ color: TEXT_PRIMARY }}>{member.totalHours}h</span>
- </div>
- <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
- <div
- initial={{ width: 0 }}
- animate={{ width: `${pct}%` }}
- transition={{ duration: 0.8, delay: 0.1 + idx * 0.05, ease: 'easeOut' }}
- className="h-full rounded-full"
- style={{ background: rankColor }}
- />
- </div>
- </div>
- {idx === 0 && member.totalHours > 0 && <Trophy className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />}
- </div>
- </div>
+ <span key={k} style={{
+ width: 12, height: 12, borderRadius: 3,
+ background: cats.length === 0 ? 'transparent'
+ : cats.length === 1 ? cats[0] : `linear-gradient(90deg, ${cats[0]} 0 50%, ${cats[1]} 50% 100%)`,
+ border: cats.length ? 'none' : `1px dashed rgba(var(--accent-rgb),${weekDays[k] > new Date() ? 0.18 : 0.35})`,
+ boxShadow: isToday ? '0 0 0 1px #e5484d' : 'none',
+ }} />
  );
  })}
  </div>
-
- {/* Member cards */}
- <div>
- <p className="text-[11px] font-normal uppercase tracking-widest mb-3 px-0.5" style={{ color: 'rgba(var(--ink),0.5)' }}>Miembros</p>
- <div className="space-y-3">
- {memberStats.map((member, idx) => (
- <MiniMemberCard
- key={member.email}
- member={member}
- teamAvgHours={memberStats.length > 0 ? memberStats.reduce((sum, m) => sum + m.totalHours, 0) / memberStats.length : 0}
- year={year} month={month} daysInMonth={daysInMonth}
- plansByDay={member.email === user?.email ? myPlansByDayOfMonth : null}
- memberGoals={teamGoals.filter(g => g.user_email === member.email)}
- prDates={memberPrDates[member.email] || new Set()}
- activityBreakdown={member.activityBreakdown}
- />
+ </div>
+ <div className="flex items-center gap-1.5 flex-shrink-0">
+ <MiniRing pct={m.pace} chart={CH} />
+ <span className="text-[10px] w-9 text-right" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>
+ {m.pace != null ? `${m.pace}%` : '–'}
+ </span>
+ </div>
+ </button>
  ))}
  </div>
- </div>
+
+ {openData && (
+ <MemberSheet
+ member={openData}
+ activities={allActivities.filter(a => a.user_email === openData.email)}
+ plans={openData.email === user?.email ? weeklyPlans : []}
+ goals={teamGoals.filter(g => g.user_email === openData.email)}
+ prDates={memberPrDates[openData.email] || new Set()}
+ pacePct={openData.pace}
+ onClose={() => setOpenMember(null)}
+ />
+ )}
  </div>
  );
 }
