@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { DashedFrame } from '@/components/sketch';
-import { iconFor } from '@/utils/activityIcons';
+import { iconFor, categoryOf, CATEGORIES } from '@/utils/activityIcons';
 
 // Calendario de entrenamiento de Olympia (inspirado en Bevel Fall 2026):
 //  · WeekStrip  → semana deslizable izq/der (pasado ← → planificado)
@@ -29,7 +29,22 @@ const fmtMins = m => {
 };
 
 // ── Celda de día compartida ──
-function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true }) {
+// Completado → marco continuo + tinte del color de su familia (fuerza, cardio…).
+//   Dos familias el mismo día → la celda se parte en diagonal, un color por mitad.
+// Planificado → marco discontinuo abierto (firma Olympia) + símbolo atenuado.
+// Hoy → pequeña línea roja que cae desde arriba.
+const TODAY_RED = '#e5484d';
+
+function cellBackground(types) {
+  const cats = [...new Set(types.map(categoryOf))];
+  if (cats.length === 0) return 'transparent';
+  if (cats.length === 1) {
+    return `radial-gradient(circle at center, rgba(var(--cat-${cats[0]}),0.42) 0%, rgba(var(--cat-${cats[0]}),0.06) 82%)`;
+  }
+  return `linear-gradient(135deg, rgba(var(--cat-${cats[0]}),0.36) 0 50%, rgba(var(--cat-${cats[1]}),0.36) 50% 100%)`;
+}
+
+export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true }) {
   const today = new Date();
   const isToday = toDateStr(date) === toDateStr(today);
   const isFuture = date > today && !isToday;
@@ -37,6 +52,7 @@ function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNu
   const planned = !trained && plans.length > 0;
   const types = trained ? acts.map(a => a.type) : plans.map(p => p.activity_type);
   const uniq = [...new Set(types)].slice(0, 2);
+  const mainCat = trained ? categoryOf(acts[0].type) : null;
 
   return (
     <button
@@ -44,22 +60,26 @@ function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNu
       className="relative flex flex-col items-center justify-center transition-transform active:scale-90"
       style={{
         width: size, height: size, borderRadius: 9,
-        ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
-        background: trained
-          ? 'radial-gradient(circle at center, rgba(var(--accent-rgb),0.42) 0%, rgba(var(--accent-rgb),0.03) 80%)'
-          : 'transparent',
+        background: trained ? cellBackground(types) : 'transparent',
+        boxShadow: trained ? `inset 0 0 0 1px rgba(var(--cat-${mainCat}),0.55)` : 'none',
       }}
     >
-      {!isToday && (
+      {!trained && (
         <DashedFrame
           color={planned ? 'rgba(var(--accent-rgb),0.85)' : undefined}
           opacity={isFuture ? 0.2 : 0.4}
         />
       )}
+      {isToday && todayMark && (
+        <span style={{
+          position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
+          width: 1.5, height: 7, borderRadius: 1, background: TODAY_RED,
+        }} />
+      )}
       {showNumber && (
         <span style={{
           fontFamily: MONO, fontSize: 8.5, lineHeight: 1,
-          color: isFuture && !planned ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
+          color: isToday ? TODAY_RED : isFuture && !planned ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
           marginBottom: uniq.length ? 2 : 0,
         }}>
           {date.getDate()}
@@ -71,7 +91,12 @@ function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNu
             const Icon = iconFor(t);
             return (
               <Icon key={t}
-                style={{ width: 9, height: 9, color: 'var(--accent)', opacity: planned ? 0.6 : 1 }}
+                style={{
+                  width: 9, height: 9,
+                  color: trained ? `rgb(var(--cat-${categoryOf(t)}))` : 'var(--accent)',
+                  opacity: planned ? 0.6 : 1,
+                  filter: trained ? 'brightness(0.8)' : 'none',
+                }}
                 strokeWidth={trained ? 2.4 : 1.8} />
             );
           })}
@@ -79,6 +104,24 @@ function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNu
       )}
       {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 7, lineHeight: 1 }}>🏆</span>}
     </button>
+  );
+}
+
+// Leyenda de familias
+export function CategoryLegend() {
+  return (
+    <div className="flex flex-wrap gap-x-3 gap-y-1">
+      {CATEGORIES.map(c => (
+        <span key={c.key} className="flex items-center gap-1 text-[9.5px]" style={{ color: 'rgba(var(--ink),0.5)' }}>
+          <span style={{ width: 7, height: 7, borderRadius: 2, background: `rgba(var(--cat-${c.key}),0.75)` }} />
+          {c.label}
+        </span>
+      ))}
+      <span className="flex items-center gap-1 text-[9.5px]" style={{ color: 'rgba(var(--ink),0.5)' }}>
+        <span style={{ width: 7, height: 7, borderRadius: 2, border: '1px dashed rgba(var(--accent-rgb),0.8)' }} />
+        Planificado
+      </span>
+    </div>
   );
 }
 
@@ -147,16 +190,10 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
 
   return (
     <div>
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <p className="text-[12px]" style={{ color: 'rgba(var(--ink),0.9)' }}>
-            {first && last ? `${short(first)} – ${short(last)}` : ''}
-          </p>
-          <p className="text-[10px]" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.45)' }}>
-            {summary.sessions} {summary.sessions === 1 ? 'sesión' : 'sesiones'} · {fmtMins(summary.mins)}
-            {summary.plannedN > 0 && ` · ${summary.plannedN} plan.`}
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[12px]" style={{ color: 'rgba(var(--ink),0.9)' }}>
+          {first && last ? `${short(first)} – ${short(last)}` : ''}
+        </p>
         {awayFromToday && (
           <button onClick={goHome} className="text-[10px] px-3 py-1 rounded-full"
             style={{ border: '1px solid var(--glass-border)', color: 'rgba(var(--ink),0.6)' }}>
@@ -175,13 +212,13 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
           const ds = toDateStr(d);
           const isToday = i === todayIdx;
           return (
-            <div key={ds} className="relative flex flex-col items-center gap-1 flex-shrink-0 pt-2.5"
+            <div key={ds} className="relative flex flex-col items-center gap-1 flex-shrink-0 pt-3.5"
               style={{ width: colW || '14.2857%' }}>
               {/* Marca del día de hoy — pequeña línea roja desde arriba */}
               {isToday && (
                 <span style={{
                   position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-                  width: 2, height: 8, borderRadius: 1, background: '#e5484d',
+                  width: 1.25, height: 13, borderRadius: 1, background: '#e5484d',
                 }} />
               )}
               <span className="text-[9px]" style={{
@@ -197,6 +234,7 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
                 isPR={prDates.has(ds)}
                 size={40}
                 onClick={onDayClick}
+                todayMark={false}
               />
             </div>
           );
@@ -207,6 +245,9 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
 }
 
 // ── Meses apilados con scroll vertical ──
+// Cada mes ocupa exactamente el alto del marco (6 filas máx.), con snap
+// obligatorio: en reposo solo se ve un mes, nunca el anterior o el siguiente.
+const MONTH_H = 318;
 export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, monthsBack = 12, monthsForward = 3 }) {
   const scrollRef = useRef(null);
   const currentRef = useRef(null);
@@ -230,7 +271,7 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
     <div
       ref={scrollRef}
       className="overflow-y-auto"
-      style={{ maxHeight: 330, scrollSnapType: 'y mandatory', overscrollBehavior: 'contain', scrollbarWidth: 'none' }}
+      style={{ height: MONTH_H, scrollSnapType: 'y mandatory', overscrollBehavior: 'contain', scrollbarWidth: 'none' }}
     >
       {months.map(m => {
         const y = m.getFullYear(), mo = m.getMonth();
@@ -243,7 +284,7 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
         const isCurrent = `${y}-${mo}` === nowKey;
         return (
           <div key={`${y}-${mo}`} ref={isCurrent ? currentRef : null}
-            className="pb-5" style={{ scrollSnapAlign: 'start' }}>
+            style={{ height: MONTH_H, scrollSnapAlign: 'start', scrollSnapStop: 'always', overflow: 'hidden' }}>
             <div className="flex items-baseline justify-between mb-2">
               <span style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)' }}>
                 {MONTHS_FULL[mo]} {y}

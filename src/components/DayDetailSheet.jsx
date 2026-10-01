@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, Pencil, Trash2, Check, Plus, Trophy, TrendingUp, Shield } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
-import { iconFor } from '@/utils/activityIcons';
+import { iconFor, catColor } from '@/utils/activityIcons';
 import { detectMuscleGroups, muscleLabel } from '@/utils/muscles';
 
 // Detalle de un día (inspirado en Activity Details de Bevel): resumen del día,
@@ -40,8 +40,8 @@ function ActivityCard({ act, onEdit, onDelete }) {
     <div className="rounded-3xl p-4" style={{ background: INK(0.04), border: `1px solid ${INK(0.06)}` }}>
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
-          <Icon style={{ width: 18, height: 18, color: 'var(--accent)' }} strokeWidth={2} />
+          style={{ background: catColor(act.type, 0.16), boxShadow: `inset 0 0 0 1px ${catColor(act.type, 0.5)}` }}>
+          <Icon style={{ width: 18, height: 18, color: catColor(act.type, 1), filter: 'brightness(0.85)' }} strokeWidth={2} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[11px]" style={{ color: INK(0.5) }}>{info.label}{act.source === 'strava' ? ' · Strava' : ''}</p>

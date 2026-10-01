@@ -20,6 +20,12 @@
   --glass-bg: rgba(48, 22, 32, 0.55);
   --glass-border: rgba(245, 237, 224, 0.12);
   --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Familias de actividad (RGB) — calendarios y detalle */
+  --cat-fuerza: 240, 228, 208;
+  --cat-cardio: 232, 140, 105;
+  --cat-deporte: 225, 190, 110;
+  --cat-movilidad: 150, 185, 150;
+  --cat-otro: 170, 160, 155;
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
@@ -39,6 +45,12 @@
   --glass-bg: rgba(255, 253, 245, 0.6);
   --glass-border: rgba(42, 18, 26, 0.12);
   --glass-shadow: 0 12px 40px rgba(42, 18, 26, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  /* Familias de actividad (RGB) — calendarios y detalle */
+  --cat-fuerza: 74, 22, 38;
+  --cat-cardio: 196, 98, 62;
+  --cat-deporte: 184, 138, 44;
+  --cat-movilidad: 98, 132, 100;
+  --cat-otro: 120, 110, 105;
   --success: #047857;
   --warning: #b45309;
   --danger: #b91c1c;

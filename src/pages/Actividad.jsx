@@ -15,7 +15,7 @@ import { useTheme } from '@/lib/theme';
 import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
-import { WeekStrip, MonthScroller, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
+import { WeekStrip, MonthScroller, CategoryLegend, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import DayDetailSheet from '@/components/DayDetailSheet';
 
@@ -1066,6 +1066,7 @@ export default function Actividad() {
  prDates={prDates}
  onDayClick={setDetailDate}
  />
+ <div className="mt-2"><CategoryLegend /></div>
  </div>
 
  {/* ── Carga muscular ── */}
