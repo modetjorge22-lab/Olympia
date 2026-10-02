@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, TrendingUp, Trophy, Minus, Plus, Shield } from 'lucide-react';
-import { iconFor } from '@/utils/activityIcons';
+import { iconFor, catColor } from '@/utils/activityIcons';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { MUSCLE_GROUPS, detectMuscleGroups, muscleLabel } from '@/utils/muscles';
 
@@ -252,11 +252,16 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 const on = activityType === key;
                 return (
                   <button key={key} onClick={() => handleActivityTypeChange(key)}
-                    className="flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all active:scale-95"
+                    className="relative flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all active:scale-95"
                     style={on
-                      ? { background: 'rgba(var(--accent-rgb),0.12)', boxShadow: 'inset 0 0 0 1.5px var(--accent)' }
-                      : { background: 'rgba(var(--ink),0.05)' }}>
-                    <Icon style={{ width: 18, height: 18, color: on ? 'var(--accent)' : TEXT_SECONDARY }} strokeWidth={on ? 2.2 : 1.7} />
+                      ? (mode === 'planned'
+                        // Planificada → mismo lenguaje que el día planificado: rayas en su color
+                        ? { background: `radial-gradient(circle, ${catColor(key, 0.14)} 0%, transparent 80%)`, border: `1.5px dashed ${catColor(key, 0.95)}` }
+                        // Hecha → halo y marco continuo en su color, como el día completado
+                        : { background: catColor(key, 0.18), boxShadow: `inset 0 0 0 1.5px ${catColor(key, 0.85)}` })
+                      : { background: 'rgba(var(--ink),0.05)', border: '1.5px solid transparent' }}>
+                    <span className="absolute top-1.5 right-1.5 rounded-full" style={{ width: 5, height: 5, background: catColor(key, 0.9) }} />
+                    <Icon style={{ width: 18, height: 18, color: on ? catColor(key, 1) : TEXT_SECONDARY, filter: on ? 'brightness(0.8)' : 'none' }} strokeWidth={on ? 2.2 : 1.7} />
                     <span className="text-[9.5px] leading-tight text-center px-1" style={{ color: on ? TEXT_PRIMARY : TEXT_MUTED }}>{label}</span>
                   </button>
                 );

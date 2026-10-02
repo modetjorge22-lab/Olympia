@@ -80,9 +80,6 @@ export default function MuscleLoad({ activities }) {
     });
   }, [activities]);
 
-  // Escala común para las barras de carga (hasta 2× la media o el máximo)
-  const maxLoad = Math.max(0.5, ...rows.map(r => Math.max(r.acute, r.chronic * 2)));
-
   return (
     <div>
       <div className="flex justify-end mb-3">
@@ -105,7 +102,14 @@ export default function MuscleLoad({ activities }) {
         </div>
       </div>
 
-      <div className="space-y-2.5">
+      {view === 'load' && (
+        <div className="flex text-[8.5px] mb-2" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.4)' }}>
+          <span style={{ width: '40%' }}>Baja</span>
+          <span style={{ width: '25%', textAlign: 'center', color: 'var(--accent)' }}>Tu rango</span>
+          <span style={{ width: '35%', textAlign: 'right' }}>Alta</span>
+        </div>
+      )}
+      <div className="space-y-3">
         {rows.map(r => {
           if (view === 'fresh') {
             const label = r.fresh >= 85 ? 'Fresco' : r.fresh >= 50 ? 'Recuperando' : 'Fatigado';
@@ -123,25 +127,35 @@ export default function MuscleLoad({ activities }) {
               </div>
             );
           }
-          // Vista de carga: banda óptima (0,8–1,3× tu media) + carga actual
-          const bandL = (r.chronic * 0.8 / maxLoad) * 100;
-          const bandW = (r.chronic * 0.5 / maxLoad) * 100;
-          const cur = Math.min(100, (r.acute / maxLoad) * 100);
+          // Vista de carga — escala por zonas (estilo zonas de Whoop / Bevel):
+          // la pista se divide en Baja | Óptima | Alta respecto a TU media de las
+          // 4 semanas previas (la zona óptima = tu rango habitual, 0,8–1,3×) y un
+          // único punto marca dónde estás esta semana. Sin barras superpuestas.
+          const ratio = r.chronic > 0 ? r.acute / r.chronic : (r.acute > 0 ? 2 : 0);
+          const pos = Math.min(1, ratio / 2) * 100;
+          const has = r.acute > 0 || r.chronic > 0;
+          const stColor = r.st.key === 'ok' ? 'var(--accent)' : r.st.key === 'high' ? 'var(--warning)' : 'rgba(var(--ink),0.45)';
           return (
             <div key={r.key}>
-              <div className="flex justify-between mb-1">
+              <div className="flex justify-between mb-1.5">
                 <span className="text-[11px]" style={{ color: 'rgba(var(--ink),0.85)' }}>{r.label}</span>
                 <span className="text-[10px]" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.5)' }}>
-                  {r.acute.toFixed(1)}h · <span style={{ color: r.st.key === 'ok' ? 'var(--accent)' : r.st.key === 'high' ? 'var(--warning)' : 'rgba(var(--ink),0.5)' }}>{r.st.label}</span>
+                  <span style={{ color: stColor }}>{r.st.label}</span> · {r.acute.toFixed(1)}h
                 </span>
               </div>
-              <div className="relative h-1.5 rounded-full" style={{ background: 'rgba(var(--ink),0.08)' }}>
-                {r.chronic > 0 && (
-                  <div className="absolute top-0 h-full rounded-full"
-                    style={{ left: `${bandL}%`, width: `${bandW}%`, background: 'rgba(var(--accent-rgb),0.22)' }} />
+              <div className="relative" style={{ height: 8, opacity: has ? 1 : 0.45 }}>
+                <div className="absolute inset-0 flex gap-[2px]" style={{ top: 2, bottom: 2 }}>
+                  <span style={{ width: '40%', borderRadius: '3px 0 0 3px', background: 'rgba(var(--ink),0.08)' }} />
+                  <span style={{ width: '25%', background: 'rgba(var(--accent-rgb),0.28)' }} />
+                  <span style={{ width: '35%', borderRadius: '0 3px 3px 0', background: 'rgba(251,191,36,0.22)' }} />
+                </div>
+                {has && (
+                  <span className="absolute" style={{
+                    left: `${pos}%`, top: '50%', transform: 'translate(-50%,-50%)',
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: stColor, boxShadow: '0 0 0 2px var(--surface)',
+                  }} />
                 )}
-                <div className="absolute top-0 left-0 h-full rounded-full"
-                  style={{ width: `${cur}%`, background: 'var(--accent)' }} />
               </div>
             </div>
           );
@@ -149,7 +163,7 @@ export default function MuscleLoad({ activities }) {
       </div>
       <p className="text-[9px] mt-3" style={{ color: 'rgba(var(--ink),0.4)' }}>
         {view === 'load'
-          ? 'Últimos 7 días. La banda clara es tu zona óptima según tus 4 semanas anteriores.'
+          ? 'Últimos 7 días comparados con tu media de las 4 semanas anteriores. El punto marca dónde estás.'
           : 'Recuperación estimada por grupo según tus sesiones recientes de fuerza y cardio.'}
       </p>
     </div>

@@ -33,7 +33,7 @@ const fmtMins = m => {
 // Completado → marco continuo + tinte del color de su familia (fuerza, cardio…).
 //   Dos familias el mismo día → la celda se parte en vertical, un color y un
 //   símbolo en cada mitad.
-// Planificado → marco discontinuo abierto (firma Olympia) + símbolo atenuado.
+// Planificado → marco discontinuo abierto en el color de su familia + halo leve.
 // Hoy → pequeña línea roja que cae desde arriba.
 const TODAY_RED = '#e5484d';
 
@@ -62,13 +62,15 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
       className="relative flex flex-col items-center justify-center transition-transform active:scale-90"
       style={{
         width: size, height: size, borderRadius: 9,
-        background: trained ? cellBackground(types) : 'transparent',
+        background: trained ? cellBackground(types)
+          : planned ? `radial-gradient(circle at center, rgba(var(--cat-${categoryOf(plans[0].activity_type)}),0.14) 0%, transparent 75%)`
+          : 'transparent',
         boxShadow: trained ? `inset 0 0 0 1px rgba(var(--cat-${mainCat}),0.55)` : 'none',
       }}
     >
       {!trained && (
         <DashedFrame
-          color={planned ? 'rgba(var(--accent-rgb),0.85)' : undefined}
+          color={planned ? `rgba(var(--cat-${categoryOf(plans[0].activity_type)}),0.95)` : undefined}
           opacity={isFuture ? 0.2 : 0.4}
         />
       )}
@@ -96,8 +98,8 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
               <Icon key={t}
                 style={{
                   width: 10, height: 10,
-                  color: trained ? `rgb(var(--cat-${categoryOf(t)}))` : 'var(--accent)',
-                  opacity: planned ? 0.6 : 1,
+                  color: `rgb(var(--cat-${categoryOf(t)}))`,
+                  opacity: planned ? 0.75 : 1,
                   filter: trained ? 'brightness(0.75)' : 'none',
                 }}
                 strokeWidth={trained ? 2.3 : 1.8} />
