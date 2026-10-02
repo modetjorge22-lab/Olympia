@@ -14,8 +14,9 @@ import { DashedFrame } from '@/components/sketch';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import ActivityFilterButton from '@/components/ActivityFilterButton';
 import MemberSheet from '@/components/MemberSheet';
-import RaceReplay from '@/components/RaceReplay';
+import { RaceReplaySheet } from '@/components/RaceReplay';
 import { categoryOf } from '@/utils/activityIcons';
+import { readPalette, blendCats } from '@/utils/blendColors';
 import { computeTeamRecords } from '@/utils/teamRecords';
 import { useObjectives } from '@/hooks/useObjectives';
 import { objectiveProgress } from '@/utils/objectives';
@@ -98,7 +99,7 @@ const glassBar = {
  border: '1px solid var(--glass-border)',
 };
 
-function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h' }) {
+function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h', colors = {} }) {
  if (!active || !payload?.length) return null;
  return (
  <div style={{
@@ -115,7 +116,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  return (
  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: i === 0 ? 0 : 3 }}>
  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
- <div style={{ width: 7, height: 7, borderRadius: 2, background: entry.color || entry.fill }} />
+ <div style={{ width: 7, height: 7, borderRadius: 2, background: colors[entry.dataKey] || (String(entry.color).startsWith('url') ? 'rgba(var(--ink),0.5)' : entry.color) || entry.fill }} />
  <span style={{ color: 'rgba(var(--ink),0.85)' }}>{m?.name || entry.name}</span>
  </div>
  <span style={{ color: 'rgba(var(--ink),0.95)', fontWeight: 600 }}>{entry.value}{unit}</span>
@@ -313,6 +314,9 @@ export default function Grupos() {
  }, [acts, emails, members, snapshot, raceMetric]);
 
  const lastIdx = chartData.length - 1;
+ const catPalette = useMemo(() => readPalette(), [CH]); // CH cambia con el tema
+ const memberColor = useMemo(() => Object.fromEntries(memberStats.map(m =>
+ [m.email, blendCats(m.cum[m.cum.length - 1]?.c, catPalette)])), [memberStats, catPalette]);
  const metricOf = m => raceMetric === 'count' ? m.sessions : m.totalHours;
  const teamAverage = memberStats.length ? +(memberStats.reduce((s, m) => s + metricOf(m), 0) / memberStats.length).toFixed(1) : null;
  const raceUnit = raceMetric === 'count' ? '' : 'h';
@@ -392,7 +396,7 @@ export default function Grupos() {
  <div className="relative flex items-center justify-end mb-2" style={{ minHeight: 32 }}>
  <h2 className="absolute left-1/2 -translate-x-1/2" style={SECTION_TITLE}>Carrera</h2>
  <div className="flex items-center gap-2">
- {!replay && (
+ {(
  <button onClick={() => setReplay(true)}
  className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
  style={glassBar} aria-label="Ver la repetición de la carrera">
@@ -410,19 +414,6 @@ export default function Grupos() {
  {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {snapLabel}
  {typeFilter ? ` · ${typeLabels[typeFilter]}` : ''}
  </p>
- {replay ? (
- <RaceReplay
- key={`${snapshot}-${raceMetric}-${typeFilter || 'all'}`}
- days={raceDays}
- unit={raceMetric === 'count' ? '' : 'h'}
- members={memberStats.map(m => ({
- email: m.email, name: m.name, avatar_url: m.avatar_url,
- values: [0, ...m.cum.map(c => (raceMetric === 'count' ? c.n : c.h))],
- cats: [{}, ...m.cum.map(c => c.c)],
- }))}
- onClose={() => setReplay(false)}
- />
- ) : (
  <div className="h-[230px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 14, right: 26, bottom: 0, left: 0 }}>
@@ -430,24 +421,37 @@ export default function Grupos() {
  <XAxis dataKey="label" tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false}
  interval={Math.max(0, Math.floor(chartData.length / 4) - 1)} minTickGap={16} />
  <YAxis domain={[0, 'auto']} allowDecimals={false} tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={24} />
- <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} isTeam />} />
+ <Tooltip content={<CustomTooltip memberStats={memberStats} unit={raceUnit} isTeam colors={memberColor} />} />
  {teamAverage > 0 && (
  <ReferenceLine y={teamAverage} stroke={CH.ref} strokeDasharray="4 4" strokeWidth={1}
  label={{ value: `Media ${teamAverage}${raceMetric === 'count' ? ' act' : 'h'}`, position: 'insideTopLeft', fill: CH.refLabel, fontSize: 9, offset: 6 }} />
  )}
+ {/* Color de cada línea = mezcla de sus actividades; degradado a lo largo
+ del tiempo con la mezcla acumulada de cada día de la ventana */}
+ <defs>
+ {memberStats.map((m, idx) => (
+ <linearGradient key={m.email} id={`race-lg-${idx}`} x1="0" y1="0" x2="1" y2="0">
+ {chartData.map((_, k) => (
+ <stop key={k} offset={lastIdx ? k / lastIdx : 0}
+ stopColor={blendCats(k === 0 ? m.cum[0]?.c : m.cum[k - 1]?.c, catPalette)} />
+ ))}
+ </linearGradient>
+ ))}
+ </defs>
  {memberStats.map((m, idx) => {
- const lineColor = rankingWine(idx, memberStats.length, CH);
+ const finalColor = memberColor[m.email];
+ // Línea plana (sin actividad) → color sólido: un degradado en un trazo sin altura no se ve
+ const stroke = m.totalMins > 0 ? `url(#race-lg-${idx})` : finalColor;
  return (
- <Line key={m.email} type="monotone" dataKey={m.email} stroke={lineColor}
+ <Line key={m.email} type="monotone" dataKey={m.email} stroke={stroke}
  strokeWidth={idx === 0 ? 2.5 : 2}
- dot={(p) => p.index === lastIdx ? makeMemberDot({ ...m, color: lineColor }, lastIdx, CH.onAccent)({ ...p, payload: { day: lastIdx } }) : null}
- activeDot={{ r: 3, fill: lineColor, strokeWidth: 0 }} isAnimationActive={false} />
+ dot={(p) => p.index === lastIdx ? makeMemberDot({ ...m, color: finalColor }, lastIdx, CH.onAccent)({ ...p, payload: { day: lastIdx } }) : null}
+ activeDot={{ r: 3, fill: finalColor, strokeWidth: 0 }} isAnimationActive={false} />
  );
  })}
  </LineChart>
  </ResponsiveContainer>
  </div>
- )}
 
  </div>
 
@@ -557,6 +561,21 @@ export default function Grupos() {
  </div>
 
  <RecordsCard records={records} onOpenMember={setOpenMember} />
+
+ {replay && (
+ <RaceReplaySheet
+ key={`${snapshot}-${raceMetric}-${typeFilter || 'all'}`}
+ title={`Carrera · ${SNAPSHOTS.find(x => x.key === snapshot)?.label}${typeFilter ? ` · ${typeLabels[typeFilter]}` : ''}`}
+ days={raceDays}
+ unit={raceMetric === 'count' ? '' : 'h'}
+ members={memberStats.map(m => ({
+ email: m.email, name: m.name, avatar_url: m.avatar_url,
+ values: [0, ...m.cum.map(c => (raceMetric === 'count' ? c.n : c.h))],
+ cats: [{}, ...m.cum.map(c => c.c)],
+ }))}
+ onClose={() => setReplay(false)}
+ />
+ )}
 
  {openData && (
  <MemberSheet

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { readPalette, blendCats } from '@/utils/blendColors';
 
 // Repetición animada de la carrera (line chart race).
 //  · Las líneas se dibujan día a día con interpolación suave.
-//  · Cámara dinámica: durante el play se acerca a la cabeza de la carrera
-//    (ventana de días alrededor del instante actual) y ajusta el eje vertical
-//    al pelotón; al terminar se aleja a la vista completa.
 //  · Color inteligente: cada tramo de línea se pinta con la mezcla de colores
 //    de las familias de actividad acumuladas hasta ese día, ponderada por minutos.
 //  · Ranking en vivo con reordenación animada y destello al adelantar.
@@ -14,41 +14,18 @@ const MONO = '"JetBrains Mono", monospace';
 const DURATION = 7000; // ms para recorrer toda la ventana a 1×
 const W = 300, H = 210, PAD_L = 6, PAD_R = 30, PAD_T = 12, PAD_B = 18;
 
-function readRGB(name, fallback) {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const parts = v.split(',').map(x => parseFloat(x));
-  return parts.length === 3 && parts.every(n => !Number.isNaN(n)) ? parts : fallback;
-}
-
 export default function RaceReplay({ days, members, unit = 'h', onClose }) {
   const n = days.length;               // nº de días; los valores tienen n+1 puntos (0 = salida)
   const [t, setT] = useState(0);       // 0..n fraccional
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [flash, setFlash] = useState({}); // email → timestamp del último adelantamiento
-  const cam = useRef(null);            // dominio de cámara suavizado
   const lastTs = useRef(0);
   const lastOrder = useRef([]);
 
-  // Colores de familia del tema actual
-  const palette = useMemo(() => ({
-    fuerza: readRGB('--cat-fuerza', [74, 22, 38]),
-    cardio: readRGB('--cat-cardio', [226, 178, 32]),
-    deporte: readRGB('--cat-deporte', [72, 160, 100]),
-    movilidad: readRGB('--cat-movilidad', [92, 156, 220]),
-    otro: readRGB('--cat-otro', [120, 110, 105]),
-    ink: readRGB('--ink', [42, 18, 26]),
-  }), []);
-
-  const blend = (cats) => {
-    let tot = 0; const acc = [0, 0, 0];
-    Object.entries(cats || {}).forEach(([k, m]) => {
-      const c = palette[k] || palette.otro;
-      acc[0] += c[0] * m; acc[1] += c[1] * m; acc[2] += c[2] * m; tot += m;
-    });
-    if (!tot) return `rgba(${palette.ink.join(',')},0.35)`;
-    return `rgb(${acc.map(x => Math.round(x / tot)).join(',')})`;
-  };
+  // Colores de familia del tema actual y mezcla ponderada por minutos
+  const palette = useMemo(() => readPalette(), []);
+  const blend = (cats) => blendCats(cats, palette);
 
   const valAt = (vals, x) => {
     const i = Math.floor(x), f = x - i;
@@ -91,25 +68,9 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
     lastOrder.current = ids;
   }); // se evalúa en cada frame; solo actualiza estado cuando hay adelantamiento
 
-  // Cámara: objetivo según el instante (zoom durante el play, completo al final)
-  const finished = !playing && t >= n;
-  const target = (() => {
-    if (finished || n <= 7) {
-      const maxV = Math.max(1, ...members.map(m => m.values[n]));
-      return { x0: 0, x1: n, y0: 0, y1: maxV * 1.08 };
-    }
-    const span = Math.max(5, n * 0.4);
-    const x1 = Math.min(n, Math.max(span, t + span * 0.12));
-    const x0 = Math.max(0, x1 - span);
-    const visible = members.flatMap(m => [valAt(m.values, Math.max(x0, 0)), valAt(m.values, t)]);
-    const lo = Math.min(...visible), hi = Math.max(...visible, lo + 1);
-    const pad = (hi - lo) * 0.18 + 0.3;
-    return { x0, x1, y0: Math.max(0, lo - pad), y1: hi + pad };
-  })();
-  if (!cam.current) cam.current = { ...target };
-  const k = playing ? 0.12 : 0.18; // suavizado de cámara
-  const c = cam.current;
-  ['x0', 'x1', 'y0', 'y1'].forEach(key => { c[key] += (target[key] - c[key]) * k; });
+  // Vista fija completa (sin zoom): eje X = toda la ventana, eje Y hasta el máximo final
+  const maxV = Math.max(1, ...members.map(m => m.values[n]));
+  const c = { x0: 0, x1: n, y0: 0, y1: maxV * 1.08 };
 
   const X = x => PAD_L + ((x - c.x0) / Math.max(0.001, c.x1 - c.x0)) * (W - PAD_L - PAD_R);
   const Y = v => H - PAD_B - ((v - c.y0) / Math.max(0.001, c.y1 - c.y0)) * (H - PAD_T - PAD_B);
@@ -127,14 +88,11 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-[22px] leading-none" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{dayLabel}</span>
-        <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(var(--ink),0.07)' }} aria-label="Cerrar repetición">
-          <X className="w-3.5 h-3.5" style={{ color: 'rgba(var(--ink),0.6)' }} />
-        </button>
+
       </div>
 
-      <div className="flex gap-2">
-        <svg viewBox={`0 0 ${W} ${H}`} className="flex-1" style={{ height: 210, overflow: 'hidden' }}>
+      <div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 230, overflow: 'hidden' }}>
           <defs>
             <clipPath id="race-clip"><rect x={0} y={0} width={W - PAD_R + 4} height={H} /></clipPath>
             {members.map(m => (
@@ -189,11 +147,11 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
           </g>
         </svg>
 
-        {/* Ranking en vivo */}
-        <div className="relative flex-shrink-0" style={{ width: 104, height: Math.max(order.length * 28, 60) }}>
+        {/* Ranking en vivo — debajo, sin restar ancho a la gráfica */}
+        <div className="relative mt-3" style={{ height: order.length * 26 }}>
           {order.map((o, pos) => (
             <div key={o.m.email} className="absolute left-0 right-0 flex items-center gap-1.5"
-              style={{ top: pos * 28, height: 24, transition: 'top 0.45s cubic-bezier(0.3,0.9,0.3,1)' }}>
+              style={{ top: pos * 26, height: 22, transition: 'top 0.45s cubic-bezier(0.3,0.9,0.3,1)' }}>
               <span className="text-[9px] w-2.5" style={{ fontFamily: MONO, color: 'rgba(var(--ink),0.45)' }}>{pos + 1}</span>
               <span className="rounded-full flex-shrink-0" style={{ width: 9, height: 9, background: blend(o.m.cats[Math.min(n, Math.max(0, Math.ceil(t)))]) }} />
               <span className="text-[10.5px] flex-1 truncate" style={{ color: 'rgba(var(--ink),0.9)' }}>{o.m.name.split(' ')[0]}</span>
@@ -205,7 +163,7 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
 
       {/* Controles */}
       <div className="flex items-center gap-2.5 mt-2">
-        <button onClick={() => { if (t >= n) { setT(0); cam.current = null; } setPlaying(p => !p); }}
+        <button onClick={() => { if (t >= n) setT(0); setPlaying(p => !p); }}
           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ background: 'var(--accent)' }} aria-label={playing ? 'Pausar' : 'Reproducir'}>
           {playing
@@ -223,5 +181,36 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// Ventana que se abre al pulsar ▶ — mismo formato que la ficha de miembro,
+// para no alterar la gráfica de la pantalla.
+export function RaceReplaySheet({ title, onClose, ...props }) {
+  return createPortal(
+    <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
+      style={{ background: 'var(--scrim)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
+      <motion.div className="w-full max-w-lg"
+        style={{
+          background: 'var(--surface)', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          boxShadow: '0 -12px 40px rgba(0,0,0,0.35)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+        }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+        onClick={e => e.stopPropagation()}>
+        <div className="pt-2.5 px-5">
+          <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[14px]" style={{ letterSpacing: '0.08em', color: 'rgba(var(--ink),0.95)' }}>{title}</p>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(var(--ink),0.07)' }} aria-label="Cerrar">
+              <X className="w-4 h-4" style={{ color: 'rgba(var(--ink),0.6)' }} />
+            </button>
+          </div>
+          <RaceReplay {...props} />
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
   );
 }
