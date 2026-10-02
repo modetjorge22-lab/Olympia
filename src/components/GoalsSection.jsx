@@ -49,7 +49,14 @@ function GoalRow({ goal, history, open, onToggle, onUpdateMark, onDelete, first 
     ? [history[0].old_value ?? history[0].new_value, ...history.map(h => h.new_value)].filter(v => v != null).map(Number)
     : (goal.current_value != null ? [Number(goal.current_value)] : []);
   const start = points[0];
-  const delta = points.length > 1 && goal.current_value != null ? Number(goal.current_value) - start : null;
+  const lower = !!goal.lower_is_better;
+  const cur = goal.current_value != null ? Number(goal.current_value) : null;
+  // Mejora: positiva siempre que vaya en el buen sentido (más peso / menos tiempo)
+  const gain = points.length > 1 && cur != null ? (lower ? start - cur : cur - start) : null;
+  const target = goal.target_value != null ? Number(goal.target_value) : null;
+  const toTarget = target != null && cur != null
+    ? Math.max(0, Math.min(1, lower ? target / cur : cur / target)) : null;
+  const reached = toTarget != null && (lower ? cur <= target : cur >= target);
   const last = history.length ? history[history.length - 1].date : goal.pb_date;
   const daysSince = last ? Math.floor((Date.now() - new Date(`${last}T12:00:00`).getTime()) / DAY) : null;
   const fresh = daysSince != null && daysSince <= 7 && history.length > 0;
@@ -80,13 +87,23 @@ function GoalRow({ goal, history, open, onToggle, onUpdateMark, onDelete, first 
           <p className="text-[17px] leading-none" style={{ fontFamily: MONO, color: INK(0.95) }}>
             {fmtVal(goal.current_value)}<span className="text-[10px] ml-0.5" style={{ color: INK(0.45) }}>{goal.unit}</span>
           </p>
-          {delta != null && delta !== 0 && (
-            <p className="text-[10px] mt-1" style={{ fontFamily: MONO, color: 'var(--accent)' }}>
-              {delta > 0 ? '+' : ''}{fmtVal(delta)} {goal.unit}
+          {gain != null && gain !== 0 && (
+            <p className="text-[10px] mt-1" style={{ fontFamily: MONO, color: gain > 0 ? 'var(--accent)' : INK(0.45) }}>
+              {lower ? (gain > 0 ? '−' : '+') : (gain > 0 ? '+' : '−')}{fmtVal(Math.abs(gain))} {goal.unit}
             </p>
           )}
         </div>
       </button>
+      {toTarget != null && (
+        <div className="flex items-center gap-2 -mt-1 mb-3 ml-12">
+          <div className="relative flex-1 h-1 rounded-full" style={{ background: INK(0.08) }}>
+            <div className="absolute top-0 left-0 h-full rounded-full" style={{ width: `${toTarget * 100}%`, background: color, opacity: 0.85 }} />
+          </div>
+          <span className="text-[9.5px]" style={{ fontFamily: MONO, color: reached ? 'var(--accent)' : INK(0.45) }}>
+            {reached ? '¡meta lograda!' : `meta ${fmtVal(target)} ${goal.unit}`}
+          </span>
+        </div>
+      )}
 
       <AnimatePresence initial={false}>
         {open && (
@@ -135,10 +152,10 @@ function GoalRow({ goal, history, open, onToggle, onUpdateMark, onDelete, first 
   );
 }
 
-export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateMark, onDelete, titleStyle }) {
+export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateMark, onDelete, titleStyle, header }) {
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: '', value: '', unit: '', type: '' });
+  const [form, setForm] = useState({ title: '', value: '', unit: '', type: '', target: '', lower: false });
 
   const historyOf = useMemo(() => {
     const m = {};
@@ -154,8 +171,10 @@ export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateM
       unit: form.unit.trim(),
       current_value: form.value !== '' ? Number(form.value) : null,
       activity_type: form.type || null,
+      target_value: form.target !== '' ? Number(form.target) : null,
+      lower_is_better: form.lower,
     });
-    setForm({ title: '', value: '', unit: '', type: '' });
+    setForm({ title: '', value: '', unit: '', type: '', target: '', lower: false });
     setAdding(false);
   };
 
@@ -164,7 +183,7 @@ export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateM
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h2 style={titleStyle}>Marcas personales</h2>
+        {header ?? <h2 style={titleStyle}>Marcas personales</h2>}
         <button onClick={() => setAdding(v => !v)}
           className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
           style={{
@@ -186,10 +205,26 @@ export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateM
                 className="w-full rounded-full px-4 py-2.5 text-[12px] focus:outline-none" style={field} />
               <div className="flex gap-2">
                 <input type="number" inputMode="decimal" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
-                  placeholder="Marca actual" className="flex-1 rounded-full px-4 py-2.5 text-[12px] focus:outline-none" style={field} />
+                  placeholder="Tu marca actual" className="flex-1 rounded-full px-4 py-2.5 text-[12px] focus:outline-none" style={field} />
                 <input value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
                   placeholder="kg, min, reps" className="w-[110px] rounded-full px-4 py-2.5 text-[12px] focus:outline-none" style={field} />
               </div>
+              <div className="flex gap-2">
+                <input type="number" inputMode="decimal" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))}
+                  placeholder="Meta a batir (opcional)" className="flex-1 rounded-full px-4 py-2.5 text-[12px] focus:outline-none" style={field} />
+                <div className="grid grid-cols-2 p-1 rounded-full" style={{ background: INK(0.05) }}>
+                  {[[false, 'Más'], [true, 'Menos']].map(([v, l]) => (
+                    <button key={l} onClick={() => setForm(f => ({ ...f, lower: v }))}
+                      className="px-3 py-1 rounded-full text-[10.5px]"
+                      style={form.lower === v ? { background: 'var(--surface)', color: INK(0.95), boxShadow: '0 1px 4px rgba(0,0,0,0.1)' } : { color: INK(0.5) }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[9.5px] -mt-1 px-2" style={{ color: INK(0.4) }}>
+                {form.lower ? 'Menos es mejor — tiempos, ritmo por km…' : 'Más es mejor — kilos, repeticiones, distancia…'}
+              </p>
               <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {[['', 'General'], ...Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label])].map(([k, l]) => {
                   const on = form.type === k;

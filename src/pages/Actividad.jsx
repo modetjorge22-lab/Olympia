@@ -19,6 +19,8 @@ import { TrainingSection, MonthScroller, toDateStr as tcDateStr } from '@/compon
 import MuscleLoad from '@/components/MuscleLoad';
 import DayDetailSheet from '@/components/DayDetailSheet';
 import GoalsSection from '@/components/GoalsSection';
+import ObjectivesPanel from '@/components/ObjectivesPanel';
+import { useObjectives } from '@/hooks/useObjectives';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -222,6 +224,8 @@ export default function Actividad() {
  const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
  const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
  const { goals, createGoal, updateMark, deleteGoal, refresh: refreshGoals } = useGoals();
+ const { myObjectives, available: objectivesAvailable, createObjective, deleteObjective } = useObjectives();
+ const [goalsTab, setGoalsTab] = useState('objectives'); // 'objectives' | 'marks'
 
  // PR achievements — fuente de verdad para colorear días
  const [prAchievements, setPrAchievements] = useState([]);
@@ -1046,16 +1050,40 @@ export default function Actividad() {
  </motion.div>
  ))}
 
- {/* ── Marcas personales ── */}
+ {/* ── Objetivos y marcas ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
+ {(() => {
+ const header = (
+ <div className="flex items-center gap-0.5 rounded-full p-1" style={glassBar}>
+ {[['objectives', 'Objetivos'], ['marks', 'Marcas']].map(([k, l]) => (
+ <button key={k} onClick={() => setGoalsTab(k)}
+ className="px-3 py-1 rounded-full text-[11px] transition-all"
+ style={goalsTab === k ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY } : { color: TEXT_MUTED }}>
+ {l}
+ </button>
+ ))}
+ </div>
+ );
+ return goalsTab === 'objectives' ? (
+ <ObjectivesPanel
+ header={header}
+ objectives={myObjectives}
+ activities={myAllActivities}
+ available={objectivesAvailable}
+ onCreate={createObjective}
+ onDelete={deleteObjective}
+ />
+ ) : (
  <GoalsSection
+ header={header}
  goals={goals}
  prs={prAchievements}
- titleStyle={SECTION_TITLE}
  onCreate={createGoal}
  onUpdateMark={(goalId, value) => handlePrBeaten([{ goalId, newValue: value }], new Date().toISOString().slice(0, 10))}
  onDelete={deleteGoal}
  />
+ );
+ })()}
  </div>
 
  {/* FAB — usa el color del fondo de la app */}

@@ -45,7 +45,10 @@ function cellBackground(types) {
   if (cats.length === 1) {
     return `radial-gradient(circle at center, rgba(var(--cat-${cats[0]}),0.42) 0%, rgba(var(--cat-${cats[0]}),0.06) 82%)`;
   }
-  return `linear-gradient(90deg, rgba(var(--cat-${cats[0]}),0.38) 0 calc(50% - 0.5px), rgba(var(--ink),0.18) calc(50% - 0.5px) calc(50% + 0.5px), rgba(var(--cat-${cats[1]}),0.38) calc(50% + 0.5px) 100%)`;
+  // Cada mitad lleva el MISMO halo que una celda de una sola actividad, así la
+  // tonalidad es idéntica haya una o dos sesiones. Fina línea central encima.
+  const halo = c => `radial-gradient(circle at center, rgba(var(--cat-${c}),0.42) 0%, rgba(var(--cat-${c}),0.06) 82%)`;
+  return `linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(var(--ink),0.16) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 100% 100% no-repeat, ${halo(cats[0])} left / 50% 100% no-repeat, ${halo(cats[1])} right / 50% 100% no-repeat`;
 }
 
 export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true }) {

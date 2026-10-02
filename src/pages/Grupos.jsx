@@ -16,6 +16,8 @@ import ActivityFilterButton from '@/components/ActivityFilterButton';
 import MemberSheet from '@/components/MemberSheet';
 import { categoryOf } from '@/utils/activityIcons';
 import { computeTeamRecords } from '@/utils/teamRecords';
+import { useObjectives } from '@/hooks/useObjectives';
+import { objectiveProgress } from '@/utils/objectives';
 
 const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -227,6 +229,7 @@ export default function Grupos() {
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
+ const { objectives } = useObjectives();
  const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
  const [snapshot, setSnapshot] = useState('month'); // 'week' | 'month' | '90d'
  const [seasonTF, setSeasonTF] = useState('1m');
@@ -311,9 +314,10 @@ export default function Grupos() {
  }), [acts, year, month, seasonTF, emails.length]);
 
  // ── Filas de miembros: semana actual + ritmo (horas del mes vs media) ──
+ // Últimos 7 días terminando hoy (hoy es el último cuadradito)
  const weekDays = useMemo(() => {
- const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - ((s.getDay() + 6) % 7));
- return Array.from({ length: 7 }, (_, i) => { const d = new Date(s); d.setDate(s.getDate() + i); return d; });
+ const t = new Date(); t.setHours(0, 0, 0, 0);
+ return Array.from({ length: 7 }, (_, i) => { const d = new Date(t); d.setDate(t.getDate() - 6 + i); return d; });
  }, []);
  const monthStats = useMemo(() => {
  const sStr = dstr(new Date(year, month, 1));
@@ -412,31 +416,70 @@ export default function Grupos() {
  </ResponsiveContainer>
  </div>
 
- {/* Podio — sigue a la ventana elegida */}
- {podium.length > 0 && (
- <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
- <div className="flex items-end justify-center gap-2.5">
- {[podium[1], podium[0], podium[2]].map((m, slot) => {
- if (!m) return <div key={slot} style={{ width: 84 }} />;
- const place = slot === 1 ? 1 : slot === 0 ? 2 : 3;
- const h = place === 1 ? 54 : place === 2 ? 38 : 26;
+ </div>
+
+ {/* ── Miembros — filas compactas; al tocar, su snapshot ── */}
+ <div className="rounded-2xl p-4" style={glassCard}>
+ <div className="flex items-baseline justify-between mb-2">
+ <h2 style={SECTION_TITLE}>Miembros</h2>
+ <span className="text-[9.5px]" style={{ color: TEXT_MUTED }}>últimos 7 días · ritmo del mes</span>
+ </div>
+ {monthStats.map((m, i) => (
+ <button key={m.email} onClick={() => setOpenMember(m.email)}
+ className="w-full flex items-center gap-3 py-2.5 text-left transition-opacity active:opacity-60"
+ style={{ borderTop: i ? '1px solid rgba(var(--ink),0.06)' : 'none' }}>
+ <Avatar m={m} size={32} />
+ <div className="flex-1 min-w-0">
+ <div className="flex items-baseline justify-between">
+ <p className="text-[12px] truncate" style={{ color: TEXT_PRIMARY }}>{m.name}</p>
+ {/* Lo que tiene fijado: objetivos (conseguidos/total) y marcas */}
+ {(() => {
+ const objs = objectives.filter(o => o.user_email === m.email);
+ const marks = teamGoals.filter(g => g.user_email === m.email).length;
+ if (!objs.length && !marks) return null;
+ const mineActs = allActivities.filter(a => a.user_email === m.email);
+ const done = objs.filter(o => objectiveProgress(o, mineActs).status === 'done').length;
  return (
- <motion.div key={m.email} layout className="flex flex-col items-center" style={{ width: 84 }}>
- <Avatar m={m} size={place === 1 ? 42 : 34} ring={place === 1 ? 'var(--accent)' : undefined} />
- <p className="text-[10.5px] mt-1 truncate max-w-full" style={{ color: TEXT_PRIMARY }}>{m.name.split(' ')[0]}</p>
- <motion.div layout className="w-full mt-1.5 flex flex-col items-center justify-start pt-1.5"
- style={{ height: h, borderRadius: '10px 10px 0 0', background: `rgba(var(--accent-rgb),${place === 1 ? 0.2 : place === 2 ? 0.12 : 0.07})` }}>
- <span className="text-[11px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent)' }}>{place}</span>
- <span className="text-[9.5px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>
- {metricOf(m)}{raceMetric === 'count' ? '' : 'h'}
+ <span className="flex items-center gap-2 ml-2 flex-shrink-0" style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: TEXT_SECONDARY }}>
+ {objs.length > 0 && (
+ <span className="flex items-center gap-0.5" title="Objetivos conseguidos">
+ <Target className="w-3 h-3" style={{ color: 'var(--accent)' }} />{done}/{objs.length}
  </span>
- </motion.div>
- </motion.div>
+ )}
+ {marks > 0 && (
+ <span className="flex items-center gap-0.5" title="Marcas fijadas">
+ <Trophy className="w-3 h-3" style={{ color: 'var(--accent)' }} />{marks}
+ </span>
+ )}
+ </span>
+ );
+ })()}
+ </div>
+ {/* La semana en 7 cuadraditos con el color de cada actividad */}
+ <div className="flex gap-[3px] mt-1.5">
+ {m.week.map((day, k) => {
+ const cats = day.slice(0, 2).map(a => `rgba(var(--cat-${categoryOf(a.type)}),0.75)`);
+ const isToday = dstr(weekDays[k]) === dstr(new Date());
+ return (
+ <span key={k} style={{
+ width: 12, height: 12, borderRadius: 3,
+ background: cats.length === 0 ? 'transparent'
+ : cats.length === 1 ? cats[0] : `linear-gradient(90deg, ${cats[0]} 0 calc(50% - 0.5px), transparent calc(50% - 0.5px) calc(50% + 0.5px), ${cats[1]} calc(50% + 0.5px) 100%)`,
+ border: cats.length ? 'none' : '1px dashed rgba(var(--accent-rgb),0.35)',
+ boxShadow: isToday ? '0 0 0 1px #e5484d' : 'none',
+ }} />
  );
  })}
  </div>
  </div>
- )}
+ <div className="flex items-center gap-1.5 flex-shrink-0">
+ <MiniRing pct={m.pace} chart={CH} />
+ <span className="text-[10px] w-9 text-right" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>
+ {m.pace != null ? `${m.pace}%` : '–'}
+ </span>
+ </div>
+ </button>
+ ))}
  </div>
 
  {/* ── Ritmo estacional del grupo ── */}
@@ -482,55 +525,13 @@ export default function Grupos() {
 
  <RecordsCard records={records} onOpenMember={setOpenMember} />
 
- {/* ── Miembros — filas compactas; al tocar, su snapshot ── */}
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-baseline justify-between mb-2">
- <h2 style={SECTION_TITLE}>Miembros</h2>
- <span className="text-[9.5px]" style={{ color: TEXT_MUTED }}>esta semana · ritmo del mes</span>
- </div>
- {monthStats.map((m, i) => (
- <button key={m.email} onClick={() => setOpenMember(m.email)}
- className="w-full flex items-center gap-3 py-2.5 text-left transition-opacity active:opacity-60"
- style={{ borderTop: i ? '1px solid rgba(var(--ink),0.06)' : 'none' }}>
- <Avatar m={m} size={32} />
- <div className="flex-1 min-w-0">
- <div className="flex items-baseline justify-between">
- <p className="text-[12px] truncate" style={{ color: TEXT_PRIMARY }}>{m.name}</p>
- <span className="text-[10.5px] ml-2" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>{formatHours(m.monthMins / 60)}</span>
- </div>
- {/* La semana en 7 cuadraditos con el color de cada actividad */}
- <div className="flex gap-[3px] mt-1.5">
- {m.week.map((day, k) => {
- const cats = [...new Set(day.map(a => `rgba(var(--cat-${categoryOf(a.type)}),0.75)`))];
- const isToday = dstr(weekDays[k]) === dstr(new Date());
- return (
- <span key={k} style={{
- width: 12, height: 12, borderRadius: 3,
- background: cats.length === 0 ? 'transparent'
- : cats.length === 1 ? cats[0] : `linear-gradient(90deg, ${cats[0]} 0 50%, ${cats[1]} 50% 100%)`,
- border: cats.length ? 'none' : `1px dashed rgba(var(--accent-rgb),${weekDays[k] > new Date() ? 0.18 : 0.35})`,
- boxShadow: isToday ? '0 0 0 1px #e5484d' : 'none',
- }} />
- );
- })}
- </div>
- </div>
- <div className="flex items-center gap-1.5 flex-shrink-0">
- <MiniRing pct={m.pace} chart={CH} />
- <span className="text-[10px] w-9 text-right" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_SECONDARY }}>
- {m.pace != null ? `${m.pace}%` : '–'}
- </span>
- </div>
- </button>
- ))}
- </div>
-
  {openData && (
  <MemberSheet
  member={openData}
  activities={allActivities.filter(a => a.user_email === openData.email)}
  plans={openData.email === user?.email ? weeklyPlans : []}
  goals={teamGoals.filter(g => g.user_email === openData.email)}
+ objectives={objectives.filter(o => o.user_email === openData.email)}
  prDates={memberPrDates[openData.email] || new Set()}
  pacePct={openData.pace}
  onClose={() => setOpenMember(null)}

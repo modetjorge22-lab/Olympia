@@ -24,7 +24,7 @@ export function useGoals() {
   // Crear una nueva meta — inserta primero las columnas base,
   // luego intenta actualizar con las nuevas columnas (activity_type, pb_date)
   // para que funcione aunque la migración SQL aún no se haya ejecutado.
-  const createGoal = useCallback(async ({ title, unit, current_value, activity_type }) => {
+  const createGoal = useCallback(async ({ title, unit, current_value, activity_type, target_value, lower_is_better }) => {
     if (!user) return null;
     const hasValue = current_value != null && current_value !== '';
 
@@ -46,11 +46,20 @@ export function useGoals() {
       pb_date: null,
     };
 
+    // 1º con meta y sentido de mejora (migración oct 2026)
     let { data, error } = await supabase
       .from('goals')
-      .insert(fullPayload)
+      .insert({
+        ...fullPayload,
+        target_value: target_value != null && target_value !== '' ? Number(target_value) : null,
+        lower_is_better: !!lower_is_better,
+      })
       .select()
       .single();
+    // 2º sin esas columnas, por si la migración aún no está aplicada
+    if (error) {
+      ({ data, error } = await supabase.from('goals').insert(fullPayload).select().single());
+    }
 
     // Fallback: las columnas nuevas aún no existen → reintentar sin ellas
     if (error) {

@@ -5,6 +5,7 @@ import { X, Trophy } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { DayCell, toDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
+import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { iconFor, categoryOf, catColor, CATEGORIES } from '@/utils/activityIcons';
 
 // Snapshot de un miembro — versión resumida de su pestaña "Tú":
@@ -26,7 +27,7 @@ function Title({ children }) {
   return <p className="text-[12px] mb-2" style={{ letterSpacing: '0.12em', color: INK(0.9) }}>{children}</p>;
 }
 
-export default function MemberSheet({ member, activities = [], plans = [], goals = [], prDates = new Set(), pacePct = null, onClose }) {
+export default function MemberSheet({ member, activities = [], plans = [], goals = [], objectives = [], prDates = new Set(), pacePct = null, onClose }) {
   const byDate = useMemo(() => {
     const m = {};
     activities.forEach(a => { const ds = a.date?.slice(0, 10); if (ds) (m[ds] = m[ds] || []).push(a); });
@@ -174,7 +175,15 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
             <div className="-mt-9"><MuscleLoad activities={activities} /></div>
           </div>
 
-          {/* Metas */}
+          {/* Objetivos del periodo */}
+          {objectives.length > 0 && (
+            <div>
+              <Title>Objetivos</Title>
+              <ObjectivesPanel readOnly objectives={objectives} activities={activities} />
+            </div>
+          )}
+
+          {/* Marcas */}
           {goals.length > 0 && (
             <div>
               <Title>Marcas</Title>
@@ -185,6 +194,11 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
                     <p className="text-[15px]" style={{ fontFamily: MONO, color: 'var(--accent)' }}>
                       {g.current_value != null ? `${g.current_value} ${g.unit || ''}` : '—'}
                     </p>
+                    {g.target_value != null && (
+                      <p className="text-[9.5px] mt-0.5" style={{ fontFamily: MONO, color: INK(0.45) }}>
+                        meta {g.target_value} {g.unit || ''}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
