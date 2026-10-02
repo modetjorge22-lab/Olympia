@@ -14,6 +14,7 @@ import { DashedFrame } from '@/components/sketch';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import ActivityFilterButton from '@/components/ActivityFilterButton';
 import MemberSheet from '@/components/MemberSheet';
+import RaceReplay from '@/components/RaceReplay';
 import { categoryOf } from '@/utils/activityIcons';
 import { computeTeamRecords } from '@/utils/teamRecords';
 import { useObjectives } from '@/hooks/useObjectives';
@@ -235,6 +236,7 @@ export default function Grupos() {
  const [seasonTF, setSeasonTF] = useState('1m');
  const [typeFilter, setTypeFilter] = useState(null);
  const [openMember, setOpenMember] = useState(null);
+ const [replay, setReplay] = useState(false);
 
  const now = new Date();
  const year = now.getFullYear();
@@ -263,7 +265,7 @@ export default function Grupos() {
  : [...new Set(allActivities.map(a => a.user_email))], [members, allActivities]);
 
  // ── Carrera + podio para la ventana elegida ──
- const { chartData, memberStats } = useMemo(() => {
+ const { chartData, memberStats, raceDays } = useMemo(() => {
  const { start, end } = windowFor(snapshot);
  const days = [];
  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(new Date(d));
@@ -275,12 +277,20 @@ export default function Grupos() {
  const byDay = {};
  win.forEach(a => {
  const k = a.date.slice(0, 10);
- byDay[k] = byDay[k] || { mins: 0, n: 0 };
+ byDay[k] = byDay[k] || { mins: 0, n: 0, cats: {} };
  byDay[k].mins += a.duration_minutes || 0;
  byDay[k].n += 1;
+ const cat = categoryOf(a.type);
+ byDay[k].cats[cat] = (byDay[k].cats[cat] || 0) + (a.duration_minutes || 0);
  });
  let cm = 0, cn = 0;
- const cum = days.map(d => { const b = byDay[dstr(d)]; cm += b?.mins || 0; cn += b?.n || 0; return { h: +(cm / 60).toFixed(1), n: cn }; });
+ const catAcc = {};
+ const cum = days.map(d => {
+ const b = byDay[dstr(d)];
+ cm += b?.mins || 0; cn += b?.n || 0;
+ Object.entries(b?.cats || {}).forEach(([c, m]) => { catAcc[c] = (catAcc[c] || 0) + m; });
+ return { h: +(cm / 60).toFixed(1), n: cn, c: { ...catAcc } };
+ });
  const totalMins = win.reduce((s, a) => s + (a.duration_minutes || 0), 0);
  return {
  email,
@@ -299,7 +309,7 @@ export default function Grupos() {
  stats.forEach(m => { p[m.email] = raceMetric === 'count' ? m.cum[i].n : m.cum[i].h; });
  data.push(p);
  });
- return { chartData: data, memberStats: stats };
+ return { chartData: data, memberStats: stats, raceDays: days };
  }, [acts, emails, members, snapshot, raceMetric]);
 
  const lastIdx = chartData.length - 1;
@@ -381,7 +391,16 @@ export default function Grupos() {
  <div className="rounded-2xl p-4" style={glassCard}>
  <div className="relative flex items-center justify-end mb-2" style={{ minHeight: 32 }}>
  <h2 className="absolute left-1/2 -translate-x-1/2" style={SECTION_TITLE}>Carrera</h2>
+ <div className="flex items-center gap-2">
+ {!replay && (
+ <button onClick={() => setReplay(true)}
+ className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+ style={glassBar} aria-label="Ver la repetición de la carrera">
+ <svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 1.5 L10 6 L3 10.5Z" fill="var(--accent)" /></svg>
+ </button>
+ )}
  <ActivityFilterButton value={typeFilter} onChange={setTypeFilter} types={usedTypes} labels={typeLabels} />
+ </div>
  </div>
  <div className="flex items-center justify-between gap-2 mb-1">
  {pill(SNAPSHOTS.map(s => [s.key, s.label]), snapshot, setSnapshot)}
@@ -391,6 +410,19 @@ export default function Grupos() {
  {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {snapLabel}
  {typeFilter ? ` · ${typeLabels[typeFilter]}` : ''}
  </p>
+ {replay ? (
+ <RaceReplay
+ key={`${snapshot}-${raceMetric}-${typeFilter || 'all'}`}
+ days={raceDays}
+ unit={raceMetric === 'count' ? '' : 'h'}
+ members={memberStats.map(m => ({
+ email: m.email, name: m.name, avatar_url: m.avatar_url,
+ values: [0, ...m.cum.map(c => (raceMetric === 'count' ? c.n : c.h))],
+ cats: [{}, ...m.cum.map(c => c.c)],
+ }))}
+ onClose={() => setReplay(false)}
+ />
+ ) : (
  <div className="h-[230px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 14, right: 26, bottom: 0, left: 0 }}>
@@ -415,6 +447,7 @@ export default function Grupos() {
  </LineChart>
  </ResponsiveContainer>
  </div>
+ )}
 
  </div>
 
