@@ -118,7 +118,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
                 return (
                   <div key={ds} className="flex flex-col items-center gap-1">
                     <span className="text-[8.5px]" style={{ fontFamily: MONO, color: ds === toDateStr(now) ? '#e5484d' : 'rgba(var(--accent-rgb),0.55)' }}>{DOW[i]}</span>
-                    <DayCell date={d} acts={byDate[ds]} plans={plansByDate[ds]} isPR={prDates.has(ds)} size={36} todayMark={false} />
+                    <DayCell date={d} acts={byDate[ds]} plans={plansByDate[ds]} isPR={prDates.has(ds)} size={36} todayMark={false} redToday={false} />
                   </div>
                 );
               })}

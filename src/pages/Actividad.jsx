@@ -18,6 +18,7 @@ import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import { TrainingSection, MonthScroller, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import DayDetailSheet from '@/components/DayDetailSheet';
+import GoalsSection from '@/components/GoalsSection';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -1045,190 +1046,16 @@ export default function Actividad() {
  </motion.div>
  ))}
 
- {/* ── Metas / Marcas personales ── */}
+ {/* ── Marcas personales ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
- <div className="flex items-center justify-between mb-3">
- <h2 style={SECTION_TITLE}>Metas</h2>
- <button
- onClick={() => setShowGoalForm(v => !v)}
- className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-normal transition-all"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.14)', color: TEXT_PRIMARY }}>
- <Plus className="w-3 h-3" /> Nueva
- </button>
- </div>
-
- {/* Formulario nueva meta */}
- {showGoalForm && (
- <div className="rounded-xl p-3 mb-3 space-y-2"
- style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.14)' }}>
- <input
- type="text"
- placeholder="Nombre de la meta (ej: Press banca 1RM)"
- value={goalTitle}
- onChange={e => setGoalTitle(e.target.value)}
- className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
+ <GoalsSection
+ goals={goals}
+ prs={prAchievements}
+ titleStyle={SECTION_TITLE}
+ onCreate={createGoal}
+ onUpdateMark={(goalId, value) => handlePrBeaten([{ goalId, newValue: value }], new Date().toISOString().slice(0, 10))}
+ onDelete={deleteGoal}
  />
- <div className="flex gap-2">
- <input
- type="number"
- placeholder="Marca actual"
- value={goalValue}
- onChange={e => setGoalValue(e.target.value)}
- className="flex-1 rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
- />
- <input
- type="text"
- placeholder="Unidad (kg, min…)"
- value={goalUnit}
- onChange={e => setGoalUnit(e.target.value)}
- className="w-[100px] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: TEXT_PRIMARY }}
- />
- </div>
- <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
- <button
- onClick={() => setGoalActivityType('')}
- className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium"
- style={goalActivityType === '' ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED }}>
- General
- </button>
- {Object.entries(ACTIVITY_TYPES).map(([key, { emoji, label }]) => (
- <button
- key={key}
- onClick={() => setGoalActivityType(key)}
- className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium"
- style={goalActivityType === key ? { background: ACCENT, color: ON_ACCENT } : { background: 'rgba(var(--ink),0.07)', color: TEXT_MUTED }}>
- <span>{emoji}</span>{label}
- </button>
- ))}
- </div>
- <div className="flex gap-2">
- <button
- onClick={handleCreateGoal}
- disabled={!goalTitle.trim()}
- className="flex-1 py-2 rounded-lg text-[12px] font-normal disabled:opacity-40"
- style={{ background: ACCENT, color: ON_ACCENT }}>
- Guardar meta
- </button>
- <button
- onClick={() => setShowGoalForm(false)}
- className="px-4 py-2 rounded-lg text-[12px]"
- style={{ background: 'rgba(var(--ink),0.08)', color: TEXT_MUTED }}>
- Cancelar
- </button>
- </div>
- </div>
- )}
-
- {/* Lista de metas */}
- {goals.length === 0 && !showGoalForm ? (
- <p className="text-[12px] text-center py-3" style={{ color: TEXT_MUTED }}>
- Añade tu primera marca personal
- </p>
- ) : (
- <div className="space-y-2">
- {goals.map(goal => (
- <div key={goal.id} className="rounded-xl px-3 py-2.5"
- style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.1)' }}>
- <div className="flex items-start justify-between gap-2">
- <div className="min-w-0">
- <p className="text-[13px] font-normal truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
- <div className="flex items-baseline gap-1.5 mt-0.5">
- {goal.current_value != null ? (
- <>
- <span className="text-[20px] font-normal font-mono leading-none" style={{ color: ACCENT }}>
- {goal.current_value}
- </span>
- <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
- {goal.pb_date && (
- <span className="text-[10px]" style={{ color: TEXT_MUTED }}>
- · {new Date(goal.pb_date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
- </span>
- )}
- </>
- ) : (
- <span className="text-[11px]" style={{ color: TEXT_MUTED }}>Sin marca registrada</span>
- )}
- </div>
- {goal.activity_type && (
- <p className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>
- {ACTIVITY_TYPES[goal.activity_type]?.emoji} {ACTIVITY_TYPES[goal.activity_type]?.label}
- </p>
- )}
- </div>
- <div className="flex items-center gap-1 flex-shrink-0">
- <button
- onClick={() => { setEditingMarkId(goal.id); setEditingMarkValue(''); }}
- className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--accent-rgb),0.12)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
- <Pencil className="w-3 h-3" style={{ color: ACCENT }} />
- </button>
- <button
- onClick={() => deleteGoal(goal.id)}
- className="w-7 h-7 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)' }}>
- <Trash2 className="w-3 h-3" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- </div>
-
- {/* Edición inline de marca */}
- {editingMarkId === goal.id && (
- <div className="flex gap-2 mt-2 items-center">
- <input
- type="number"
- autoFocus
- placeholder={`Nueva marca${goal.unit ? ` (${goal.unit})` : ''}`}
- value={editingMarkValue}
- onChange={e => setEditingMarkValue(e.target.value)}
- className="flex-1 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--accent-rgb),0.4)', color: TEXT_PRIMARY }}
- />
- <button
- onClick={() => handleSaveEditMark(goal.id)}
- disabled={editingMarkValue === ''}
- className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-40"
- style={{ background: ACCENT }}>
- <Check className="w-3.5 h-3.5" style={{ color: ON_ACCENT }} />
- </button>
- <button
- onClick={() => setEditingMarkId(null)}
- className="w-8 h-8 rounded-lg flex items-center justify-center"
- style={{ background: 'rgba(var(--ink),0.08)' }}>
- <X className="w-3.5 h-3.5" style={{ color: TEXT_MUTED }} />
- </button>
- </div>
- )}
- </div>
- ))}
- </div>
- )}
- </div>
-
- {/* Favorito */}
- {favoriteType && (
- <div className="rounded-2xl px-4 py-3" style={glassCard}>
- <div className="flex items-center gap-2">
- <Sparkles className="w-4 h-4" style={{ color: 'var(--info)' }} />
- <span className="text-[13px]" style={{ color: TEXT_SECONDARY }}>
- Favorito: <span className="font-normal" style={{ color: TEXT_PRIMARY }}>{favoriteType.label?.toLowerCase()}</span> {favoriteType.emoji}
- </span>
- </div>
- </div>
- )}
-
- {/* Stats */}
- <div className="grid grid-cols-3 gap-3">
- <StatBox
- icon={<span className="text-[16px]">🏓</span>}
- value={padelWinRate !== null ? `${padelWinRate.rate}%` : '—'}
- label="Win rate"
- sub={padelWinRate ? `${padelWinRate.wins}/${padelWinRate.total}` : 'Pádel'}
- />
- <StatBox icon={<Sparkles className="w-4 h-4" style={{ color: 'var(--info)' }} />} value={`${totalHours}h`} label="Este mes" />
- <StatBox icon={<Target className="w-4 h-4" style={{ color: '#10b981' }} />} value={`${ritmo}%`} label="Ritmo" />
  </div>
 
  {/* FAB — usa el color del fondo de la app */}

@@ -37,23 +37,25 @@ const fmtMins = m => {
 // Hoy → pequeña línea roja que cae desde arriba.
 const TODAY_RED = '#e5484d';
 
+// Una actividad → halo de su color. Dos (iguales o distintas) → celda partida
+// en vertical, una mitad por sesión, con una fina separación central.
 function cellBackground(types) {
-  const cats = [...new Set(types.map(categoryOf))];
+  const cats = types.slice(0, 2).map(categoryOf);
   if (cats.length === 0) return 'transparent';
   if (cats.length === 1) {
     return `radial-gradient(circle at center, rgba(var(--cat-${cats[0]}),0.42) 0%, rgba(var(--cat-${cats[0]}),0.06) 82%)`;
   }
-  return `linear-gradient(90deg, rgba(var(--cat-${cats[0]}),0.38) 0 50%, rgba(var(--cat-${cats[1]}),0.38) 50% 100%)`;
+  return `linear-gradient(90deg, rgba(var(--cat-${cats[0]}),0.38) 0 calc(50% - 0.5px), rgba(var(--ink),0.18) calc(50% - 0.5px) calc(50% + 0.5px), rgba(var(--cat-${cats[1]}),0.38) calc(50% + 0.5px) 100%)`;
 }
 
-export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true }) {
+export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true }) {
   const today = new Date();
   const isToday = toDateStr(date) === toDateStr(today);
   const isFuture = date > today && !isToday;
   const trained = acts.length > 0;
   const planned = !trained && plans.length > 0;
   const types = trained ? acts.map(a => a.type) : plans.map(p => p.activity_type);
-  const uniq = [...new Set(types)].slice(0, 2);
+  const uniq = types.slice(0, 2); // por sesión: dos carreras → dos símbolos
   const mainCat = trained ? categoryOf(acts[0].type) : null;
 
   return (
@@ -84,7 +86,7 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
         <span style={{
           position: 'absolute', top: 5, left: 0, right: 0, textAlign: 'center',
           fontFamily: MONO, fontSize: 7, lineHeight: 1,
-          color: isToday ? TODAY_RED : isFuture && !planned ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
+          color: isToday && redToday ? TODAY_RED : isFuture && !planned ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
           opacity: trained ? 0.75 : 1,
         }}>
           {date.getDate()}
@@ -92,10 +94,10 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
       )}
       {uniq.length > 0 && (
         <span className="flex items-center w-full" style={{ marginTop: 8, justifyContent: uniq.length > 1 ? 'space-around' : 'center' }}>
-          {uniq.map(t => {
+          {uniq.map((t, k) => {
             const Icon = iconFor(t);
             return (
-              <Icon key={t}
+              <Icon key={`${t}${k}`}
                 style={{
                   width: 10, height: 10,
                   color: `rgb(var(--cat-${categoryOf(t)}))`,
@@ -232,6 +234,7 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
                 size={40}
                 onClick={onDayClick}
                 todayMark={false}
+                redToday={false}
               />
             </div>
           );
