@@ -1018,8 +1018,7 @@ export default function Actividad() {
  </div>
 
  {/* ── Tus gráficas — tarjetas reordenables ── */}
- <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(var(--ink),0.12)' }}>
- <h2 style={SECTION_TITLE}>Tus gráficas</h2>
+ <div className="flex justify-end -mb-2">
  <button onClick={() => setEditCards(v => !v)}
  className="text-[10px] px-3 py-1 rounded-full"
  style={{ ...glassBar, color: editCards ? 'var(--accent)' : TEXT_MUTED }}>

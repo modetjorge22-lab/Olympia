@@ -245,7 +245,7 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
 // ── Meses apilados con scroll vertical ──
 // Cada mes ocupa exactamente el alto del marco (6 filas máx.), con snap
 // obligatorio: en reposo solo se ve un mes, nunca el anterior o el siguiente.
-const MONTH_H = 318;
+const MONTH_H = 294; // título + días de la semana + 6 filas de 36px
 export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, monthsBack = 12, monthsForward = 3 }) {
   const scrollRef = useRef(null);
   const currentRef = useRef(null);
@@ -311,6 +311,7 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
                   </div>
                 );
               })}
+              {Array.from({ length: 42 - lead - dim }, (_, i) => <span key={`t${i}`} style={{ height: 36 }} />)}
             </div>
           </div>
         );
