@@ -4,7 +4,7 @@
 // La mayoría de la UI usa variables CSS (definidas en index.css) que cambian
 // con data-theme. Las gráficas SVG (recharts) no resuelven var(), así que
 // reciben colores JS desde CHART[mode] vía useTheme().
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useState } from 'react';
 
 const THEME_KEY = 'olympia_theme';
 
@@ -50,9 +50,18 @@ export function ThemeProvider({ children }) {
     }
   });
 
-  useEffect(() => {
+  // useLayoutEffect: el cambio se aplica antes del repintado. Durante el swap se
+  // desactivan todas las transiciones; si no, cada color anima a la vez y el
+  // cambio de tema se ve "corrido".
+  useLayoutEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = '*,*::before,*::after{transition:none!important}';
+    document.head.appendChild(style);
     document.documentElement.dataset.theme = mode;
+    window.getComputedStyle(document.body).opacity; // fuerza el recálculo de estilos
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => style.remove()));
     try { localStorage.setItem(THEME_KEY, mode); } catch { /* noop */ }
+    return () => { cancelAnimationFrame(raf); style.remove(); };
   }, [mode]);
 
   const toggle = () => setMode(m => (m === 'dark' ? 'light' : 'dark'));

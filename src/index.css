@@ -79,6 +79,13 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(var(--ink), 0.18); border-radius: 2px; }
 
+/* Contorno de fotos (avatares): negro/blanco puro al 10 %, nunca tintado —
+   evita que una foto oscura se funda con el fondo. */
+.img-outline { outline: 1px solid oklch(0 0 0 / 0.1); outline-offset: -1px; }
+:root .img-outline,
+[data-theme='dark'] .img-outline { outline-color: oklch(1 0 0 / 0.1); }
+[data-theme='light'] .img-outline { outline-color: oklch(0 0 0 / 0.1); }
+
 /* Remove tap highlight on mobile */
 * { -webkit-tap-highlight-color: transparent; }
 

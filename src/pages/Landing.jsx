@@ -134,7 +134,7 @@ export default function Landing() {
           ) : state === 'idle' ? (
             <button
               onClick={() => setState('form')}
-              className="px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-transform active:scale-95"
+              className="px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
               {t.cta}
@@ -157,7 +157,7 @@ export default function Landing() {
               <button
                 type="submit"
                 disabled={state === 'sending'}
-                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 disabled:opacity-60"
+                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:opacity-60"
                 style={{ background: ACCENT, color: ON_ACCENT }}
                 aria-label="Enviar"
               >

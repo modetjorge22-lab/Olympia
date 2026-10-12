@@ -194,7 +194,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  setSelectedDay(d);
  }
  }}
- className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all"
+ className="w-full aspect-square rounded-lg flex flex-col items-center justify-center relative transition-[background,box-shadow]"
  style={
  isCompleted ? {
  background: DAY_PALETTE.completed.bg,
@@ -263,7 +263,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  className="rounded-2xl p-4 w-full max-w-sm"
  style={{
  maxHeight: '100%',
- overflowY: 'auto',
+ overflowY: 'auto', overscrollBehavior: 'contain',
  background: 'var(--surface)',
  border: '1px solid rgba(var(--ink),0.16)',
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
@@ -334,7 +334,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  {canComplete && (
  <button
  onClick={() => setCompleting(p)}
- className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all"
+ className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-ui"
  style={{
  background: ACCENT,
  color: ON_ACCENT,
@@ -405,7 +405,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  <button
  key={mins}
  onClick={() => setPlanDuration(mins)}
- className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
+ className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-ui"
  style={planDuration === mins ? {
  background: 'transparent',
  color: TEXT_PRIMARY,
@@ -429,7 +429,7 @@ export default function WeeklyPlanner({ plans, onAddPlan, onRemovePlan, onComple
  key={key}
  onClick={() => handleSelectActivity(key)}
  disabled={adding}
- className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
+ className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-ui"
  style={{
  background: 'rgba(var(--ink),0.07)',
  border: '1px solid rgba(var(--ink),0.12)',
@@ -589,7 +589,7 @@ function CompletePlanDialog({ plan, onCancel, onConfirm }) {
  </button>
  </div>
 
- <div className="overflow-y-auto flex-1 px-5 pb-5 space-y-4">
+ <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-5 space-y-4">
  {/* Duration */}
  <div>
  <label className="block text-[11px] uppercase tracking-wider mb-2" style={{ color: TEXT_MUTED }}>Duración</label>

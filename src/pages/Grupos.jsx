@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trophy, ChevronDown, Flame, CalendarCheck, Zap, Timer, Layers, Shuffle, Repeat, Sun, AudioWaveform, Target, Sunrise, Medal } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -168,7 +168,7 @@ function Avatar({ m, size = 32, ring }) {
  const initials = m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
  const style = { width: size, height: size, ...(ring ? { boxShadow: `0 0 0 2px ${ring}` } : {}) };
  return m.avatar_url
- ? <img src={m.avatar_url} alt={m.name} className="rounded-full object-cover flex-shrink-0" style={style} />
+ ? <img src={m.avatar_url} alt={m.name} className="rounded-full object-cover flex-shrink-0 img-outline" style={style} />
  : <div className="rounded-full flex items-center justify-center flex-shrink-0"
  style={{ ...style, background: 'rgba(var(--ink),0.08)', color: TEXT_PRIMARY, fontSize: size * 0.32 }}>{initials}</div>;
 }
@@ -378,7 +378,7 @@ export default function Grupos() {
  <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
  {opts.map(([key, lbl]) => (
  <button key={key} onClick={() => set(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ className="px-2.5 py-1 rounded-full text-[10px] transition-ui whitespace-nowrap"
  style={value === key ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY } : { color: TEXT_MUTED }}>
  {lbl}
  </button>
@@ -398,7 +398,7 @@ export default function Grupos() {
  <div className="flex items-center gap-2">
  {(
  <button onClick={() => setReplay(true)}
- className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+ className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
  style={glassBar} aria-label="Ver la repetición de la carrera">
  <svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 1.5 L10 6 L3 10.5Z" fill="var(--accent)" /></svg>
  </button>
@@ -562,6 +562,7 @@ export default function Grupos() {
 
  <RecordsCard records={records} onOpenMember={setOpenMember} />
 
+ <AnimatePresence>
  {replay && (
  <RaceReplaySheet
  key={`${snapshot}-${raceMetric}-${typeFilter || 'all'}`}
@@ -576,7 +577,9 @@ export default function Grupos() {
  onClose={() => setReplay(false)}
  />
  )}
+ </AnimatePresence>
 
+ <AnimatePresence>
  {openData && (
  <MemberSheet
  member={openData}
@@ -589,6 +592,7 @@ export default function Grupos() {
  onClose={() => setOpenMember(null)}
  />
  )}
+ </AnimatePresence>
  </div>
  );
 }
@@ -681,7 +685,7 @@ function SportFilterDropdown({ value, onChange, types }) {
  <div ref={ref} style={{ position: 'relative' }}>
  <button
  onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-normal transition-all"
+ className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-normal transition-ui"
  style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: value ? TEXT_PRIMARY : TEXT_MUTED }}
  >
  {label}
@@ -699,7 +703,7 @@ function SportFilterDropdown({ value, onChange, types }) {
  }}>
  <button
  onClick={() => { onChange(null); setOpen(false); }}
- className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left"
+ className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-ui text-left"
  style={value === null ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
  >
  Todos
@@ -707,7 +711,7 @@ function SportFilterDropdown({ value, onChange, types }) {
  {types.map(t => (
  <button key={t}
  onClick={() => { onChange(t); setOpen(false); }}
- className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left"
+ className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-ui text-left"
  style={value === t ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
  >
  <span>{ACTIVITY_TYPES[t]?.emoji}</span>{ACTIVITY_TYPES[t]?.label}
@@ -739,8 +743,7 @@ function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGo
  <div className="flex items-center gap-2.5">
  {member.avatar_url ? (
  <img src={member.avatar_url} alt={member.name}
- className="w-8 h-8 rounded-full object-cover"
- style={{ border: '1.5px solid rgba(var(--ink),0.22)' }} />
+ className="w-8 h-8 rounded-full object-cover img-outline" />
  ) : (
  <div className="w-8 h-8 rounded-full flex items-center justify-center font-normal text-[10px]"
  style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>

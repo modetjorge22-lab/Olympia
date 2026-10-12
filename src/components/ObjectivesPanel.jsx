@@ -80,7 +80,7 @@ export default function ObjectivesPanel({ objectives = [], activities = [], onCr
   const seg = (opts, value, set) => (
     <div className="grid p-1 rounded-full" style={{ gridTemplateColumns: `repeat(${opts.length}, 1fr)`, background: INK(0.05) }}>
       {opts.map(([k, l]) => (
-        <button key={k} onClick={() => set(k)} className="py-1.5 rounded-full text-[11px] transition-all"
+        <button key={k} onClick={() => set(k)} className="py-1.5 rounded-full text-[11px] transition-ui"
           style={value === k ? { background: 'var(--surface)', color: INK(0.95), boxShadow: '0 1px 4px rgba(0,0,0,0.1)' } : { color: INK(0.5) }}>
           {l}
         </button>
@@ -96,7 +96,7 @@ export default function ObjectivesPanel({ objectives = [], activities = [], onCr
         <div className="flex items-center justify-between mb-1">
           {header}
           <button onClick={() => setAdding(v => !v)} disabled={!available}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 disabled:opacity-30"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:opacity-30"
             style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid var(--glass-border)' }}
             aria-label={adding ? 'Cancelar' : 'Nuevo objetivo'}>
             {adding ? <X className="w-3.5 h-3.5" style={{ color: INK(0.7) }} /> : <Plus className="w-3.5 h-3.5" style={{ color: INK(0.7) }} />}

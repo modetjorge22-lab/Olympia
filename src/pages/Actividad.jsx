@@ -145,7 +145,7 @@ function ActivityDropdown({ value, onChange, types }) {
  <div ref={ref} style={{ position: 'relative' }}>
  <button
  onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] transition-all"
+ className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] transition-ui"
  style={{
  background: 'var(--glass-bg)',
  backdropFilter: 'blur(24px) saturate(160%)',
@@ -161,9 +161,13 @@ function ActivityDropdown({ value, onChange, types }) {
 
  <AnimatePresence>
  {open && (
- <div exit={{ opacity: 0, y: -6, scale: 0.97 }}
- transition={{ duration: 0.14 }}
+ <motion.div
+ initial={{ opacity: 0, y: -6, scale: 0.96 }}
+ animate={{ opacity: 1, y: 0, scale: 1 }}
+ exit={{ opacity: 0, y: -6, scale: 0.96 }}
+ transition={{ duration: 0.15, ease: 'easeOut' }}
  style={{
+ transformOrigin: 'top left',
  position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
  minWidth: 180,
  background: 'var(--surface)',
@@ -188,7 +192,7 @@ function ActivityDropdown({ value, onChange, types }) {
  ))}
  </>
  )}
- </div>
+ </motion.div>
  )}
  </AnimatePresence>
  </div>
@@ -199,7 +203,7 @@ function MenuItem({ active, dot, label, color, onClick }) {
  return (
  <button
  onClick={onClick}
- className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all text-left"
+ className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-ui text-left"
  style={active ? {
  background: color ? `${color}22` : 'rgba(var(--ink),0.12)',
  color: color || TEXT_PRIMARY,
@@ -817,7 +821,7 @@ export default function Actividad() {
  <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
  {[['1m', 'Último mes'], ['3m', '3M']].map(([key, lbl]) => (
  <button key={key} onClick={() => setSeasonTF(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ className="px-2.5 py-1 rounded-full text-[10px] transition-ui whitespace-nowrap"
  style={seasonTF === key
  ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
  : { color: TEXT_MUTED }}>
@@ -877,7 +881,7 @@ export default function Actividad() {
  <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" style={glassBar}>
  {[['1m', 'Último mes'], ['3m', '3M'], ['6m', '6M']].map(([key, lbl]) => (
  <button key={key} onClick={() => setMuscleTF(key)}
- className="px-2.5 py-1 rounded-full text-[10px] transition-all whitespace-nowrap"
+ className="px-2.5 py-1 rounded-full text-[10px] transition-ui whitespace-nowrap"
  style={muscleTF === key
  ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY }
  : { color: TEXT_MUTED }}>
@@ -1057,7 +1061,7 @@ export default function Actividad() {
  <div className="flex items-center gap-0.5 rounded-full p-1" style={glassBar}>
  {[['objectives', 'Objetivos'], ['marks', 'Marcas']].map(([k, l]) => (
  <button key={k} onClick={() => setGoalsTab(k)}
- className="px-3 py-1 rounded-full text-[11px] transition-all"
+ className="px-3 py-1 rounded-full text-[11px] transition-ui"
  style={goalsTab === k ? { background: 'rgba(var(--ink),0.1)', color: TEXT_PRIMARY } : { color: TEXT_MUTED }}>
  {l}
  </button>
@@ -1097,6 +1101,7 @@ export default function Actividad() {
  <Plus className="w-5 h-5" style={{ color: ON_ACCENT }} />
  </button>
 
+ <AnimatePresence>
  {detailDate && (
  <DayDetailSheet
  date={detailDate}
@@ -1112,9 +1117,12 @@ export default function Actividad() {
  onAdd={(d) => { setDetailDate(null); setSelectedDate(d); setShowLogDialog(true); }}
  />
  )}
+ </AnimatePresence>
 
+ <AnimatePresence>
+ {(showLogDialog || !!editActivity || !!convertPlan) && (
  <LogActivityDialog
- isOpen={showLogDialog || !!editActivity || !!convertPlan}
+ isOpen
  onClose={() => { setShowLogDialog(false); setEditActivity(null); setConvertPlan(null); }}
  onSubmit={async (data) => { await createActivity(data); if (convertPlan) { await removePlan(convertPlan.id); setConvertPlan(null); } }}
  onSubmitPlan={addPlan}
@@ -1125,6 +1133,8 @@ export default function Actividad() {
  goals={goals}
  onPrBeaten={handlePrBeaten}
  />
+ )}
+ </AnimatePresence>
  </div>
  );
 }
@@ -1229,7 +1239,7 @@ function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, p
  : null;
  return (
  <button key={day} onClick={() => onDayClick(day)}
- className="w-8 h-8 mx-auto flex items-center justify-center transition-all relative"
+ className="w-8 h-8 mx-auto flex items-center justify-center transition-[background,border-color] relative"
  style={{
  borderRadius: 8,
  ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),

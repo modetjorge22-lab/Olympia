@@ -64,7 +64,7 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
   return (
     <button
       onClick={() => onClick?.(date)}
-      className="relative flex flex-col items-center justify-center transition-transform active:scale-90"
+      className="relative flex flex-col items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
       style={{
         width: size, height: size, borderRadius: 9,
         background: trained ? cellBackground(types)
@@ -357,7 +357,7 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
 
         <div ref={menuRef} className="relative">
           <button onClick={() => setOpen(o => !o)}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
             style={{ ...btn, ...(filter ? { boxShadow: 'inset 0 0 0 1.5px var(--accent)' } : {}) }}
             aria-label="Filtrar por actividad">
             <FilterIcon className="w-3.5 h-3.5" style={{ color: filter ? 'var(--accent)' : 'rgba(var(--ink),0.75)' }} />

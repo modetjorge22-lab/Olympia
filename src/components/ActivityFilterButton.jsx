@@ -19,7 +19,7 @@ export default function ActivityFilterButton({ value = null, onChange, types = [
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(o => !o)}
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
         style={{
           background: 'var(--glass-bg)',
           backdropFilter: 'blur(24px) saturate(160%)',

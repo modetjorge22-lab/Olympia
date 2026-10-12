@@ -225,7 +225,7 @@ export default function Mas() {
  <img
  src={avatarUrl}
  alt={userName}
- className="w-14 h-14 rounded-xl object-cover"
+ className="w-14 h-14 rounded-xl object-cover img-outline"
  style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
  />
  ) : (
@@ -280,7 +280,7 @@ export default function Mas() {
  <button
  key={key}
  onClick={() => setMode(key)}
- className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-all"
+ className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-ui"
  style={mode === key ? {
  background: ACCENT,
  color: ON_ACCENT,

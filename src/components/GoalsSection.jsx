@@ -185,7 +185,7 @@ export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateM
       <div className="flex items-center justify-between mb-1">
         {header ?? <h2 style={titleStyle}>Marcas personales</h2>}
         <button onClick={() => setAdding(v => !v)}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
           style={{
             background: 'var(--glass-bg)', backdropFilter: 'blur(24px) saturate(160%)',
             WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid var(--glass-border)',

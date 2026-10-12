@@ -70,7 +70,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
   return createPortal(
     <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
       style={{ background: 'var(--scrim)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
       <motion.div
         className="w-full max-w-lg flex flex-col"
         style={{
@@ -79,7 +79,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
           boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
-        initial={{ y: '100%' }} animate={{ y: 0 }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
         transition={{ type: 'spring', damping: 30, stiffness: 320 }}
         drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
         onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
@@ -90,7 +90,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: INK(0.18) }} />
           <div className="flex items-center gap-3 mb-4">
             {member.avatar_url ? (
-              <img src={member.avatar_url} alt={member.name} className="w-11 h-11 rounded-full object-cover" />
+              <img src={member.avatar_url} alt={member.name} className="w-11 h-11 rounded-full object-cover img-outline" />
             ) : (
               <div className="w-11 h-11 rounded-full flex items-center justify-center text-[13px]"
                 style={{ background: INK(0.08), color: INK(0.9) }}>{initials}</div>
@@ -109,7 +109,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 pb-6 space-y-5">
+        <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-6 space-y-5">
           {/* Esta semana */}
           <div>
             <Title>Esta semana</Title>

@@ -103,7 +103,7 @@ export default function DayDetailSheet({
   return createPortal(
     <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
       style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
       <motion.div
         className="w-full max-w-lg flex flex-col"
         style={{
@@ -112,7 +112,7 @@ export default function DayDetailSheet({
           boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
-        initial={{ y: '100%' }} animate={{ y: 0 }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
         transition={{ type: 'spring', damping: 30, stiffness: 320 }}
         drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
         onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
@@ -136,7 +136,7 @@ export default function DayDetailSheet({
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 pb-4 space-y-3">
+        <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-3">
           {activities.map(a => (
             <ActivityCard key={a.id} act={a} onEdit={onEdit} onDelete={onDelete} />
           ))}
@@ -205,7 +205,7 @@ export default function DayDetailSheet({
 
         <div className="flex-shrink-0 px-5 pt-2 pb-4" style={{ borderTop: `1px solid ${INK(0.06)}` }}>
           <button onClick={() => onAdd(date)}
-            className="w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px] transition-transform active:scale-[0.98]"
+            className="w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px] transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
             style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
             <Plus className="w-4 h-4" /> {isFuture ? 'Planificar actividad' : 'Añadir actividad'}
           </button>

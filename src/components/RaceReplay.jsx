@@ -190,13 +190,13 @@ export function RaceReplaySheet({ title, onClose, ...props }) {
   return createPortal(
     <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
       style={{ background: 'var(--scrim)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
       <motion.div className="w-full max-w-lg"
         style={{
           background: 'var(--surface)', borderTopLeftRadius: 28, borderTopRightRadius: 28,
           boxShadow: '0 -12px 40px rgba(0,0,0,0.35)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
         }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }} transition={{ type: 'spring', damping: 30, stiffness: 320 }}
         onClick={e => e.stopPropagation()}>
         <div className="pt-2.5 px-5">
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />

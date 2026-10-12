@@ -109,7 +109,7 @@ export default function Login() {
           {/* Google */}
           <button
             onClick={signInWithGoogle}
-            className="w-full font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-3 mb-4 text-[14px]"
+            className="w-full font-semibold py-3 px-4 rounded-xl transition-ui flex items-center justify-center gap-3 mb-4 text-[14px]"
             style={{ background: 'rgba(255,255,255,0.95)', color: '#18181b' }}
           >
             <svg style={{ width: 18, height: 18 }} viewBox="0 0 24 24">
@@ -163,7 +163,7 @@ export default function Login() {
 
             <button
               type="submit" disabled={loading}
-              className="w-full font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 group text-[14px] mt-1 disabled:opacity-60"
+              className="w-full font-bold py-3 px-4 rounded-xl transition-ui flex items-center justify-center gap-2 group text-[14px] mt-1 disabled:opacity-60"
               style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (

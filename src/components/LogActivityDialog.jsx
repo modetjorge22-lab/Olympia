@@ -194,7 +194,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     <motion.div
       className="fixed inset-0 z-[100] flex items-end justify-center"
       style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }}
       onClick={onClose}
     >
       <motion.div
@@ -206,7 +206,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
-        initial={{ y: '100%' }} animate={{ y: 0 }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
         transition={{ type: 'spring', damping: 30, stiffness: 320 }}
         drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
         onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
@@ -231,7 +231,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid var(--glass-border)' }}>
               {[['realized', 'Hecha'], ['planned', 'Planificada']].map(([k, l]) => (
                 <button key={k} onClick={() => setMode(k)}
-                  className="py-1.5 rounded-full text-[12px] transition-all"
+                  className="py-1.5 rounded-full text-[12px] transition-ui"
                   style={mode === k
                     ? { background: 'var(--surface)', color: TEXT_PRIMARY, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
                     : { color: TEXT_MUTED }}>
@@ -242,7 +242,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           )}
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 pb-4 space-y-5">
+        <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-5">
           {/* Tipo de actividad — rejilla de símbolos */}
           <div>
             <Label>Actividad</Label>
@@ -252,7 +252,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 const on = activityType === key;
                 return (
                   <button key={key} onClick={() => handleActivityTypeChange(key)}
-                    className="relative flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all active:scale-95"
+                    className="relative flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-[background-color,border-color,color,opacity,box-shadow,transform] duration-150 ease-out enabled:active:scale-[0.96]"
                     style={on
                       ? (mode === 'planned'
                         // Planificada → mismo lenguaje que el día planificado: rayas en su color
@@ -293,7 +293,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                 const isToday = ds === todayStr;
                 return (
                   <button key={ds} data-sel={on ? '1' : '0'} onClick={() => setDateInput(ds)}
-                    className="flex-shrink-0 flex flex-col items-center justify-center rounded-2xl transition-all"
+                    className="flex-shrink-0 flex flex-col items-center justify-center rounded-2xl transition-ui"
                     style={{
                       width: 44, height: 54,
                       ...(on ? { background: 'var(--accent)', color: ON_ACCENT }
@@ -335,7 +335,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             <div className="flex gap-1.5 mt-2">
               {[30, 45, 60, 90, 120].map(m => (
                 <button key={m} onClick={() => setDurationMinutes(String(m))}
-                  className="flex-1 py-1.5 rounded-full text-[10px] transition-all"
+                  className="flex-1 py-1.5 rounded-full text-[10px] transition-ui"
                   style={dur === m
                     ? { background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--accent)' }
                     : { background: 'rgba(var(--ink),0.05)', color: TEXT_MUTED }}>
@@ -352,7 +352,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               <div className="grid grid-cols-3 gap-1.5">
                 {[['win','Victoria'],['draw','Empate'],['loss','Derrota']].map(([val, label]) => (
                   <button key={val} onClick={() => setMatchResult(v => v === val ? null : val)}
-                    className="py-2 rounded-full text-[11px] transition-all"
+                    className="py-2 rounded-full text-[11px] transition-ui"
                     style={matchResult === val
                       ? { background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--accent)' }
                       : { background: 'rgba(var(--ink),0.05)', color: TEXT_MUTED }}>
@@ -370,7 +370,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               <div className="grid grid-cols-2 gap-1.5">
                 {[['progress', 'Progreso', TrendingUp], ['consolidation', 'Consolidación', Shield]].map(([k, l, Icon]) => (
                   <button key={k} onClick={() => setTrainingType(t => t === k ? '' : k)}
-                    className="py-2.5 rounded-2xl text-[11px] flex items-center justify-center gap-1.5 transition-all"
+                    className="py-2.5 rounded-2xl text-[11px] flex items-center justify-center gap-1.5 transition-ui"
                     style={trainingType === k
                       ? { background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--accent)' }
                       : { background: 'rgba(var(--ink),0.05)', color: TEXT_SECONDARY }}>
@@ -421,7 +421,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
                     return (
                       <button key={g.key} type="button"
                         onClick={() => setMuscleGroups(prev => on ? prev.filter(k => k !== g.key) : [...prev, g.key])}
-                        className="px-3 py-1.5 rounded-full text-[10.5px] transition-all"
+                        className="px-3 py-1.5 rounded-full text-[10.5px] transition-ui"
                         style={on
                           ? { background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--accent)' }
                           : { background: 'rgba(var(--ink),0.05)', color: TEXT_MUTED }}>
@@ -476,7 +476,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
         <div className="flex-shrink-0 px-5 pt-2 pb-4" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
           <button onClick={handleSubmit}
             disabled={!activityType || !durationMinutes || !dateInput || loading}
-            className="w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px] disabled:opacity-40 transition-transform active:scale-[0.98]"
+            className="w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px] disabled:opacity-40 transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
             style={{ background: ACCENT, color: ON_ACCENT }}>
             {loading ? (
               <div className="w-4 h-4 border-2 rounded-full animate-spin"

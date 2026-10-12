@@ -146,8 +146,8 @@ export default function Feed() {
                       <div className="flex items-start gap-3">
                         {memberAvatar ? (
                           <img src={memberAvatar} alt={memberName}
-                            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                            style={{ border: `1.5px solid ${COLORS.innerCellBorder}` }} />
+                            className="w-9 h-9 rounded-full object-cover flex-shrink-0 img-outline"
+ />
                         ) : (
                           <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[11px] flex-shrink-0"
                             style={{ background: COLORS.innerCellBg, border: `1.5px solid ${COLORS.innerCellBorder}`, color: COLORS.textPrimary }}>

@@ -95,7 +95,7 @@ export default function MuscleLoad({ activities }) {
           }}>
           {[['load', 'Carga'], ['fresh', 'Frescura']].map(([k, l]) => (
             <button key={k} onClick={() => setView(k)}
-              className="px-2.5 py-1 rounded-full text-[10px] transition-all"
+              className="px-2.5 py-1 rounded-full text-[10px] transition-ui"
               style={view === k
                 ? { background: 'rgba(var(--ink),0.1)', color: 'rgba(var(--ink),0.95)' }
                 : { color: 'rgba(var(--ink),0.45)' }}>
@@ -118,7 +118,7 @@ export default function MuscleLoad({ activities }) {
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${r.fresh}%`, background: 'var(--accent)', opacity: 0.35 + r.fresh / 160 }} />
+                  <div className="h-full rounded-full transition-[width,opacity]" style={{ width: `${r.fresh}%`, background: 'var(--accent)', opacity: 0.35 + r.fresh / 160 }} />
                 </div>
               </div>
             );
@@ -138,7 +138,7 @@ export default function MuscleLoad({ activities }) {
                 </span>
               </div>
               <div className="relative h-1.5 rounded-full" style={{ background: 'rgba(var(--ink),0.08)' }}>
-                <div className="absolute top-0 left-0 h-full rounded-full transition-all"
+                <div className="absolute top-0 left-0 h-full rounded-full transition-[width,opacity]"
                   style={{ width: `${cur}%`, background: 'var(--accent)', opacity: 0.85 }} />
                 {r.chronic > 0 && (
                   <>
