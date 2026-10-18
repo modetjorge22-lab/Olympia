@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getAuthedUser } from './_lib/auth.js';
 
 async function refreshWhoopToken(supabase, tokenRecord) {
   const res = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
@@ -39,8 +40,10 @@ async function whoopGet(url, accessToken) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
+  // Solo el propio usuario, identificado por su JWT.
+  const user = await getAuthedUser(req);
+  if (!user) return res.status(401).json({ error: 'unauthorized' });
+  const email = user.email;
 
   try {
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);

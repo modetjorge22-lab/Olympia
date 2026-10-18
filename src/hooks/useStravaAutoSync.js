@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 
@@ -32,11 +33,7 @@ export function useStravaAutoSync() {
 
       // Disparar sync en background (sin bloquear UI)
       try {
-        const response = await fetch('/api/strava-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email }),
-        });
+        const response = await apiPost('/api/strava-sync');
         if (response.ok) {
           localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
           // Refrescar datos para que los planes convertidos a actividades se reflejen

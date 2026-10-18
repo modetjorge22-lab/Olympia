@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { apiPost, startOAuth } from '@/lib/api';
 import { useSearchParams } from 'react-router-dom';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useData } from '@/lib/DataContext';
@@ -61,7 +62,7 @@ export default function Mas() {
  }, [user, stravaStatus, whoopStatus]);
 
  const connectStrava = () => {
- window.location.href = `/api/strava-auth?email=${encodeURIComponent(user.email)}`;
+ startOAuth('/api/strava-auth').catch(err => setSyncResult({ type: 'error', message: err.message }));
  };
 
  const disconnectStrava = async () => {
@@ -75,7 +76,7 @@ export default function Mas() {
  };
 
  const connectWhoop = () => {
- window.location.href = `/api/whoop-auth?email=${encodeURIComponent(user.email)}`;
+ startOAuth('/api/whoop-auth').catch(err => setWhoopSyncResult({ type: 'error', message: err.message }));
  };
 
  const disconnectWhoop = async () => {
@@ -94,16 +95,12 @@ export default function Mas() {
  setWhoopSyncing(true);
  setWhoopSyncResult(null);
  try {
- const response = await fetch('/api/whoop-sync', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ email: user.email }),
- });
+ const response = await apiPost('/api/whoop-sync');
  const data = await response.json();
  if (response.ok) {
  setWhoopSyncResult({ type: 'success', message: `${data.imported} noches importadas` });
  if (data.imported > 0) refreshData();
- } else if (response.status === 401 || data.error === 'reconnect_required') {
+ } else if (data.error === 'reconnect_required' || (response.status === 401 && data.error !== 'unauthorized')) {
  setWhoopConnected(false);
  setWhoopSyncResult({ type: 'error', message: 'Token expirado. Reconecta Whoop para continuar.' });
  } else {
@@ -120,12 +117,12 @@ export default function Mas() {
  setSyncing(true);
  setSyncResult(null);
  try {
- const response = await fetch('/api/strava-sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email }) });
+ const response = await apiPost('/api/strava-sync');
  const data = await response.json();
  if (response.ok) {
  setSyncResult({ type: 'success', message: `${data.imported} actividades importadas` });
  refreshData();
- } else if (response.status === 401 || data.error === 'reconnect_required') {
+ } else if (data.error === 'reconnect_required' || (response.status === 401 && data.error !== 'unauthorized')) {
  setStravaConnected(false);
  setSyncResult({ type: 'error', message: 'Token expirado. Reconecta Strava para continuar.' });
  } else {

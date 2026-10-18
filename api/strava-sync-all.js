@@ -1,14 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { isCron } from './_lib/auth.js';
 
 // Endpoint invocado por Vercel Cron diariamente.
 // Recorre todos los usuarios con Strava conectado y sincroniza sus actividades recientes.
-// Requiere auth header de Vercel Cron (automático).
+// Vercel manda "Authorization: Bearer $CRON_SECRET" en cada invocación de cron.
+// Sin CRON_SECRET configurado, el endpoint queda cerrado.
 
 export default async function handler(req, res) {
-  // Vercel añade este header automáticamente en invocaciones de cron
-  const authHeader = req.headers.authorization;
-  const expectedSecret = process.env.CRON_SECRET;
-  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+  if (!isCron(req)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -33,7 +32,10 @@ export default async function handler(req, res) {
       try {
         const resp = await fetch(`${baseUrl}/api/strava-sync`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.CRON_SECRET}`,
+          },
           body: JSON.stringify({ email: tok.user_email }),
         });
         const body = await resp.json();
