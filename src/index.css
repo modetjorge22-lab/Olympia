@@ -91,3 +91,31 @@ body {
 
 /* Smooth page transitions */
 main { scroll-behavior: smooth; }
+
+/* ── Detalles de oficio (principios de Apple) ── */
+
+/* Cifras de ancho fijo: los contadores y totales no "bailan" al cambiar */
+body { font-variant-numeric: tabular-nums; }
+
+/* Reducir transparencia → el vidrio se vuelve sólido y legible */
+@media (prefers-reduced-transparency: reduce) {
+  :root, [data-theme='dark'] { --glass-bg: rgba(48, 22, 32, 0.97); }
+  [data-theme='light'] { --glass-bg: rgba(255, 253, 245, 0.97); }
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+
+/* Más contraste → bordes definidos en las superficies de vidrio */
+@media (prefers-contrast: more) {
+  :root, [data-theme='dark'] { --glass-border: rgba(245, 237, 224, 0.45); }
+  [data-theme='light'] { --glass-border: rgba(42, 18, 26, 0.45); }
+}
+
+/* Movimiento reducido: transiciones CSS casi instantáneas (Framer Motion ya
+   respeta esta preferencia vía MotionConfig) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

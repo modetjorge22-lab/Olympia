@@ -110,10 +110,14 @@ export default function AppLayout({ children }) {
                   className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-transform duration-150 ease-out active:scale-[0.96] relative"
                   style={{ minWidth: 64 }}
                 >
+                  {/* Píldora activa compartida: se desliza de una pestaña a otra
+                      (continuidad espacial) con un muelle críticamente amortiguado */}
                   {isActive && (
-                    <div
+                    <motion.div
+                      layoutId="tab-pill"
                       className="absolute inset-0 rounded-full"
                       style={{ background: 'rgba(var(--ink),0.1)' }}
+                      transition={{ type: 'spring', damping: 32, stiffness: 420, mass: 0.8 }}
                     />
                   )}
                   <Icon

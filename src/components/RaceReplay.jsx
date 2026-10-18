@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { readPalette, blendCats } from '@/utils/blendColors';
+import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
 
 // Repetición animada de la carrera (line chart race).
 //  · Las líneas se dibujan día a día con interpolación suave.
@@ -187,6 +188,7 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
 // Ventana que se abre al pulsar ▶ — mismo formato que la ficha de miembro,
 // para no alterar la gráfica de la pantalla.
 export function RaceReplaySheet({ title, onClose, ...props }) {
+  const sheet = useSheetDrag(onClose);
   return createPortal(
     <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
       style={{ background: 'var(--scrim)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
@@ -196,9 +198,11 @@ export function RaceReplaySheet({ title, onClose, ...props }) {
           background: 'var(--surface)', borderTopLeftRadius: 28, borderTopRightRadius: 28,
           boxShadow: '0 -12px 40px rgba(0,0,0,0.35)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
         }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }} transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }} transition={SHEET_SPRING}
+        {...sheet.dragProps}
         onClick={e => e.stopPropagation()}>
         <div className="pt-2.5 px-5">
+          <div {...sheet.handleProps}>
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />
           <div className="flex items-center justify-between mb-3">
             <p className="text-[14px]" style={{ letterSpacing: '0.08em', color: 'rgba(var(--ink),0.95)' }}>{title}</p>
@@ -206,6 +210,7 @@ export function RaceReplaySheet({ title, onClose, ...props }) {
               style={{ background: 'rgba(var(--ink),0.07)' }} aria-label="Cerrar">
               <X className="w-4 h-4" style={{ color: 'rgba(var(--ink),0.6)' }} />
             </button>
+          </div>
           </div>
           <RaceReplay {...props} />
         </div>

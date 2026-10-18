@@ -5,6 +5,7 @@ import { X, Pencil, Trash2, Check, Plus, Trophy, TrendingUp, Shield } from 'luci
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { iconFor, catColor } from '@/utils/activityIcons';
 import { detectMuscleGroups, muscleLabel } from '@/utils/muscles';
+import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
 
 // Detalle de un día (inspirado en Activity Details de Bevel): resumen del día,
 // tarjeta por actividad con sus métricas y acciones, planes pendientes y
@@ -95,6 +96,7 @@ export default function DayDetailSheet({
   date, activities = [], plans = [], prs = [],
   onClose, onEdit, onDelete, onCompletePlan, onRemovePlan, onDeletePr, onAdd,
 }) {
+  const sheet = useSheetDrag(onClose);
   if (!date) return null;
   const totalMin = activities.reduce((s, a) => s + (a.duration_minutes || 0), 0);
   const isFuture = date > new Date();
@@ -113,12 +115,11 @@ export default function DayDetailSheet({
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-        drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
-        onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
+        transition={SHEET_SPRING}
+        {...sheet.dragProps}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex-shrink-0 pt-2.5 px-5">
+        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: INK(0.18) }} />
           <div className="flex items-start justify-between mb-4">
             <div>

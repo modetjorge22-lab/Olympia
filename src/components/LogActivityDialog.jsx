@@ -5,6 +5,7 @@ import { X, TrendingUp, Trophy, Minus, Plus, Shield } from 'lucide-react';
 import { iconFor, catColor } from '@/utils/activityIcons';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { MUSCLE_GROUPS, detectMuscleGroups, muscleLabel } from '@/utils/muscles';
+import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
 
 const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
@@ -24,6 +25,7 @@ function parseLocalDate(dateStr) {
 }
 
 export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten, editActivity = null, onUpdate, prefillPlan = null }) {
+  const sheet = useSheetDrag(onClose);
   const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -207,13 +209,12 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-        drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
-        onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
+        transition={SHEET_SPRING}
+        {...sheet.dragProps}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Asa + cabecera */}
-        <div className="flex-shrink-0 pt-2.5 px-5">
+        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px]" style={{ color: TEXT_PRIMARY, letterSpacing: '0.04em' }}>

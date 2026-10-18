@@ -7,6 +7,7 @@ import { DayCell, toDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { iconFor, categoryOf, catColor, CATEGORIES } from '@/utils/activityIcons';
+import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
 
 // Snapshot de un miembro — versión resumida de su pestaña "Tú":
 // cifras clave, su semana, su mes en calendario Olympia, desglose por familia,
@@ -28,6 +29,7 @@ function Title({ children }) {
 }
 
 export default function MemberSheet({ member, activities = [], plans = [], goals = [], objectives = [], prDates = new Set(), pacePct = null, onClose }) {
+  const sheet = useSheetDrag(onClose);
   const byDate = useMemo(() => {
     const m = {};
     activities.forEach(a => { const ds = a.date?.slice(0, 10); if (ds) (m[ds] = m[ds] || []).push(a); });
@@ -80,13 +82,12 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-        drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
-        onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
+        transition={SHEET_SPRING}
+        {...sheet.dragProps}
         onClick={e => e.stopPropagation()}
       >
         {/* Cabecera */}
-        <div className="flex-shrink-0 pt-2.5 px-5">
+        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
           <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: INK(0.18) }} />
           <div className="flex items-center gap-3 mb-4">
             {member.avatar_url ? (
