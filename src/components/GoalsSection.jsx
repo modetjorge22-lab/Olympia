@@ -187,8 +187,8 @@ export default function GoalsSection({ goals = [], prs = [], onCreate, onUpdateM
         <button onClick={() => setAdding(v => !v)}
           className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
           style={{
-            background: 'var(--glass-bg)', backdropFilter: 'blur(24px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid var(--glass-border)',
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
           }}
           aria-label={adding ? 'Cancelar' : 'Nueva marca'}>
           {adding ? <X className="w-3.5 h-3.5" style={{ color: INK(0.7) }} /> : <Plus className="w-3.5 h-3.5" style={{ color: INK(0.7) }} />}

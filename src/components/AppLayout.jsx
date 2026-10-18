@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import InfinityMark from './InfinityMark';
@@ -29,13 +29,60 @@ const glass = {
 export default function AppLayout({ children }) {
   const location = useLocation();
   const mainRef = useRef(null);
+  const activeIdx = navItems.findIndex(({ path }) =>
+    location.pathname === path || (path === '/actividad' && location.pathname === '/'));
 
   useStravaAutoSync();
 
-  // Al cambiar de pestaña, cada página arranca desde arriba
+  // Al cambiar de pestaña, cada página arranca desde arriba (y con las barras completas)
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    compact.set(0);
   }, [location.pathname]);
+
+  // ── Barras que se recogen al hacer scroll (estilo Instagram / Revolut) ──
+  // `compact` va de 0 (barras completas) a 1 (recogidas). Sigue al dedo: cada
+  // píxel desplazado hacia abajo las recoge un poco y hacia arriba las despliega.
+  // Al parar, se asientan en el estado más cercano con un muelle. Todo vive en
+  // motion values → solo transforms en el compositor, cero renders de React.
+  const compact = useMotionValue(0);
+  const c = useSpring(compact, { stiffness: 520, damping: 46, mass: 0.6 });
+  const headerY = useTransform(c, [0, 1], [0, -6]);
+  const headerScale = useTransform(c, [0, 1], [1, 0.84]);
+  const navY = useTransform(c, [0, 1], [0, 10]);
+  const navScale = useTransform(c, [0, 1], [1, 0.86]);
+
+  useEffect(() => {
+    const RANGE = 90; // px de scroll para pasar de completa a recogida
+    let last = null, raf = 0, idle = 0;
+    const read = (t) => (t === window || t === document ? window.scrollY : t.scrollTop);
+    const onScroll = (e) => {
+      const target = e.target === document ? window : e.target;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const y = read(target);
+        if (last == null) { last = y; return; }
+        const dy = y - last; last = y;
+        if (y < 12) compact.set(0);
+        else compact.set(Math.min(1, Math.max(0, compact.get() + dy / RANGE)));
+        clearTimeout(idle);
+        idle = setTimeout(() => {
+          const v = compact.get();
+          if (v > 0 && v < 1) compact.set(read(target) < 12 ? 0 : v > 0.5 ? 1 : 0);
+        }, 140);
+      });
+    };
+    const main = mainRef.current;
+    window.addEventListener('scroll', onScroll, { passive: true });
+    main?.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      main?.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf); clearTimeout(idle);
+    };
+  }, []);
 
 
   return (
@@ -48,9 +95,10 @@ export default function AppLayout({ children }) {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 8px)', pointerEvents: 'none' }}
       >
         <div className="mx-auto max-w-lg px-3">
-          <div
+          <motion.div
             className="flex items-center justify-start px-4"
-            style={{ height: HEADER_H, borderRadius: HEADER_H / 2, pointerEvents: 'auto', ...glass }}
+            style={{ height: HEADER_H, borderRadius: HEADER_H / 2, pointerEvents: 'auto', ...glass,
+              y: headerY, scale: headerScale, transformOrigin: '50% 0%', willChange: 'transform' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <InfinityMark size={15} />
@@ -66,7 +114,7 @@ export default function AppLayout({ children }) {
               </div>
             </div>
 
-          </div>
+          </motion.div>
         </div>
       </header>
 
@@ -95,10 +143,23 @@ export default function AppLayout({ children }) {
         style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)', pointerEvents: 'none' }}
       >
         <div className="mx-auto px-4" style={{ maxWidth: 420 }}>
-          <div
-            className="flex items-center justify-around px-2"
-            style={{ height: NAV_H, borderRadius: NAV_H / 2, pointerEvents: 'auto', ...glass }}
+          <motion.div
+            className="relative grid grid-cols-4 items-center px-2"
+            style={{ height: NAV_H, borderRadius: NAV_H / 2, pointerEvents: 'auto', ...glass,
+              y: navY, scale: navScale, transformOrigin: '50% 100%', willChange: 'transform' }}
           >
+            {/* Píldora activa: una sola pieza que se desliza con transform (corre en
+                el compositor, sin medir layout en JS → fluida aunque la página pese) */}
+            {activeIdx >= 0 && (
+              <div aria-hidden className="absolute pointer-events-none"
+                style={{
+                  top: 7, bottom: 7, left: 8, width: 'calc((100% - 16px) / 4)',
+                  transform: `translate3d(${activeIdx * 100}%,0,0)`,
+                  transition: 'transform 420ms cubic-bezier(0.32, 0.72, 0, 1)',
+                }}>
+                <div className="h-full rounded-full mx-1.5" style={{ background: 'rgba(var(--ink),0.1)' }} />
+              </div>
+            )}
             {navItems.map(({ path, label, icon: Icon }) => {
               const isActive = location.pathname === path ||
                 (path === '/actividad' && location.pathname === '/');
@@ -107,19 +168,8 @@ export default function AppLayout({ children }) {
                 <NavLink
                   key={path}
                   to={path}
-                  className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full transition-transform duration-150 ease-out active:scale-[0.96] relative"
-                  style={{ minWidth: 64 }}
+                  className="flex flex-col items-center gap-0.5 py-1.5 rounded-full transition-transform duration-150 ease-out active:scale-[0.96] relative"
                 >
-                  {/* Píldora activa compartida: se desliza de una pestaña a otra
-                      (continuidad espacial) con un muelle críticamente amortiguado */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="tab-pill"
-                      className="absolute inset-0 rounded-full"
-                      style={{ background: 'rgba(var(--ink),0.1)' }}
-                      transition={{ type: 'spring', damping: 32, stiffness: 420, mass: 0.8 }}
-                    />
-                  )}
                   <Icon
                     className="w-[19px] h-[19px] transition-colors relative z-10"
                     strokeWidth={isActive ? 2.2 : 1.6}
@@ -134,7 +184,7 @@ export default function AppLayout({ children }) {
                 </NavLink>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </nav>
     </div>

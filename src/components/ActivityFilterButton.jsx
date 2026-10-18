@@ -22,8 +22,6 @@ export default function ActivityFilterButton({ value = null, onChange, types = [
         className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
         style={{
           background: 'var(--glass-bg)',
-          backdropFilter: 'blur(24px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(160%)',
           border: '1px solid var(--glass-border)',
           ...(value ? { boxShadow: 'inset 0 0 0 1.5px var(--accent)' } : {}),
         }}

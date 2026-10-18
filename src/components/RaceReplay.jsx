@@ -191,7 +191,7 @@ export function RaceReplaySheet({ title, onClose, ...props }) {
   const sheet = useSheetDrag(onClose);
   return createPortal(
     <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'var(--scrim)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+      style={{ background: 'var(--scrim)' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
       <motion.div className="w-full max-w-lg"
         style={{

@@ -97,7 +97,7 @@ export default function ObjectivesPanel({ objectives = [], activities = [], onCr
           {header}
           <button onClick={() => setAdding(v => !v)} disabled={!available}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:opacity-30"
-            style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid var(--glass-border)' }}
+            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
             aria-label={adding ? 'Cancelar' : 'Nuevo objetivo'}>
             {adding ? <X className="w-3.5 h-3.5" style={{ color: INK(0.7) }} /> : <Plus className="w-3.5 h-3.5" style={{ color: INK(0.7) }} />}
           </button>

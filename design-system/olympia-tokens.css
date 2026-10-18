@@ -1,0 +1,174 @@
+/* ─────────────────────────────────────────────────────────────
+   OLYMPIA · Design tokens  v1.0  (octubre 2026)
+   Fuente de verdad: src/index.css + src/lib/theme.js
+   Uso: <html data-theme="dark|light">  ·  colores de tinta como
+        rgba(var(--ink), α)  ·  familias como rgba(var(--cat-x), α)
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..500;1,9..40,400&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root,
+[data-theme='dark'] {
+  /* Lienzo y tinta */
+  --bg: #2a121a;                 /* vino profundo — lienzo único */
+  --header-bg: rgba(42, 18, 26, 0.85);
+  --ink: 245, 237, 224;          /* beige crema (triplete RGB) */
+  --surface: #3a1c28;            /* hojas (sheets) */
+  --scrim: rgba(15, 5, 9, 0.7);
+
+  /* Acento */
+  --accent: #f0e4d0;
+  --accent-rgb: 240, 228, 208;
+  --accent-strong: #f5ede0;
+  --accent-over: #ffffff;        /* 2ª vuelta de anillos, cifras sobre acento */
+  --on-accent: #2a121a;
+
+  /* Vidrio líquido */
+  --glass-bg: rgba(48, 22, 32, 0.55);
+  --glass-border: rgba(245, 237, 224, 0.12);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* Familias de actividad (RGB) */
+  --cat-fuerza: 240, 228, 208;
+  --cat-cardio: 242, 206, 92;
+  --cat-deporte: 126, 204, 148;
+  --cat-movilidad: 140, 190, 240;
+  --cat-otro: 170, 160, 155;
+
+  /* Semánticos */
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #a5b4fc;
+}
+
+[data-theme='light'] {
+  --bg: #fffdf5;                 /* marfil */
+  --header-bg: rgba(255, 253, 245, 0.85);
+  --ink: 42, 18, 26;             /* vino como tinta */
+  --surface: #ffffff;
+  --scrim: rgba(42, 18, 26, 0.45);
+
+  --accent: #4a1626;
+  --accent-rgb: 74, 22, 38;
+  --accent-strong: #31000f;
+  --accent-over: #96203f;
+  --on-accent: #f5ede0;
+
+  --glass-bg: rgba(255, 253, 245, 0.6);
+  --glass-border: rgba(42, 18, 26, 0.12);
+  --glass-shadow: 0 12px 40px rgba(42, 18, 26, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  --cat-fuerza: 74, 22, 38;
+  --cat-cardio: 226, 178, 32;
+  --cat-deporte: 72, 160, 100;
+  --cat-movilidad: 92, 156, 220;
+  --cat-otro: 120, 110, 105;
+
+  --success: #047857;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --info: #4338ca;
+}
+
+:root {
+  /* Marcador de "hoy" — único rojo del sistema, igual en ambos temas */
+  --today: #e5484d;
+
+  /* Escala de tinta (opacidades canónicas) */
+  --ink-primary: 0.95;   /* títulos, cifras clave */
+  --ink-body: 0.9;
+  --ink-secondary: 0.6;
+  --ink-tertiary: 0.45;  /* metadatos, ejes */
+  --ink-hairline: 0.06;  /* separadores entre filas */
+  --ink-divider: 0.12;   /* separador entre secciones */
+  --ink-fill: 0.05;      /* fondo de chips / métricas */
+  --ink-pill-active: 0.1;
+
+  /* Tipografía */
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --weight: 400;                 /* sin negritas: jerarquía por tamaño y tinta */
+  --fs-micro: 8.5px;             /* letras de día (L M X…) */
+  --fs-caption: 10px;
+  --fs-meta: 11px;
+  --fs-body: 12px;
+  --fs-section: 13px;            /* títulos de sección, tracking .14em */
+  --fs-title: 15px;
+  --fs-metric: 17px;
+  --fs-display: 22px;            /* cifras protagonistas (mono) */
+  --tracking-section: 0.14em;
+  --tracking-logo: 0.3em;
+
+  /* Radios */
+  --r-chip: 999px;
+  --r-tile: 16px;                /* métricas internas (rounded-2xl) */
+  --r-card: 24px;                /* tarjetas de actividad (rounded-3xl) */
+  --r-sheet: 28px;
+  --header-h: 52px;              /* radio = h/2 */
+  --nav-h: 60px;
+
+  /* Espaciado (base 4) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+
+  /* Materiales */
+  --glass-filter: blur(24px) saturate(160%);
+  --scrim-filter: blur(10px);
+  --sheet-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+
+  /* Movimiento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-press: 150ms;            /* escala .96 al pulsar */
+  --dur-fade: 150ms;             /* cambio de pestaña */
+  --dur-scrim: 200ms;
+  --dur-theme: 250ms;
+}
+
+/* Base recomendada */
+body {
+  font-family: var(--font-sans);
+  font-weight: var(--weight);
+  background: var(--bg);
+  color: rgba(var(--ink), var(--ink-primary));
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--dur-theme) ease, color var(--dur-theme) ease;
+}
+
+/* Utilidades del sistema */
+.o-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.o-section-title {
+  font-size: var(--fs-section);
+  letter-spacing: var(--tracking-section);
+  color: rgba(var(--ink), var(--ink-body));
+  font-weight: 400;
+}
+.o-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.o-press { transition: transform var(--dur-press) ease-out; }
+.o-press:active { transform: scale(0.96); }
+.img-outline { outline: 1px solid oklch(1 0 0 / 0.1); outline-offset: -1px; }
+[data-theme='light'] .img-outline { outline-color: oklch(0 0 0 / 0.1); }
+
+/* Accesibilidad */
+@media (prefers-reduced-transparency: reduce) {
+  :root, [data-theme='dark'] { --glass-bg: rgba(48, 22, 32, 0.97); }
+  [data-theme='light'] { --glass-bg: rgba(255, 253, 245, 0.97); }
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  :root, [data-theme='dark'] { --glass-border: rgba(245, 237, 224, 0.45); }
+  [data-theme='light'] { --glass-border: rgba(42, 18, 26, 0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

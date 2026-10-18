@@ -50,8 +50,6 @@ const SECTION_TITLE = {
 // Barra tipo liquid glass para controles
 const glassBar = {
  background: 'var(--glass-bg)',
- backdropFilter: 'blur(24px) saturate(160%)',
- WebkitBackdropFilter: 'blur(24px) saturate(160%)',
  border: '1px solid var(--glass-border)',
 };
 const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
@@ -148,8 +146,6 @@ function ActivityDropdown({ value, onChange, types }) {
  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] transition-ui"
  style={{
  background: 'var(--glass-bg)',
- backdropFilter: 'blur(24px) saturate(160%)',
- WebkitBackdropFilter: 'blur(24px) saturate(160%)',
  border: '1px solid var(--glass-border)',
  color: TEXT_PRIMARY,
  }}
@@ -171,8 +167,6 @@ function ActivityDropdown({ value, onChange, types }) {
  position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
  minWidth: 180,
  background: 'var(--surface)',
- backdropFilter: 'blur(24px)',
- WebkitBackdropFilter: 'blur(24px)',
  border: '1px solid rgba(var(--ink),0.16)',
  borderRadius: 12, padding: 6,
  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
@@ -800,6 +794,9 @@ export default function Actividad() {
  });
  return map;
  }, [myAllActivities]);
+ // Mapas filtrados memorizados: sin esto, cada render recrea 266 celdas de la semana
+ const fActsByDate = useMemo(() => filterMap(activitiesByDateStr, 'type'), [activitiesByDateStr, typeFilter]);
+ const fPlansByDate = useMemo(() => filterMap(plansByDateStr, 'activity_type'), [plansByDateStr, typeFilter]);
 
  // Tarjetas de gráficas reordenables (orden persistido por dispositivo)
  const chartCards = {
@@ -949,8 +946,8 @@ export default function Actividad() {
  {/* ── Entrenamiento — semana deslizable + filtro global de la pestaña ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <TrainingSection
- activitiesByDate={filterMap(activitiesByDateStr, 'type')}
- plansByDate={filterMap(plansByDateStr, 'activity_type')}
+ activitiesByDate={fActsByDate}
+ plansByDate={fPlansByDate}
  prDates={prDates}
  onDayClick={setDetailDate}
  usedTypes={usedTypes.map(t => t.key)}
@@ -1011,8 +1008,8 @@ export default function Actividad() {
  {/* ── Calendario — meses con scroll vertical ── */}
  <div className="rounded-2xl p-4" style={glassCard}>
  <MonthScroller
- activitiesByDate={filterMap(activitiesByDateStr, 'type')}
- plansByDate={filterMap(plansByDateStr, 'activity_type')}
+ activitiesByDate={fActsByDate}
+ plansByDate={fPlansByDate}
  prDates={prDates}
  onDayClick={setDetailDate}
  />
@@ -1035,7 +1032,7 @@ export default function Actividad() {
  </button>
  </div>
  {cardOrder.map((key, idx) => (
- <motion.div key={key} layout transition={{ duration: 0.25 }} className="relative">
+ <motion.div key={key} layout={editCards} transition={{ duration: 0.25 }} className="relative">
  {editCards && (
  <div className="absolute right-0 top-3 z-10 flex gap-1">
  <button disabled={idx === 0} onClick={() => moveCard(idx, -1)}

@@ -89,8 +89,6 @@ export default function MuscleLoad({ activities }) {
         <div className="flex items-center gap-0.5 rounded-full p-1"
           style={{
             background: 'var(--glass-bg)',
-            backdropFilter: 'blur(24px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(160%)',
             border: '1px solid var(--glass-border)',
           }}>
           {[['load', 'Carga'], ['fresh', 'Frescura']].map(([k, l]) => (

@@ -94,8 +94,6 @@ const SECTION_TITLE = {
 
 const glassBar = {
  background: 'var(--glass-bg)',
- backdropFilter: 'blur(24px) saturate(160%)',
- WebkitBackdropFilter: 'blur(24px) saturate(160%)',
  border: '1px solid var(--glass-border)',
 };
 
@@ -193,7 +191,7 @@ function RecordsCard({ records, onOpenMember }) {
  {list.map((r, i) => {
  const Icon = RECORD_ICONS[r.icon] || Trophy;
  return (
- <motion.button key={r.key} layout onClick={() => onOpenMember(r.holder.email)}
+ <motion.button key={r.key} onClick={() => onOpenMember(r.holder.email)}
  className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-60"
  style={{ borderTop: i ? '1px solid rgba(var(--ink),0.06)' : 'none' }}>
  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -232,7 +230,7 @@ export default function Grupos() {
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
  const { objectives } = useObjectives();
- const [raceMetric, setRaceMetric] = useState('hours'); // 'hours' | 'count'
+ const raceMetric = 'hours'; // la carrera se mide en horas
  const [snapshot, setSnapshot] = useState('month'); // 'week' | 'month' | '90d'
  const [seasonTF, setSeasonTF] = useState('1m');
  const [typeFilter, setTypeFilter] = useState(null);
@@ -390,31 +388,23 @@ export default function Grupos() {
  const openData = openMember && monthStats.find(m => m.email === openMember);
 
  return (
- <div className="px-4 py-5 space-y-4 max-w-lg mx-auto">
+ <div className="px-4 pt-2 pb-5 space-y-4 max-w-lg mx-auto">
  {/* ── Carrera — semana / mes / 3 meses móviles ── */}
- <div className="rounded-2xl p-4" style={glassCard}>
- <div className="relative flex items-center justify-end mb-2" style={{ minHeight: 32 }}>
- <h2 className="absolute left-1/2 -translate-x-1/2" style={SECTION_TITLE}>Carrera</h2>
- <div className="flex items-center gap-2">
- {(
+ <div className="pt-1 pb-0">
+ {/* Una sola fila: ventana · título · repetición + filtro */}
+ <div className="grid items-center mb-1" style={{ gridTemplateColumns: '1fr auto 1fr', minHeight: 32 }}>
+ <div className="justify-self-start">{pill(SNAPSHOTS.map(s => [s.key, s.label]), snapshot, setSnapshot)}</div>
+ <h2 className="px-2" style={SECTION_TITLE}>Carrera</h2>
+ <div className="justify-self-end flex items-center gap-1.5">
  <button onClick={() => setReplay(true)}
  className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
  style={glassBar} aria-label="Ver la repetición de la carrera">
  <svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 1.5 L10 6 L3 10.5Z" fill="var(--accent)" /></svg>
  </button>
- )}
  <ActivityFilterButton value={typeFilter} onChange={setTypeFilter} types={usedTypes} labels={typeLabels} />
  </div>
  </div>
- <div className="flex items-center justify-between gap-2 mb-1">
- {pill(SNAPSHOTS.map(s => [s.key, s.label]), snapshot, setSnapshot)}
- {pill([['hours', 'Horas'], ['count', 'Nº']], raceMetric, setRaceMetric)}
- </div>
- <p className="text-[10px] mb-2" style={{ color: TEXT_MUTED }}>
- {raceMetric === 'count' ? 'Actividades acumuladas' : 'Horas acumuladas'} · {snapLabel}
- {typeFilter ? ` · ${typeLabels[typeFilter]}` : ''}
- </p>
- <div className="h-[230px] -mx-1">
+ <div className="h-[290px] -mx-1">
  <ResponsiveContainer width="100%" height="100%">
  <LineChart data={chartData} margin={{ top: 14, right: 26, bottom: 0, left: 0 }}>
  <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
@@ -455,8 +445,8 @@ export default function Grupos() {
 
  </div>
 
- {/* ── Miembros — filas compactas; al tocar, su snapshot ── */}
- <div className="rounded-2xl p-4" style={glassCard}>
+ {/* ── Miembros — continúa la carrera, sin separador ── */}
+ <div className="-mt-2 pb-4">
  <div className="flex items-baseline justify-between mb-2">
  <h2 style={SECTION_TITLE}>Miembros</h2>
  <span className="text-[9.5px]" style={{ color: TEXT_MUTED }}>últimos 7 días · ritmo del mes</span>

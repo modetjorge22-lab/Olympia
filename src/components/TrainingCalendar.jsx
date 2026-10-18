@@ -3,6 +3,8 @@ import { SlidersHorizontal } from 'lucide-react';
 import { DashedFrame } from '@/components/sketch';
 import { iconFor, categoryOf, CATEGORIES } from '@/utils/activityIcons';
 
+const EMPTY = [];
+
 // Calendario de entrenamiento de Olympia (inspirado en Bevel Fall 2026):
 //  · WeekStrip  → semana deslizable izq/der (pasado ← → planificado)
 //  · MonthScroller → meses apilados con scroll vertical
@@ -51,7 +53,7 @@ function cellBackground(types) {
   return `linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(var(--ink),0.16) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 100% 100% no-repeat, ${halo(cats[0])} left / 50% 100% no-repeat, ${halo(cats[1])} right / 50% 100% no-repeat`;
 }
 
-export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true }) {
+export const DayCell = React.memo(function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true }) {
   const today = new Date();
   const isToday = toDateStr(date) === toDateStr(today);
   const isFuture = date > today && !isToday;
@@ -115,7 +117,7 @@ export function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick,
       {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 7, lineHeight: 1 }}>🏆</span>}
     </button>
   );
-}
+});
 
 // Leyenda de familias
 export function CategoryLegend() {
@@ -144,7 +146,6 @@ const DOW_BY_JS = ['D','L','M','X','J','V','S'];
 export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, onVisibleChange, weeksBack = 26, weeksForward = 12 }) {
   const scrollRef = useRef(null);
   const [colW, setColW] = useState(0);
-  const [firstIdx, setFirstIdx] = useState(weeksBack * 7);
 
   const days = useMemo(() => {
     const s = startOfWeek(new Date());
@@ -174,45 +175,20 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
     return () => ro.disconnect();
   }, [homeIdx]);
 
-  const onScroll = () => {
-    const el = scrollRef.current;
-    if (!el || !colW) return;
-    setFirstIdx(Math.max(0, Math.min(days.length - 7, Math.round(el.scrollLeft / colW))));
-  };
-
-  // Avisa al padre del rango visible (para marcarlo en la tendencia)
-  useEffect(() => {
-    if (onVisibleChange && days[firstIdx]) onVisibleChange(days[firstIdx], days[firstIdx + 6]);
-  }, [firstIdx]);
-
-  // Resumen de los 7 días visibles vs media semanal de las 12 semanas previas
-  const summary = useMemo(() => {
-    const visMins = dayMins.slice(firstIdx, firstIdx + 7).reduce((s, m) => s + m, 0);
-    const sessions = days.slice(firstIdx, firstIdx + 7)
-      .reduce((s, d) => s + (activitiesByDate[toDateStr(d)] || []).length, 0);
-    const from = Math.max(0, firstIdx - 84);
-    const prevSpan = firstIdx - from;
-    const prevMins = dayMins.slice(from, firstIdx).reduce((s, m) => s + m, 0);
-    const avgWeek = prevSpan >= 7 ? prevMins / (prevSpan / 7) : 0;
-    return { visMins, sessions, avgWeek, delta: avgWeek > 0 ? visMins - avgWeek : null };
-  }, [firstIdx, dayMins, days, activitiesByDate]);
-
-  const first = days[firstIdx], last = days[firstIdx + 6];
-  const short = d => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3).toLowerCase()}`;
+  // Sin estado ligado al scroll: deslizar la semana no provoca renders
   const BAR_H = 30;
 
   return (
     <div>
       <div
         ref={scrollRef}
-        onScroll={onScroll}
         className="flex overflow-x-auto"
         style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
       >
         {days.map((d, i) => {
           const ds = toDateStr(d);
           const isToday = i === todayIdx;
-          const acts = activitiesByDate[ds] || [];
+          const acts = activitiesByDate[ds] || EMPTY;
           return (
             <div key={ds} className="relative flex flex-col items-center gap-1 flex-shrink-0 pt-3.5"
               style={{ width: colW || '14.2857%' }}>
@@ -341,8 +317,6 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
 
   const btn = {
     background: 'var(--glass-bg)',
-    backdropFilter: 'blur(24px) saturate(160%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(160%)',
     border: '1px solid var(--glass-border)',
   };
   const FilterIcon = filter ? iconFor(filter) : SlidersHorizontal;

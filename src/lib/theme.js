@@ -132,6 +132,4 @@ export const surfaceCard = {
   background: 'var(--surface)',
   border: '1px solid rgba(var(--ink),0.16)',
   boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
 };

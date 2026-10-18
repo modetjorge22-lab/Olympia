@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olympia · Sistema de diseño</title>
+<style>
+:root,[data-theme='dark']{--bg:#2a121a;--ink:245,237,224;--surface:#3a1c28;--scrim:rgba(15,5,9,.7);--accent:#f0e4d0;--accent-rgb:240,228,208;--accent-over:#fff;--on-accent:#2a121a;--glass-bg:rgba(48,22,32,.55);--glass-border:rgba(245,237,224,.12);--glass-shadow:0 12px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);--cat-fuerza:240,228,208;--cat-cardio:242,206,92;--cat-deporte:126,204,148;--cat-movilidad:140,190,240;--cat-otro:170,160,155;--success:#34d399;--warning:#fbbf24;--danger:#f87171;--info:#a5b4fc}
+[data-theme='light']{--bg:#fffdf5;--ink:42,18,26;--surface:#fff;--scrim:rgba(42,18,26,.45);--accent:#4a1626;--accent-rgb:74,22,38;--accent-over:#96203f;--on-accent:#f5ede0;--glass-bg:rgba(255,253,245,.6);--glass-border:rgba(42,18,26,.12);--glass-shadow:0 12px 40px rgba(42,18,26,.16),inset 0 1px 0 rgba(255,255,255,.6);--cat-fuerza:74,22,38;--cat-cardio:226,178,32;--cat-deporte:72,160,100;--cat-movilidad:92,156,220;--cat-otro:120,110,105;--success:#047857;--warning:#b45309;--danger:#b91c1c;--info:#4338ca}
+:root{--today:#e5484d;--sans:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);font-weight:400;background:var(--bg);color:rgba(var(--ink),.95);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;transition:background-color .25s,color .25s;line-height:1.5}
+.mono{font-family:var(--mono)}
+.wrap{max-width:880px;margin:0 auto;padding:96px 24px 120px}
+.glass{background:var(--glass-bg);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow)}
+.top{position:fixed;top:12px;left:0;right:0;z-index:50;pointer-events:none}
+.top .bar{pointer-events:auto;max-width:560px;margin:0 auto;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 18px}
+.logo{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:rgba(var(--ink),.92)}
+.seg{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(var(--ink),.06);position:relative}
+.seg button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:11px;padding:6px 12px;border-radius:999px;color:rgba(var(--ink),.55);cursor:pointer;transition:color .2s}
+.seg button.on{color:rgba(var(--ink),.95)}
+.seg .pill{position:absolute;top:3px;bottom:3px;border-radius:999px;background:rgba(var(--ink),.1);transition:left .38s cubic-bezier(.22,1.12,.36,1),width .38s cubic-bezier(.22,1.12,.36,1)}
+section{padding:56px 0 8px;border-top:1px solid rgba(var(--ink),.12)}
+section:first-of-type{border-top:0;padding-top:0}
+.eyebrow{font-family:var(--mono);font-size:10px;color:rgba(var(--accent-rgb),.6);letter-spacing:.08em;margin-bottom:10px}
+h2{font-weight:400;font-size:13px;letter-spacing:.14em;color:rgba(var(--ink),.9);margin-bottom:6px}
+.lead{font-size:13px;color:rgba(var(--ink),.6);max-width:560px;margin-bottom:28px}
+.hero h1{font-weight:300;font-size:44px;letter-spacing:-.01em;line-height:1.1;margin:28px 0 18px}
+.manifesto{font-family:var(--mono);font-style:italic;font-size:15px;color:rgba(var(--ink),.7);max-width:560px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+html,body{overflow-x:hidden}.grid>*{min-width:0}
+@media (max-width:640px){.g2{grid-template-columns:1fr}.g3,.g4,.g5{grid-template-columns:repeat(2,1fr)}.theme-pair{grid-template-columns:1fr}.hero h1{font-size:34px}}
+.principle{padding:16px 0;border-top:1px solid rgba(var(--ink),.06)}
+.principle b{font-weight:400;font-size:14px;color:rgba(var(--ink),.95);display:block;margin-bottom:2px}
+.principle span{font-size:12px;color:rgba(var(--ink),.55)}
+.principle i{font-family:var(--mono);font-style:normal;font-size:10px;color:rgba(var(--accent-rgb),.6);margin-right:8px}
+.sw{border-radius:16px;overflow:hidden;border:1px solid rgba(var(--ink),.08)}
+.sw .chip{height:76px}
+.sw .meta{padding:10px 12px;font-size:11px}
+.sw .meta div:first-child{color:rgba(var(--ink),.9)}
+.sw .meta div+div{font-family:var(--mono);font-size:10px;color:rgba(var(--ink),.45)}
+.theme-pair{display:grid;grid-template-columns:1fr 1fr;border-radius:24px;overflow:hidden;border:1px solid rgba(var(--ink),.1)}
+.theme-pair>div{padding:22px}
+.mini-label{font-family:var(--mono);font-size:10px;opacity:.55;margin-bottom:12px}
+.ladder div{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid rgba(var(--ink),.06);font-size:12px}
+.ladder .mono{font-size:10px;color:rgba(var(--ink),.45)}
+.type-row{display:grid;grid-template-columns:110px 1fr;gap:18px;align-items:baseline;padding:12px 0;border-top:1px solid rgba(var(--ink),.06)}
+.type-row .spec{font-family:var(--mono);font-size:10px;color:rgba(var(--ink),.45)}
+.card{border-radius:24px;padding:20px;background:rgba(var(--ink),.035);border:1px solid rgba(var(--ink),.06)}
+.card h3{font-weight:400;font-size:12px;letter-spacing:.12em;color:rgba(var(--ink),.9);margin-bottom:14px}
+.note{font-size:11px;color:rgba(var(--ink),.5);margin-top:12px}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.dow span{font-family:var(--mono);font-size:8.5px;color:rgba(var(--accent-rgb),.55)}
+.cell{position:relative;width:40px;height:40px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s ease-out}
+.cell:active{transform:scale(.96)}
+.cell .n{position:absolute;top:5px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:7px;color:rgba(var(--ink),.55)}
+.cell svg.ic{width:10px;height:10px;margin-top:6px}
+.dash{position:absolute;inset:22%;}
+.btn{border:0;font:inherit;font-size:13px;padding:11px 20px;border-radius:999px;cursor:pointer;transition:transform .15s ease-out;display:inline-flex;align-items:center;gap:6px}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.quiet{background:rgba(var(--ink),.06);color:rgba(var(--ink),.6)}
+.btn.icon{width:32px;height:32px;padding:0;justify-content:center;background:rgba(var(--ink),.07);color:rgba(var(--ink),.6)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+.bar{height:6px;border-radius:999px;background:rgba(var(--ink),.08);position:relative;overflow:visible}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(var(--ink),.06)}
+.avatar{width:32px;height:32px;border-radius:50%;background:rgba(var(--ink),.08);display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(var(--ink),.9)}
+.sq{width:9px;height:9px;border-radius:3px}
+.today-line{width:1.25px;height:13px;background:var(--today);border-radius:1px;margin:0 auto}
+.dont{color:rgba(var(--ink),.5);font-size:12px}
+.do-list div{padding:8px 0;border-top:1px solid rgba(var(--ink),.06);font-size:12px;display:flex;gap:10px}
+.do-list .y{color:var(--success);font-family:var(--mono)}
+.do-list .n2{color:var(--danger);font-family:var(--mono)}
+code{font-family:var(--mono);font-size:11px;background:rgba(var(--ink),.06);padding:1px 6px;border-radius:6px}
+pre{font-family:var(--mono);font-size:11px;line-height:1.6;background:rgba(var(--ink),.04);border:1px solid rgba(var(--ink),.06);border-radius:16px;padding:14px 16px;white-space:pre-wrap;color:rgba(var(--ink),.75);margin-top:12px}
+/* sheet demo */
+.scrim{position:fixed;inset:0;z-index:100;background:var(--scrim);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .2s ease-out;display:flex;align-items:flex-end;justify-content:center}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{width:100%;max-width:520px;background:var(--surface);border-radius:28px 28px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(100%);will-change:transform}
+.sheet .handle{padding:10px 20px 4px;cursor:grab;touch-action:none}
+.sheet .grip{width:36px;height:4px;border-radius:2px;background:rgba(var(--ink),.18);margin:0 auto 12px}
+@media (prefers-reduced-transparency:reduce){:root,[data-theme='dark']{--glass-bg:rgba(48,22,32,.97)}[data-theme='light']{--glass-bg:rgba(255,253,245,.97)}*{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+@media (prefers-contrast:more){:root,[data-theme='dark']{--glass-border:rgba(245,237,224,.45)}[data-theme='light']{--glass-border:rgba(42,18,26,.45)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="inf" viewBox="0 0 88 44"><path d="M44 22 C 34 10, 22 10, 22 22 C 22 34, 34 34, 44 22" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M44 22 C 54 10, 66 10, 66 22 C 66 34, 54 34, 44 22" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-fuerza" viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-cardio" viewBox="0 0 24 24"><circle cx="14" cy="4" r="2" fill="currentColor"/><path d="M8 21l3-6 3 3v-6l-3-2-4 3M14 12l3 2h3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-deporte" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+    <symbol id="i-movilidad" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2" fill="currentColor"/><path d="M4 10c3 1 5 1 8 1s5 0 8-1M12 11v4l-4 6M12 15l4 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-otro" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="top"><div class="bar glass">
+  <div class="logo"><svg width="30" height="15" style="color:var(--accent)"><use href="#inf"/></svg>Olympia</div>
+  <div class="seg" id="themeSeg"><span class="pill"></span><button data-t="dark" class="on">Vino</button><button data-t="light">Marfil</button></div>
+</div></div>
+
+<div class="wrap">
+
+<!-- ESENCIA -->
+<section class="hero">
+  <div class="eyebrow">SISTEMA DE DISEÑO · v1.0 · OCTUBRE 2026</div>
+  <svg width="88" height="44" style="color:var(--accent)"><use href="#inf"/></svg>
+  <h1>Constancia que se ve.<br><span style="color:rgba(var(--ink),.5)">Competición que se siente.</span></h1>
+  <p class="manifesto">Olympia mide el tiempo que dedicas a moverte y lo convierte en algo que compartes. Un lienzo tranquilo, cifras exactas y movimiento con peso físico.</p>
+</section>
+
+<section>
+  <div class="eyebrow">01 · PRINCIPIOS</div>
+  <h2>Esencia</h2>
+  <p class="lead">Ocho reglas que deciden cualquier pantalla nueva. Si dudas, vuelve aquí.</p>
+  <div class="grid g2" style="gap:0 32px">
+    <div class="principle"><i>01</i><b>Un solo lienzo</b><span>Fondo vino (o marfil) continuo. Las secciones se separan con hairlines, no con cajas de color.</span></div>
+    <div class="principle"><i>02</i><b>El beige es acento, no superficie</b><span>Se reserva para cifras protagonistas, el botón principal y la familia fuerza. Nunca como fondo de tarjeta.</span></div>
+    <div class="principle"><i>03</i><b>Sin negritas</b><span>La jerarquía nace del tamaño, el tracking y la opacidad de la tinta. Peso 400 (300 solo en display).</span></div>
+    <div class="principle"><i>04</i><b>Las cifras van en mono</b><span>JetBrains Mono tabular para horas, fechas y marcas: no bailan al cambiar y se leen como datos.</span></div>
+    <div class="principle"><i>05</i><b>El color significa algo</b><span>Solo existen cinco familias de actividad y un rojo: hoy. Nada es decorativo.</span></div>
+    <div class="principle"><i>06</i><b>Hecho vs planificado</b><span>Lo hecho es sólido y con halo; lo planificado, un marco discontinuo con esquinas abiertas.</span></div>
+    <div class="principle"><i>07</i><b>Vidrio solo en lo que flota</b><span>Header, nav y controles superpuestos. El contenido nunca es vidrio.</span></div>
+    <div class="principle"><i>08</i><b>Movimiento con física</b><span>Muelles críticos, inercia proyectada y gestos interrumpibles. Respeta "reducir movimiento".</span></div>
+  </div>
+</section>
+
+<!-- COLOR -->
+<section>
+  <div class="eyebrow">02 · COLOR</div>
+  <h2>Dos temas, un mismo carácter</h2>
+  <p class="lead">El tema oscuro es vino con tinta crema; el claro invierte los papeles: marfil con tinta vino. Toda la UI se escribe con <code>rgba(var(--ink), α)</code>, así funciona en ambos sin tocar código.</p>
+  <div class="theme-pair">
+    <div style="background:#2a121a;color:#f5ede0">
+      <div class="mini-label">VINO · data-theme="dark"</div>
+      <div class="grid g2" style="gap:8px">
+        <div><div style="height:46px;border-radius:12px;background:#2a121a;border:1px solid rgba(245,237,224,.15)"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">bg #2a121a</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#3a1c28"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">surface #3a1c28</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#f0e4d0"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">accent #f0e4d0</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#ffffff"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">accent-over #fff</div></div>
+      </div>
+    </div>
+    <div style="background:#fffdf5;color:#2a121a">
+      <div class="mini-label">MARFIL · data-theme="light"</div>
+      <div class="grid g2" style="gap:8px">
+        <div><div style="height:46px;border-radius:12px;background:#fffdf5;border:1px solid rgba(42,18,26,.15)"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">bg #fffdf5</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#fff;border:1px solid rgba(42,18,26,.08)"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">surface #ffffff</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#4a1626"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">accent #4a1626</div></div>
+        <div><div style="height:46px;border-radius:12px;background:#96203f"></div><div class="mono" style="font-size:10px;margin-top:4px;opacity:.6">accent-over #96203f</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:28px;gap:32px">
+    <div>
+      <h2 style="margin-bottom:10px">Escala de tinta</h2>
+      <div class="ladder">
+        <div><span style="color:rgba(var(--ink),.95)">Primaria · títulos, cifras</span><span class="mono">.95</span></div>
+        <div><span style="color:rgba(var(--ink),.9)">Cuerpo · secciones</span><span class="mono">.90</span></div>
+        <div><span style="color:rgba(var(--ink),.6)">Secundaria · detalle</span><span class="mono">.60</span></div>
+        <div><span style="color:rgba(var(--ink),.45)">Terciaria · metadatos, ejes</span><span class="mono">.45</span></div>
+        <div><span style="color:rgba(var(--ink),.6)">Divisor de sección</span><span class="mono">.12</span></div>
+        <div><span style="color:rgba(var(--ink),.6)">Hairline entre filas</span><span class="mono">.06</span></div>
+        <div><span style="color:rgba(var(--ink),.6)">Relleno de chip / métrica</span><span class="mono">.05</span></div>
+      </div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:10px">Señales</h2>
+      <div class="ladder">
+        <div><span style="display:flex;align-items:center;gap:10px"><span class="today-line" style="margin:0"></span>Hoy</span><span class="mono">#e5484d · único rojo</span></div>
+        <div><span style="color:var(--success)">Conseguido</span><span class="mono">--success</span></div>
+        <div><span style="color:var(--warning)">Te falta poco</span><span class="mono">--warning</span></div>
+        <div><span style="color:var(--danger)">Error / eliminar</span><span class="mono">--danger</span></div>
+        <div><span style="color:var(--info)">Información</span><span class="mono">--info</span></div>
+      </div>
+      <p class="note">Los semánticos son texto o iconos pequeños, nunca rellenos grandes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAMILIAS -->
+<section>
+  <div class="eyebrow">03 · FAMILIAS DE ACTIVIDAD</div>
+  <h2>Cinco colores, cinco maneras de moverse</h2>
+  <p class="lead">Cada tipo de actividad pertenece a una familia. Su color tiñe calendario, iconos, selección y líneas de carrera. Fuerza hereda el acento de la marca.</p>
+  <div class="grid g5" id="fams"></div>
+  <div class="card" style="margin-top:20px">
+    <h3>Mezcla ponderada</h3>
+    <p style="font-size:12px;color:rgba(var(--ink),.6);margin-bottom:12px">Cuando algo resume varias actividades (una línea de carrera, un avatar), su color es la mezcla de familias ponderada por minutos.</p>
+    <div style="display:flex;align-items:center;gap:10px;font-size:11px" class="mono">
+      <span style="width:36px;height:12px;border-radius:6px;background:rgb(var(--cat-fuerza))"></span>8h fuerza
+      <span style="opacity:.4">+</span>
+      <span style="width:36px;height:12px;border-radius:6px;background:rgb(var(--cat-cardio))"></span>2h cardio
+      <span style="opacity:.4">=</span>
+      <span id="blend" style="width:36px;height:12px;border-radius:6px"></span>
+    </div>
+  </div>
+</section>
+
+<!-- TIPOGRAFÍA -->
+<section>
+  <div class="eyebrow">04 · TIPOGRAFÍA</div>
+  <h2>DM Sans para hablar, JetBrains Mono para medir</h2>
+  <p class="lead">Peso único 400. La voz es tranquila; el énfasis llega con tamaño, tracking y tinta.</p>
+  <div class="type-row"><div class="spec">display · mono 22</div><div class="mono" style="font-size:22px;color:var(--accent)">12h 40min</div></div>
+  <div class="type-row"><div class="spec">métrica · mono 17</div><div class="mono" style="font-size:17px">1h 05min</div></div>
+  <div class="type-row"><div class="spec">título · 15</div><div style="font-size:15px">Martes, 14 de octubre</div></div>
+  <div class="type-row"><div class="spec">sección · 13 · .14em</div><div style="font-size:13px;letter-spacing:.14em;color:rgba(var(--ink),.9)">Entrenamiento</div></div>
+  <div class="type-row"><div class="spec">cuerpo · 12</div><div style="font-size:12px;color:rgba(var(--ink),.9)">Fuerza de tren superior con progresión en press.</div></div>
+  <div class="type-row"><div class="spec">meta · mono 11</div><div class="mono" style="font-size:11px;color:rgba(var(--ink),.45)">3 actividades · 2h 10min</div></div>
+  <div class="type-row"><div class="spec">caption · 10</div><div style="font-size:10px;color:rgba(var(--ink),.5)">Planificado · Carrera</div></div>
+  <div class="type-row"><div class="spec">micro · mono 8.5</div><div class="mono" style="font-size:8.5px;color:rgba(var(--accent-rgb),.55);letter-spacing:.2em">L M X J V S D</div></div>
+  <div class="type-row"><div class="spec">logotipo · 13 · .3em</div><div class="logo" style="font-size:13px"><svg width="30" height="15" style="color:var(--accent)"><use href="#inf"/></svg>OLYMPIA</div></div>
+  <div class="type-row"><div class="spec">manifiesto · mono itálica 15</div><div class="manifesto" style="font-size:15px">Muévete. Comparte. Vuelve mañana.</div></div>
+</section>
+
+<!-- MATERIALES -->
+<section>
+  <div class="eyebrow">05 · MATERIALES Y FORMA</div>
+  <h2>Vidrio líquido, hojas y hairlines</h2>
+  <p class="lead">Tres materiales y nada más: el lienzo, el vidrio para lo que flota y la hoja (surface) para lo que sube desde abajo.</p>
+  <div style="position:relative;border-radius:28px;overflow:hidden;height:240px;background:
+    radial-gradient(60% 80% at 20% 30%, rgba(var(--cat-cardio),.35), transparent 60%),
+    radial-gradient(50% 70% at 80% 70%, rgba(var(--cat-movilidad),.35), transparent 60%),
+    radial-gradient(40% 60% at 55% 20%, rgba(var(--cat-deporte),.3), transparent 60%), var(--bg)">
+    <div class="glass" style="position:absolute;top:18px;left:18px;right:18px;height:52px;border-radius:26px;display:flex;align-items:center;padding:0 18px"><div class="logo"><svg width="30" height="15" style="color:var(--accent)"><use href="#inf"/></svg>Olympia</div></div>
+    <div class="glass" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:min(360px,86%);height:60px;border-radius:30px;display:flex;align-items:center;justify-content:space-around;font-size:10px;color:rgba(var(--ink),.5)">
+      <span>Feed</span><span style="background:rgba(var(--ink),.1);color:rgba(var(--ink),.95);padding:8px 16px;border-radius:999px">Tú</span><span>Grupos</span><span>Más</span>
+    </div>
+  </div>
+  <div class="grid g4" style="margin-top:16px">
+    <div><div class="mono" style="font-size:10px;color:rgba(var(--ink),.45)">vidrio</div><div style="font-size:12px">blur 24 · saturate 160%</div></div>
+    <div><div class="mono" style="font-size:10px;color:rgba(var(--ink),.45)">header / nav</div><div style="font-size:12px">52 / 60 px · radio h/2</div></div>
+    <div><div class="mono" style="font-size:10px;color:rgba(var(--ink),.45)">hoja</div><div style="font-size:12px">radio 28 · asa 36×4</div></div>
+    <div><div class="mono" style="font-size:10px;color:rgba(var(--ink),.45)">radios</div><div style="font-size:12px">16 tile · 24 card · ∞ chip</div></div>
+  </div>
+</section>
+
+<!-- CALENDARIO -->
+<section>
+  <div class="eyebrow">06 · EL DÍA</div>
+  <h2>La unidad básica de Olympia</h2>
+  <p class="lead">Cada día es un círculo. Su estado se lee sin leyenda: halo = hecho, marco discontinuo = planificado, mitades = dos sesiones, línea roja = hoy.</p>
+  <div class="card">
+    <div class="dow" id="wkDow"></div>
+    <div class="dow" id="wk" style="margin-top:6px"></div>
+    <div class="dow" id="wkLbl" style="margin-top:8px"></div>
+  </div>
+  <pre>// Hecho      radial-gradient(rgba(cat,.42) → rgba(cat,.06)) + inset ring rgba(cat,.85)
+// Planificado DashedFrame: esquinas abiertas, inset 22%, color de familia α .38
+// Doble       dos halos (izq / dcha 50%) + hairline central, un icono por mitad
+// Hoy (semana) línea 1.25×13 px #e5484d bajo la letra del día; número en tinta normal
+// Hoy (mes)    solo el número en rojo, sin marco</pre>
+</section>
+
+<!-- COMPONENTES -->
+<section>
+  <div class="eyebrow">07 · COMPONENTES</div>
+  <h2>Piezas reutilizables</h2>
+  <p class="lead">Todo lo que se repite en la app, con sus reglas.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Botones y chips</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button class="btn primary">＋ Añadir actividad</button>
+        <button class="btn quiet">Quitar</button>
+        <button class="btn icon" aria-label="Cerrar">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:14px"><span class="tag">Pecho</span><span class="tag">Tríceps</span><span class="tag">Hombro</span></div>
+      <p class="note">Primario: una vez por pantalla, píldora llena en acento. Al pulsar, escala .96 en 150 ms.</p>
+    </div>
+    <div class="card">
+      <h3>Selector segmentado</h3>
+      <div class="seg" id="segDemo" style="display:inline-flex"><span class="pill"></span><button class="on">Semana</button><button>Mes</button><button>3M</button></div>
+      <p class="note">La píldora activa se desliza con muelle (damping 32 · stiffness 420). Mismo patrón que la barra de pestañas.</p>
+    </div>
+    <div class="card">
+      <h3>Anillo de ritmo</h3>
+      <div style="display:flex;gap:18px;align-items:center" id="rings"></div>
+      <p class="note">Doble vuelta: la segunda en <code>accent-over</code>. Punto al completar el objetivo.</p>
+    </div>
+    <div class="card">
+      <h3>Progreso de objetivo</h3>
+      <div id="obj"></div>
+      <p class="note">Barra en color de familia; la marca vertical indica cuánto del periodo ha pasado.</p>
+    </div>
+    <div class="card">
+      <h3>Carga muscular</h3>
+      <div id="load"></div>
+      <p class="note">Una barra de acento y tu rango óptimo rayado entre dos marcas (crónica × 0.8 – 1.3).</p>
+    </div>
+    <div class="card">
+      <h3>Marca personal</h3>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div><div style="font-size:10px;color:rgba(var(--ink),.5)">5 km</div><div class="mono" style="font-size:22px;color:var(--accent)">22:48</div><div class="mono" style="font-size:10px;color:var(--success)">−0:34 · nueva</div></div>
+        <svg width="110" height="36" viewBox="0 0 110 36"><polyline points="2,8 22,12 40,10 58,18 76,22 94,26 108,30" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="108" cy="30" r="2.5" fill="var(--accent)"/></svg>
+      </div>
+      <p class="note">Sparkline sin ejes. La mejora se lee según el sentido (menos es mejor en tiempo).</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3>Fila de miembro</h3>
+    <div id="members"></div>
+    <p class="note">Avatar con <code>.img-outline</code>; insignias de objetivos y marcas; los últimos 7 días terminando hoy; anillo de ritmo a la derecha. Sin horas: el ritmo cuenta la historia.</p>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3>Carrera</h3>
+    <svg id="race" viewBox="0 0 600 180" width="100%" height="180"></svg>
+    <p class="note">Líneas acumuladas cuyo color es la mezcla ponderada de familias de cada día. Sin rejilla vertical; ejes a .18 de tinta.</p>
+  </div>
+</section>
+
+<!-- MOVIMIENTO -->
+<section>
+  <div class="eyebrow">08 · MOVIMIENTO</div>
+  <h2>Física, no animaciones</h2>
+  <p class="lead">El movimiento responde al dedo: muelles críticamente amortiguados, inercia proyectada al soltar y gestos que se pueden interrumpir a mitad.</p>
+  <div class="grid g3">
+    <div class="card"><h3>Hoja</h3><div class="mono" style="font-size:11px;color:rgba(var(--ink),.6)">spring<br>damping 34<br>stiffness 380<br>mass .9</div></div>
+    <div class="card"><h3>Píldora de pestaña</h3><div class="mono" style="font-size:11px;color:rgba(var(--ink),.6)">spring<br>damping 32<br>stiffness 420<br>mass .8</div></div>
+    <div class="card"><h3>Cortes rápidos</h3><div class="mono" style="font-size:11px;color:rgba(var(--ink),.6)">pulsar 150 ms · .96<br>pestaña fade 150 ms<br>scrim 200 ms<br>tema 250 ms</div></div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <button class="btn primary" id="openSheet">Abrir hoja de ejemplo</button>
+    <span style="font-size:12px;color:rgba(var(--ink),.5)">Arrástrala desde la cabecera: si la inercia proyectada supera 140 px, se cierra.</span>
+  </div>
+  <pre>// Proyección de inercia (desaceleración UIScrollView .998)
+const project = v => (v / 1000) * 0.998 / (1 - 0.998);
+onDragEnd = (_, info) => { if (info.offset.y + project(info.velocity.y) > 140) onClose(); };
+// Elasticidad: arriba .06 (resistencia), abajo .8 · solo se arrastra desde la cabecera</pre>
+</section>
+
+<!-- ACCESIBILIDAD -->
+<section>
+  <div class="eyebrow">09 · ACCESIBILIDAD</div>
+  <h2>Detalles de oficio</h2>
+  <div class="do-list">
+    <div><span class="y">✓</span>Cifras tabulares en todo el body: contadores que no saltan.</div>
+    <div><span class="y">✓</span>Reducir transparencia → el vidrio pasa a sólido al 97 %.</div>
+    <div><span class="y">✓</span>Más contraste → bordes de vidrio a .45.</div>
+    <div><span class="y">✓</span>Reducir movimiento → transiciones instantáneas y <code>MotionConfig reducedMotion="user"</code>.</div>
+    <div><span class="y">✓</span>Avatares con contorno neutro al 10 % para no fundirse con el fondo.</div>
+    <div><span class="y">✓</span>Botones de icono con <code>aria-label</code> y área táctil ≥ 32 px.</div>
+  </div>
+</section>
+
+<!-- SÍ / NO -->
+<section>
+  <div class="eyebrow">10 · SÍ / NO</div>
+  <h2>Para no perder la esencia</h2>
+  <div class="grid g2" style="gap:32px">
+    <div class="do-list">
+      <div><span class="y">SÍ</span>Separar con hairlines y aire.</div>
+      <div><span class="y">SÍ</span>Títulos centrados y discretos, en tracking ancho.</div>
+      <div><span class="y">SÍ</span>Un control de filtro arriba a la derecha que afecta a toda la sección.</div>
+      <div><span class="y">SÍ</span>Hojas desde abajo para detalle y edición.</div>
+      <div><span class="y">SÍ</span>Pocas cifras, grandes y en mono.</div>
+    </div>
+    <div class="do-list">
+      <div><span class="n2">NO</span>Tarjetas beige o fondos de color de marca.</div>
+      <div><span class="n2">NO</span>Negritas, mayúsculas forzadas en títulos o sombras de texto.</div>
+      <div><span class="n2">NO</span>Leyendas: si hace falta leyenda, el código visual falla.</div>
+      <div><span class="n2">NO</span>Rojo para algo que no sea hoy (o un error real).</div>
+      <div><span class="n2">NO</span>Zoom, podios o adornos que compiten con los datos.</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" id="sheet">
+    <div class="handle" id="handle">
+      <div class="grip"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:15px">Martes, 14 de octubre</div><div class="mono" style="font-size:11px;color:rgba(var(--ink),.45)">2 actividades · 1h 50min</div></div>
+        <button class="btn icon" id="closeSheet" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+    <div style="padding:16px 20px 28px;display:grid;gap:12px">
+      <div class="card" style="display:flex;gap:12px;align-items:center">
+        <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--cat-fuerza),.16);box-shadow:inset 0 0 0 1px rgba(var(--cat-fuerza),.5);color:rgb(var(--cat-fuerza))"><svg width="18" height="18"><use href="#i-fuerza"/></svg></div>
+        <div style="flex:1"><div style="font-size:11px;color:rgba(var(--ink),.5)">Fuerza</div><div style="font-size:14px">Torso · empuje</div></div>
+        <span class="mono" style="font-size:12px;color:rgba(var(--ink),.6)">1h 10min</span>
+      </div>
+      <div style="border-radius:24px;padding:16px;border:1.5px dashed rgba(var(--cat-cardio),.55);display:flex;gap:12px;align-items:center">
+        <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(var(--cat-cardio),.7);color:rgb(var(--cat-cardio))"><svg width="17" height="17"><use href="#i-cardio"/></svg></div>
+        <div style="flex:1"><div style="font-size:11px;color:rgba(var(--ink),.5)">Planificado · Carrera</div><div style="font-size:14px">Rodaje suave</div></div>
+        <span class="mono" style="font-size:12px;color:rgba(var(--ink),.6)">40min</span>
+      </div>
+      <button class="btn primary" style="justify-content:center;padding:14px">＋ Añadir actividad</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FAMS=[['fuerza','Fuerza','Pesas, calistenia, crossfit'],['cardio','Cardio','Carrera, bici, natación'],['deporte','Deporte','Pádel, fútbol, tenis'],['movilidad','Movilidad','Yoga, pilates, estiramientos'],['otro','Otro','Todo lo demás']];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rgb=k=>css('--cat-'+k).split(',').map(Number);
+
+function render(){
+  // familias
+  document.getElementById('fams').innerHTML=FAMS.map(([k,l,d])=>`
+    <div class="sw"><div class="chip" style="background:radial-gradient(circle at 50% 55%, rgba(var(--cat-${k}),.42), rgba(var(--cat-${k}),.06) 70%);display:flex;align-items:center;justify-content:center;color:rgb(var(--cat-${k}))"><svg width="22" height="22"><use href="#i-${k}"/></svg></div>
+    <div class="meta"><div>${l}</div><div>${css('--cat-'+k)}</div><div style="font-family:var(--sans);font-size:10px;margin-top:2px">${d}</div></div></div>`).join('');
+  // mezcla
+  const a=rgb('fuerza'),b=rgb('cardio');document.getElementById('blend').style.background=`rgb(${a.map((v,i)=>Math.round((v*8+b[i]*2)/10)).join(',')})`;
+  // semana
+  const L=['L','M','X','J','V','S','D'];const today=2;
+  document.getElementById('wkDow').innerHTML=L.map((d,i)=>`<span style="${i===today?'color:var(--today)':''}">${d}</span>`).join('');
+  const days=[
+    {n:12,s:[['fuerza',1]]},{n:13,s:[['cardio',1],['movilidad',1]]},{n:14,s:[['deporte',1]]},
+    {n:15,s:[['cardio',0]]},{n:16,s:[['fuerza',0],['fuerza',0]]},{n:17,s:[]},{n:18,s:[['movilidad',0]]}];
+  document.getElementById('wk').innerHTML=days.map((d,i)=>cell(d)).join('');
+  document.getElementById('wkLbl').innerHTML=['hecho','doble','hoy','planif.','doble plan','vacío','planif.'].map((t,i)=>`<span style="font-family:var(--sans);font-size:9px;color:rgba(var(--ink),.45)">${i===today?'<div class=today-line></div>':''}${t}</span>`).join('');
+  // anillos
+  document.getElementById('rings').innerHTML=[[.45,'45%'],[.92,'92%'],[1.35,'135%']].map(([p,t])=>ring(p,t)).join('');
+  // objetivo
+  document.getElementById('obj').innerHTML=[['cardio','3 h de cardio · semana',.62,.43,'A buen ritmo','var(--success)'],['fuerza','4 sesiones de fuerza · mes',.25,.58,'Te faltan 3','var(--warning)']].map(([k,t,p,e,s,c])=>`
+    <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>${t}</span><span style="font-size:10px;color:${c}">${s}</span></div>
+    <div class="bar"><div style="position:absolute;inset:0 auto 0 0;width:${p*100}%;border-radius:999px;background:rgb(var(--cat-${k}))"></div><div style="position:absolute;left:${e*100}%;top:-3px;bottom:-3px;width:1.5px;background:rgba(var(--ink),.5);border-radius:1px"></div></div></div>`).join('');
+  // carga
+  document.getElementById('load').innerHTML=[['Pecho',.62,.38,.62],['Espalda',.82,.42,.68],['Piernas',.18,.36,.58]].map(([m,v,lo,hi])=>`
+    <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px"><span>${m}</span><span class="mono" style="color:rgba(var(--ink),.45)">${(v*6).toFixed(1)}h · ${v>hi?'Alta':v<lo?'Baja':'Óptima'}</span></div>
+    <div class="bar"><div style="position:absolute;left:${lo*100}%;width:${(hi-lo)*100}%;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(var(--ink),.16) 0 1px,transparent 1px 4px)"></div>
+    <div style="position:absolute;inset:0 auto 0 0;width:${v*100}%;border-radius:999px;background:var(--accent)"></div>
+    ${[lo,hi].map(x=>`<div style="position:absolute;left:${x*100}%;top:-3px;bottom:-3px;width:1px;background:rgba(var(--ink),.4)"></div>`).join('')}</div></div>`).join('');
+  // miembros
+  const M=[['Lucía','LG',[2,1,0,2,1,1,2],1.1,'3/3',4],['Jorge','JM',[1,0,1,1,0,2,1],.86,'2/3',2],['Marta','MR',[0,1,0,0,1,0,1],.42,'1/2',1]];
+  const cs=['fuerza','cardio','deporte','movilidad'];
+  document.getElementById('members').innerHTML=M.map(([n,i,w,p,o,t],r)=>`
+    <div class="row" ${r===0?'style="border-top:0"':''}><div class="avatar img-outline">${i}</div>
+    <div style="flex:1;min-width:0"><div style="font-size:13px">${n}</div><div class="mono" style="font-size:9.5px;color:rgba(var(--ink),.45)">◎ ${o} · ✦ ${t}</div></div>
+    <div style="display:flex;gap:3px">${w.map((v,j)=>`<span class="sq" style="background:${v?`rgba(var(--cat-${cs[(j+r)%4]}),${v>1?.95:.55})`:'rgba(var(--ink),.08)'};${j===6?'box-shadow:0 2px 0 -1px var(--today)':''}"></span>`).join('')}</div>
+    ${ring(p,'',30)}</div>`).join('');
+  race();
+}
+function cell(d){
+  const s=d.s;let bg='',ring='',inner='';
+  const done=s.filter(x=>x[1]),plan=s.filter(x=>!x[1]);
+  if(s.length===1){const[k,dn]=s[0];
+    if(dn){bg=`radial-gradient(circle, rgba(var(--cat-${k}),.42), rgba(var(--cat-${k}),.06) 72%)`;ring=`inset 0 0 0 1px rgba(var(--cat-${k}),.85)`}
+    inner=`<svg class="ic" style="color:rgb(var(--cat-${k}))"><use href="#i-${k}"/></svg>`;
+    if(!dn)inner+=frame(k);
+  }else if(s.length===2){const[a,b]=s;
+    if(a[1])bg=`radial-gradient(circle at 25% 50%, rgba(var(--cat-${a[0]}),.42), transparent 50%), radial-gradient(circle at 75% 50%, rgba(var(--cat-${b[0]}),.42), transparent 50%), rgba(var(--ink),.03)`;
+    if(a[1])ring=`inset 0 0 0 1px rgba(var(--cat-${a[0]}),.6)`;
+    inner=`<div style="display:flex;gap:6px;margin-top:6px">${s.map(x=>`<svg width="10" height="10" style="color:rgb(var(--cat-${x[0]}))"><use href="#i-${x[0]}"/></svg>`).join('')}</div>`+(a[1]?`<div style="position:absolute;left:50%;top:22%;bottom:22%;width:1px;background:rgba(var(--ink),.12)"></div>`:frame(a[0]));
+  }else{bg='rgba(var(--ink),.03)'}
+  return `<div><div class="cell" style="background:${bg||'transparent'};box-shadow:${ring||'none'}"><span class="n">${d.n}</span>${inner}</div></div>`;
+}
+function frame(k){const c=`rgba(var(--cat-${k}),.55)`;return `<svg class="dash" viewBox="0 0 100 100" preserveAspectRatio="none" style="inset:8%;width:84%;height:84%;position:absolute"><circle cx="50" cy="50" r="48" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="9 7" vector-effect="non-scaling-stroke"/></svg>`}
+function ring(p,t,s=56){const r=s/2-4,c=2*Math.PI*r,p1=Math.min(p,1),p2=Math.max(0,Math.min(p-1,1));
+  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><circle cx="${s/2}" cy="${s/2}" r="${r}" fill="none" stroke="rgba(var(--ink),.1)" stroke-width="${s>40?4:3}"/>
+  <circle cx="${s/2}" cy="${s/2}" r="${r}" fill="none" stroke="var(--accent)" stroke-width="${s>40?4:3}" stroke-linecap="round" stroke-dasharray="${c*p1} ${c}" transform="rotate(-90 ${s/2} ${s/2})"/>
+  ${p2?`<circle cx="${s/2}" cy="${s/2}" r="${r}" fill="none" stroke="var(--accent-over)" stroke-width="${s>40?4:3}" stroke-linecap="round" stroke-dasharray="${c*p2} ${c}" transform="rotate(-90 ${s/2} ${s/2})"/>`:''}
+  ${p>=1?`<circle cx="${s/2}" cy="3.5" r="1.8" fill="var(--on-accent)"/>`:''}
+  ${t?`<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="rgba(${css('--ink')},.9)">${t}</text>`:''}</svg>`}
+function race(){
+  const svg=document.getElementById('race');const W=600,H=180,P=24;
+  const mix=w=>{let t=0,o=[0,0,0];for(const k in w){const c=rgb(k);t+=w[k];o=o.map((v,i)=>v+c[i]*w[k])}return t?`rgb(${o.map(v=>Math.round(v/t)).join(',')})`:'gray'};
+  const runners=[{f:{fuerza:6,cardio:2},s:[0,1,1.6,2.8,3.4,4.6,5.5,6.8,7.4,8.6,9.8,10.9]},{f:{cardio:5,deporte:3},s:[0,.6,1.8,2.4,3.9,4.4,5.8,6.4,7.9,8.4,9.6,11.6]},{f:{movilidad:4,fuerza:1},s:[0,.8,1.2,2,2.6,3.5,3.9,4.8,5.3,6.1,6.6,7.4]}];
+  const max=12,x=i=>P+i*(W-2*P)/11,y=v=>H-P-v/max*(H-2*P);
+  let h=`<line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="rgba(${css('--ink')},.18)"/>`;
+  runners.forEach((r,ri)=>{const col=mix(r.f);
+    h+=`<polyline points="${r.s.map((v,i)=>x(i)+','+y(v)).join(' ')}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    h+=`<circle cx="${x(11)}" cy="${y(r.s[11])}" r="4" fill="${col}"/>`;});
+  svg.innerHTML=h;
+}
+// segmentado
+function seg(el,cb){const pill=el.querySelector('.pill'),bs=[...el.querySelectorAll('button')];
+  const place=b=>{pill.style.left=b.offsetLeft+'px';pill.style.width=b.offsetWidth+'px'};
+  bs.forEach(b=>b.onclick=()=>{bs.forEach(x=>x.classList.remove('on'));b.classList.add('on');place(b);cb&&cb(b)});
+  requestAnimationFrame(()=>place(el.querySelector('.on')));}
+seg(document.getElementById('themeSeg'),b=>{document.documentElement.dataset.theme=b.dataset.t;render()});
+seg(document.getElementById('segDemo'));
+render();
+
+// hoja con muelle + inercia proyectada
+const scrim=document.getElementById('scrim'),sheet=document.getElementById('sheet'),handle=document.getElementById('handle');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let y=0,v=0,target=0,raf=null,open=false;
+function spring(to,v0=0,done){target=to;v=v0;cancelAnimationFrame(raf);
+  if(reduce){y=to;apply();done&&done();return}
+  const k=380,c=34,m=.9;let last=performance.now();
+  const step=t=>{const dt=Math.min(.032,(t-last)/1000);last=t;const a=(-k*(y-target)-c*v)/m;v+=a*dt;y+=v*dt;apply();
+    if(Math.abs(v)<5&&Math.abs(y-target)<.5){y=target;apply();done&&done();return}raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step);}
+const H=()=>sheet.offsetHeight;
+function apply(){sheet.style.transform=`translateY(${y}px)`}
+function show(){scrim.classList.add('open');open=true;y=H();apply();spring(0)}
+function hide(v0=0){open=false;scrim.classList.remove('open');spring(H(),v0)}
+document.getElementById('openSheet').onclick=show;
+document.getElementById('closeSheet').onclick=e=>{e.stopPropagation();hide()};
+scrim.onclick=e=>{if(e.target===scrim)hide()};
+let drag=null;
+handle.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;cancelAnimationFrame(raf);drag={y0:e.clientY-y,hist:[[e.clientY,performance.now()]]};handle.setPointerCapture(e.pointerId)});
+handle.addEventListener('pointermove',e=>{if(!drag)return;let d=e.clientY-drag.y0;y=d<0?d*.06:d;apply();drag.hist.push([e.clientY,performance.now()]);if(drag.hist.length>5)drag.hist.shift()});
+handle.addEventListener('pointerup',()=>{if(!drag)return;const h=drag.hist,a=h[0],b=h[h.length-1];const vel=b[1]>a[1]?(b[0]-a[0])/(b[1]-a[1])*1000:0;drag=null;
+  const projected=y+(vel/1000)*.998/(1-.998);projected>140?hide(vel):spring(0,vel)});
+</script>
+</body>
+</html>
