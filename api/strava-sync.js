@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getAuthedUser, isCron } from './_lib/auth.js';
 
 const ACTIVITY_TYPE_MAP = {
   'Run': 'running',
@@ -60,9 +61,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email required' });
+  // El cron (strava-sync-all) indica el email; un usuario solo puede
+  // sincronizar su propia cuenta, identificada por su JWT.
+  let email;
+  if (isCron(req)) {
+    email = req.body?.email;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+  } else {
+    const user = await getAuthedUser(req);
+    if (!user) return res.status(401).json({ error: 'unauthorized' });
+    email = user.email;
   }
 
   try {

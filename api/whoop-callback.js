@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { adminClient, verifyState } from './_lib/auth.js';
 
 const REDIRECT_URI = 'https://olympia-navy.vercel.app/api/whoop-callback';
 
 export default async function handler(req, res) {
-  const { code, state: email, error } = req.query;
+  const { code, state, error } = req.query;
 
-  console.log('[whoop-callback] code:', !!code, '| email:', email, '| error:', error);
+  console.log('[whoop-callback] code:', !!code, '| error:', error);
 
   if (error) {
     console.error('[whoop-callback] Whoop returned error:', error);
@@ -17,8 +17,10 @@ export default async function handler(req, res) {
     return res.redirect('/mas?whoop=error');
   }
 
-  if (!email) {
-    console.error('[whoop-callback] Missing email in state');
+  // El state lo firmó /api/whoop-auth para el usuario con sesión.
+  const owner = verifyState(state);
+  if (!owner) {
+    console.error('[whoop-callback] Invalid or expired state');
     return res.redirect('/mas?whoop=error');
   }
 
@@ -36,37 +38,24 @@ export default async function handler(req, res) {
       }),
     });
 
-    const tokenText = await tokenRes.text();
-    console.log('[whoop-callback] token exchange status:', tokenRes.status, '| body:', tokenText);
+    // No se registra el cuerpo: contiene los tokens.
+    console.log('[whoop-callback] token exchange status:', tokenRes.status);
 
     if (!tokenRes.ok) {
       return res.redirect('/mas?whoop=error');
     }
 
-    const tokens = JSON.parse(tokenText);
+    const tokens = await tokenRes.json();
     const { access_token, refresh_token = '', expires_in } = tokens;
     const expires_at = Math.floor(Date.now() / 1000) + (expires_in || 3600);
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabase = adminClient();
 
-    // 2. Buscar user_id a partir del email
-    const { data: member } = await supabase
-      .from('team_members')
-      .select('user_id')
-      .eq('email', email)
-      .single();
-
-    const user_id = member?.user_id || null;
-    console.log('[whoop-callback] user_id:', user_id);
-
-    // 3. Guardar tokens
+    // 2. Guardar tokens
     const { error: upsertError } = await supabase
       .from('whoop_tokens')
       .upsert(
-        { user_email: email, user_id, access_token, refresh_token, expires_at },
+        { user_email: owner.email, user_id: owner.uid, access_token, refresh_token, expires_at },
         { onConflict: 'user_email' }
       );
 
@@ -75,13 +64,13 @@ export default async function handler(req, res) {
       return res.redirect('/mas?whoop=error');
     }
 
-    // 4. Marcar whoop_connected en team_members
+    // 3. Marcar whoop_connected en team_members
     await supabase
       .from('team_members')
       .update({ whoop_connected: true })
-      .eq('email', email);
+      .eq('user_id', owner.uid);
 
-    console.log('[whoop-callback] success for', email);
+    console.log('[whoop-callback] success for', owner.uid);
     return res.redirect('/mas?whoop=success');
 
   } catch (err) {

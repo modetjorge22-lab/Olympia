@@ -22,6 +22,24 @@ const inputStyle = {
   transition: 'border-color 0.2s',
 };
 
+// El registro está cerrado a la waitlist (db/2026-10-fase0-registro-cerrado.sql).
+// El hook devuelve su propio mensaje; sin hook, Supabase da un error genérico.
+const NOT_INVITED = 'Olympia está en acceso por invitación. Solicita acceso desde la página principal.';
+
+function authErrorMessage(message = '') {
+  if (message === 'Invalid login credentials') return 'Email o contraseña incorrectos';
+  if (/invitaci|signup_not_invited|Database error saving new user/i.test(message)) return NOT_INVITED;
+  return message;
+}
+
+// Error que Supabase deja en la URL al volver de Google (query o hash).
+function oauthErrorFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const description = params.get('error_description') || hash.get('error_description');
+  return description ? authErrorMessage(description) : '';
+}
+
 function Field({ icon: Icon, label, ...props }) {
   return (
     <div>
@@ -49,7 +67,7 @@ export default function Login() {
   const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(oauthErrorFromUrl);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -64,7 +82,7 @@ export default function Login() {
         await signInWithEmail(email, password);
       }
     } catch (err) {
-      setError(err.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos' : err.message);
+      setError(authErrorMessage(err.message));
     } finally {
       setLoading(false);
     }

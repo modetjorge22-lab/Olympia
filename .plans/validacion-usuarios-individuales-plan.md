@@ -2,6 +2,8 @@
 
 *Plan del 15 oct 2026. Sustituye en parte a `olympia-grupos-y-apertura-spec.md` (ver §8).*
 
+> **Sustituido** el 18 oct 2026 por `olympia-lanzamiento-publico-spec.md`.
+
 ## 1. La pregunta
 
 > ¿Hay gente, fuera de mi entorno, que use Olympia para **registrar a mano y con disciplina** el tiempo que dedica al

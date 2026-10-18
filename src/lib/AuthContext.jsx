@@ -50,7 +50,9 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/feed',
+        // Vuelve a /login: si hay sesión, PublicRoute lleva a la app; si el
+        // registro se rechazó (waitlist), Login muestra el motivo.
+        redirectTo: window.location.origin + '/login',
       },
     });
     if (error) throw error;
