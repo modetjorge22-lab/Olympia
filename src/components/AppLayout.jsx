@@ -48,10 +48,10 @@ export default function AppLayout({ children }) {
   // motion values → solo transforms en el compositor, cero renders de React.
   const compact = useMotionValue(0);
   const c = useSpring(compact, { stiffness: 520, damping: 46, mass: 0.6 });
-  const headerY = useTransform(c, [0, 1], [0, -6]);
-  const headerScale = useTransform(c, [0, 1], [1, 0.84]);
-  const navY = useTransform(c, [0, 1], [0, 10]);
-  const navScale = useTransform(c, [0, 1], [1, 0.86]);
+  const headerY = useTransform(c, [0, 1], [0, -8]);
+  const headerScale = useTransform(c, [0, 1], [1, 0.76]);
+  const navY = useTransform(c, [0, 1], [0, 11]);
+  const navScale = useTransform(c, [0, 1], [1, 0.78]);
 
   useEffect(() => {
     const RANGE = 90; // px de scroll para pasar de completa a recogida
