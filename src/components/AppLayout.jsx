@@ -4,7 +4,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import InfinityMark from './InfinityMark';
-import FeatureAnnouncement from './FeatureAnnouncement';
+import OfficialAnnouncement from './OfficialAnnouncement';
 
 
 const navItems = [
@@ -87,7 +87,7 @@ export default function AppLayout({ children }) {
 
   return (
     <>
-    <FeatureAnnouncement />
+    <OfficialAnnouncement />
     <div className="min-h-screen flex flex-col">
       {/* Header flotante — píldora de vidrio */}
       <header
