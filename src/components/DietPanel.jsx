@@ -10,7 +10,10 @@ import { MAX_STANDARDS, pendingDate, useDiet } from '@/hooks/useDiet';
 const INK = a => `rgba(var(--ink),${a})`;
 const MONO = 'var(--font-mono)';
 
-const dayLabel = ds => new Date(`${ds}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+const dayLabel = ds => {
+  const s = new Date(`${ds}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
 function Choice({ on, children, ...rest }) {
   return (
@@ -252,7 +255,7 @@ export function DietDailyPrompt() {
         <Sheet onClose={close} label="Alimentación de ayer" header={
           <div className="flex items-start gap-3 mb-4">
             <div className="flex-1 min-w-0">
-              <p style={{ fontFamily: MONO, fontSize: 11, color: INK(0.45) }}>Alimentación · <span className="capitalize">{dayLabel(date)}</span></p>
+              <p style={{ fontFamily: MONO, fontSize: 11, color: INK(0.45) }}>Alimentación · {dayLabel(date)}</p>
               <p className="mt-1" style={{ fontSize: 17, letterSpacing: 'var(--tracking-title)', color: INK(0.95) }}>{questionFor(diet)}</p>
             </div>
             <IconButton icon={X} label="Ahora no" onClick={close} />
@@ -269,7 +272,7 @@ export function DietDailyPrompt() {
             <Answer diet={diet} date={date} onDone={close} />
             {diet.stats.streak > 0 && (
               <p className="mt-4 text-center" style={{ fontFamily: MONO, fontSize: 11, color: INK(0.45) }}>
-                llevas {diet.stats.streak} {diet.stats.streak === 1 ? 'día' : 'días'} seguidos
+                llevas {diet.stats.streak} {diet.stats.streak === 1 ? 'día seguido' : 'días seguidos'}
               </p>
             )}
           </div>
