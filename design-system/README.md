@@ -9,6 +9,7 @@ Olympia mide el tiempo que dedicas a moverte y lo convierte en algo que comparte
 | `index.html` | Guía viva: ábrela en el navegador (tiene conmutador Vino/Marfil y una hoja arrastrable) |
 | `olympia-tokens.css` | Variables CSS listas para importar en cualquier proyecto web |
 | `olympia-tokens.json` | Los mismos tokens para Figma, nativo, emails o scripts |
+| `auditoria-2026-11.md` | Auditoría de la app contra el sistema: qué falta por armonizar, por prioridad |
 
 La fuente de verdad sigue siendo la app: `src/index.css`, `src/lib/theme.js`, `src/components/sheetDrag.js` y `src/utils/activityIcons.js`. Si cambias algo allí, actualiza también estos tokens.
 
