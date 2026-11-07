@@ -9,10 +9,11 @@ export const WHOOP_SCOPES = 'offline read:profile read:workout read:sleep read:r
 
 const MIN_WORKOUT_MINUTES = 10;
 
-// WHOOP detecta solo paseos y "activity" genérica casi a diario. No son
-// entrenos: no crean actividad (llenarían el feed e inflarían las horas),
-// solo se enlazan si ya existe una sesión registrada que coincida.
-const PASSIVE_SPORTS = new Set(['walking', 'activity']);
+// Caminar no cuenta como actividad en Olympia: se ignora del todo (ni se
+// crea ni se enlaza). La "activity" genérica que WHOOP detecta sola no crea
+// actividad; solo se enlaza si ya existe una sesión registrada que coincida.
+const IGNORED_SPORTS = new Set(['walking']);
+const PASSIVE_SPORTS = new Set(['activity']);
 const MATCH_TOLERANCE_MINUTES = 15;
 
 const TYPE_LABELS = {
@@ -158,6 +159,11 @@ export async function importWorkout(sb, row, w) {
   if (!w || w.score_state !== 'SCORED') return 'pending';
   const minutes = Math.round((new Date(w.end) - new Date(w.start)) / 60000);
   if (minutes < MIN_WORKOUT_MINUTES) return 'short';
+  if (IGNORED_SPORTS.has(String(w.sport_name || '').toLowerCase())) {
+    // Por si se importó antes de esta regla.
+    await removeWorkout(sb, w.id);
+    return 'ignored';
+  }
 
   const type = mapSport(w.sport_name);
   const date = localDate(w.start, w.timezone_offset);
