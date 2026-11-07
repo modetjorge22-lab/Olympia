@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid, ReferenceLine, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -9,10 +9,8 @@ import { useMonth } from '@/lib/MonthContext';
 import LogActivityDialog from '@/components/LogActivityDialog';
 import { useGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Target, Sparkles, TrendingUp, TrendingDown, ChevronDown, Calendar, Trophy, Pencil, Check, X, Moon, Dumbbell, ChevronUp } from 'lucide-react';
-import { getActivitySummary, getPlanSummary, DAY_PALETTE } from '@/utils/dayDisplay';
+import { Plus, ChevronDown, X, ChevronUp } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
-import { DashedFrame } from '@/components/sketch';
 import { MUSCLE_GROUPS, detectMuscleGroups } from '@/utils/muscles';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import { TrainingSection, MonthScroller, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
@@ -57,19 +55,6 @@ const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
 const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const TEXT_FAINT = 'rgba(var(--ink),0.30)';
 
-const ACTIVITY_COLORS = {
- strength_training: '#6366f1',
- running: '#10b981',
- swimming: '#38bdf8',
- cycling: '#f59e0b',
- tennis: '#a78bfa',
- padel: '#fb923c',
- football: '#4ade80',
- yoga: '#f472b6',
- hiking: '#84cc16',
- martial_arts: '#f87171',
- other: '#71717a',
-};
 
 function ChartTooltip({ active, payload, label, labelPrefix }) {
  if (!active || !payload?.length) return null;
@@ -95,7 +80,7 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
  <p style={{ color: 'rgba(var(--ink),0.55)', fontSize: 9, marginBottom: 2 }}>
  {headerText}
  </p>
- <p style={{ color: 'rgba(var(--ink),0.95)', fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>
+ <p style={{ color: 'rgba(var(--ink),0.95)', fontSize: 11, lineHeight: 1.2 }}>
  {totalText}
  </p>
  {showBreakdown && items.map((entry, i) => (
@@ -104,110 +89,10 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
  <div style={{ width: 5, height: 5, borderRadius: 1, background: entry.color || entry.fill }} />
  <span style={{ color: 'rgba(var(--ink),0.7)', fontSize: 9 }}>{entry.tooltipName || entry.name}</span>
  </div>
- <span style={{ color: 'rgba(var(--ink),0.85)', fontWeight: 500, fontSize: 9 }}>{entry.value}h</span>
+ <span style={{ color: 'rgba(var(--ink),0.85)', fontSize: 9 }}>{entry.value}h</span>
  </div>
  ))}
  </div>
- );
-}
-
-function singleBarColor(hours, maxHours, color) {
- if (hours === 0) return 'rgba(var(--ink),0.08)';
- const r = Math.min(hours / Math.max(maxHours, 0.5), 1);
- const opacity = 0.35 + r * 0.6;
- const hex = color.replace('#','');
- const bigint = parseInt(hex, 16);
- const r2 = (bigint >> 16) & 255;
- const g = (bigint >> 8) & 255;
- const b = bigint & 255;
- return `rgba(${r2},${g},${b},${opacity})`;
-}
-
-function ActivityDropdown({ value, onChange, types }) {
- const [open, setOpen] = useState(false);
- const ref = useRef(null);
-
- useEffect(() => {
- function handleClick(e) {
- if (ref.current && !ref.current.contains(e.target)) setOpen(false);
- }
- document.addEventListener('mousedown', handleClick);
- return () => document.removeEventListener('mousedown', handleClick);
- }, []);
-
- const selected = value === 'accumulated'
- ? { label: 'Acumulado' }
- : { ...ACTIVITY_TYPES[value] };
-
- return (
- <div ref={ref} style={{ position: 'relative' }}>
- <button
- onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] transition-ui"
- style={{
- background: 'var(--glass-bg)',
- border: '1px solid var(--glass-border)',
- color: TEXT_PRIMARY,
- }}
- >
- {selected.label}
- <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform"
- style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: TEXT_MUTED }} />
- </button>
-
- <AnimatePresence>
- {open && (
- <motion.div
- initial={{ opacity: 0, y: -6, scale: 0.96 }}
- animate={{ opacity: 1, y: 0, scale: 1 }}
- exit={{ opacity: 0, y: -6, scale: 0.96 }}
- transition={{ duration: 0.15, ease: 'easeOut' }}
- style={{
- transformOrigin: 'top left',
- position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
- minWidth: 180,
- background: 'var(--surface)',
- border: '1px solid rgba(var(--ink),0.16)',
- borderRadius: 12, padding: 6,
- boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
- }}
- >
- <MenuItem active={value === 'accumulated'} dot={ACCENT} label="Acumulado"
- onClick={() => { onChange('accumulated'); setOpen(false); }} />
-
- {types.length > 0 && (
- <>
- <div style={{ height: 1, background: 'rgba(var(--ink),0.12)', margin: '4px 6px' }} />
- <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_MUTED, padding: '4px 8px 2px' }}>Por actividad</p>
- {types.map(t => (
- <MenuItem key={t.key} active={value === t.key} dot={ACCENT}
- label={`${t.emoji} ${t.label}`}
- onClick={() => { onChange(t.key); setOpen(false); }} />
- ))}
- </>
- )}
- </motion.div>
- )}
- </AnimatePresence>
- </div>
- );
-}
-
-function MenuItem({ active, dot, label, color, onClick }) {
- return (
- <button
- onClick={onClick}
- className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-ui text-left"
- style={active ? {
- background: color ? `${color}22` : 'rgba(var(--ink),0.12)',
- color: color || TEXT_PRIMARY,
- } : {
- color: TEXT_SECONDARY,
- }}
- >
- <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dot }} />
- {label}
- </button>
  );
 }
 
@@ -910,7 +795,7 @@ export default function Actividad() {
  fontFamily='"JetBrains Mono", monospace'>
  {payload.value}
  </text>
- <text x={x} y={y + 12} textAnchor={textAnchor} fontSize="10" fontWeight="700" fill={CH.accent}
+ <text x={x} y={y + 12} textAnchor={textAnchor} fontSize="10" fill={CH.accent}
  fontFamily='"JetBrains Mono", monospace'>
  {item && item.hours > 0 ? `${item.hours}h` : '–'}
  </text>
@@ -1133,144 +1018,5 @@ export default function Actividad() {
  )}
  </AnimatePresence>
  </div>
- );
-}
-
-function StatBox({ icon, value, label, sub }) {
- return (
- <div className="rounded-2xl p-4 flex flex-col items-center" style={glassCard}>
- {icon}
- <span className="text-[22px] font-normal font-mono mt-1.5" style={{ color: TEXT_PRIMARY }}>{value}</span>
- <span className="text-[10px] mt-0.5" style={{ color: TEXT_MUTED }}>{label}</span>
- {sub && <span className="text-[9px]" style={{ color: TEXT_MUTED }}>{sub}</span>}
- </div>
- );
-}
-
-function DaySummaryDrop({ summary, palette, extraCount = 0 }) {
- if (!summary?.name) return null;
- const lineStyle = {
- width: 1,
- borderLeft: `1px dashed ${palette.line}`,
- alignSelf: 'stretch',
- };
- return (
- <div className="flex w-full" style={{ marginTop: 3 }}>
- <div style={lineStyle} />
- <div
- className="flex-1 flex flex-col justify-center"
- style={{ paddingTop: 3, paddingBottom: 3, paddingLeft: 2, paddingRight: 2, textAlign: 'center', lineHeight: 1.15, minWidth: 0 }}
- >
- <p style={{
- fontSize: 8.5,
- fontWeight: 600,
- color: palette.textOnSummary,
- overflow: 'hidden',
- textOverflow: 'ellipsis',
- whiteSpace: 'nowrap',
- }}>
- {summary.name}
- </p>
- {summary.duration && (
- <p style={{
- fontSize: 8,
- fontWeight: 500,
- color: palette.textOnSummary,
- opacity: 0.78,
- }}>
- {summary.duration}
- </p>
- )}
- {extraCount > 0 && (
- <p style={{
- fontSize: 7.5,
- color: palette.textOnSummary,
- opacity: 0.6,
- }}>
- +{extraCount}
- </p>
- )}
- </div>
- <div style={lineStyle} />
- </div>
- );
-}
-
-function CalendarGrid({ year, month, activitiesByDate, plansByDayOfMonth = {}, prDates = new Set(), onDayClick, expandedDay, filterType = null }) {
- const now = new Date();
- const daysInMonth = new Date(year, month + 1, 0).getDate();
- let startDow = new Date(year, month, 1).getDay() - 1;
- if (startDow < 0) startDow = 6;
- const trailing = [];
- for (let i = 0; i < startDow; i++) trailing.push(i);
-
- return (
- <>
-  <div className="grid grid-cols-7 gap-y-1.5 max-w-[340px] mx-auto">
- {/* Iniciales de la semana — deja claro que es un calendario */}
- {['L','M','X','J','V','S','D'].map(d => (
- <span key={`dow-${d}`} className="text-center text-[8px] font-normal"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
- {d}
- </span>
- ))}
- {trailing.map(i => (
- <div key={`p-${i}`} className="w-8 h-8 mx-auto" aria-hidden="true" />
- ))}
- {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
- const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const acts = activitiesByDate[day] || [];
- const has = acts.length > 0;
- const matchesFilter = !filterType || acts.some(a => a.type === filterType);
- const show = has && matchesFilter;
- const matchCount = filterType ? acts.filter(a => a.type === filterType).length : acts.length;
- const planned = plansByDayOfMonth[day] || [];
- const showPlan = !has && planned.length > 0 && !filterType;
- const isExp = expandedDay === day;
- const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
- const isFuture = new Date(year, month, day) > now;
- const isPR = prDates.has(dateStr) && matchesFilter;
- const emoji = isPR ? '🏆'
- : show ? (ACTIVITY_TYPES[filterType || acts[0].type]?.emoji || '🏅')
- : showPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅')
- : null;
- return (
- <button key={day} onClick={() => onDayClick(day)}
- className="w-8 h-8 mx-auto flex items-center justify-center transition-[background,border-color] relative"
- style={{
- borderRadius: 8,
- ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
- background: (show || isPR)
- ? `radial-gradient(circle at center, rgba(var(--accent-rgb),${isExp ? 0.55 : 0.45}) 0%, rgba(var(--accent-rgb),0.03) 78%)`
- : 'transparent',
- }}>
- {!isToday && (
- <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
- opacity={isFuture ? 0.22 : 0.45}
- />
- )}
- <span className="text-[9px] font-normal leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
- {day}
- </span>
- {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, lineHeight: 1 }}>🏆</span>}
- {show && matchCount > 1 && (
- <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(var(--ink),0.12)' }}>
- <span className="text-[7px] font-normal" style={{ color: '#1c2620' }}>{matchCount}</span>
- </div>
- )}
- {showPlan && planned.length > 1 && (
- <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
- style={{ background: '#fff', border: '1px solid rgba(125,107,167,0.4)' }}>
- <span className="text-[7px] font-normal" style={{ color: DAY_PALETTE.planned.text }}>{planned.length}</span>
- </div>
- )}
- </button>
- );
- })}
- </div>
- </>
  );
 }

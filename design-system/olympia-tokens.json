@@ -1,7 +1,7 @@
 {
   "$name": "Olympia Design Tokens",
-  "$version": "1.0.0",
-  "$updated": "2026-10-18",
+  "$version": "1.2.0",
+  "$updated": "2026-11-07",
   "color": {
     "dark": {
       "bg": "#2a121a",
@@ -12,10 +12,36 @@
       "accentStrong": "#f5ede0",
       "accentOver": "#ffffff",
       "onAccent": "#2a121a",
-      "glass": { "bg": "rgba(48,22,32,0.55)", "border": "rgba(245,237,224,0.12)", "shadow": "0 12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)" },
-      "category": { "fuerza": "rgb(240,228,208)", "cardio": "rgb(242,206,92)", "deporte": "rgb(126,204,148)", "movilidad": "rgb(140,190,240)", "otro": "rgb(170,160,155)" },
-      "semantic": { "success": "#34d399", "warning": "#fbbf24", "danger": "#f87171", "info": "#a5b4fc" },
-      "chart": { "grid": "rgba(245,237,224,0.08)", "axis": "rgba(245,237,224,0.18)", "tick": "rgba(245,237,224,0.45)", "cursor": "rgba(245,237,224,0.25)", "ref": "rgba(245,237,224,0.35)" }
+      "glass": {
+        "bg": "rgba(48,22,32,0.55)",
+        "border": "rgba(245,237,224,0.12)",
+        "shadow": "0 12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)"
+      },
+      "category": {
+        "fuerza": "rgb(240,228,208)",
+        "cardio": "rgb(242,206,92)",
+        "deporte": "rgb(126,204,148)",
+        "movilidad": "rgb(140,190,240)",
+        "otro": "rgb(170,160,155)"
+      },
+      "semantic": {
+        "success": "#34d399",
+        "warning": "#fbbf24",
+        "danger": "#f87171",
+        "info": "#a5b4fc"
+      },
+      "chart": {
+        "grid": "rgba(245,237,224,0.08)",
+        "axis": "rgba(245,237,224,0.18)",
+        "tick": "rgba(245,237,224,0.45)",
+        "cursor": "rgba(245,237,224,0.25)",
+        "ref": "rgba(245,237,224,0.35)"
+      },
+      "sheet": {
+        "bg": "rgba(58,28,40,0.74)",
+        "edge": "rgba(245,237,224,0.14)",
+        "shadow": "0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)"
+      }
     },
     "light": {
       "bg": "#fffdf5",
@@ -26,33 +52,153 @@
       "accentStrong": "#31000f",
       "accentOver": "#96203f",
       "onAccent": "#f5ede0",
-      "glass": { "bg": "rgba(255,253,245,0.6)", "border": "rgba(42,18,26,0.12)", "shadow": "0 12px 40px rgba(42,18,26,0.16), inset 0 1px 0 rgba(255,255,255,0.6)" },
-      "category": { "fuerza": "rgb(74,22,38)", "cardio": "rgb(226,178,32)", "deporte": "rgb(72,160,100)", "movilidad": "rgb(92,156,220)", "otro": "rgb(120,110,105)" },
-      "semantic": { "success": "#047857", "warning": "#b45309", "danger": "#b91c1c", "info": "#4338ca" },
-      "chart": { "grid": "rgba(42,18,26,0.08)", "axis": "rgba(42,18,26,0.2)", "tick": "rgba(42,18,26,0.45)", "cursor": "rgba(42,18,26,0.3)", "ref": "rgba(42,18,26,0.35)" }
+      "glass": {
+        "bg": "rgba(255,253,245,0.6)",
+        "border": "rgba(42,18,26,0.12)",
+        "shadow": "0 12px 40px rgba(42,18,26,0.16), inset 0 1px 0 rgba(255,255,255,0.6)"
+      },
+      "category": {
+        "fuerza": "rgb(74,22,38)",
+        "cardio": "rgb(226,178,32)",
+        "deporte": "rgb(72,160,100)",
+        "movilidad": "rgb(92,156,220)",
+        "otro": "rgb(120,110,105)"
+      },
+      "semantic": {
+        "success": "#047857",
+        "warning": "#b45309",
+        "danger": "#b91c1c",
+        "info": "#4338ca"
+      },
+      "chart": {
+        "grid": "rgba(42,18,26,0.08)",
+        "axis": "rgba(42,18,26,0.2)",
+        "tick": "rgba(42,18,26,0.45)",
+        "cursor": "rgba(42,18,26,0.3)",
+        "ref": "rgba(42,18,26,0.35)"
+      },
+      "sheet": {
+        "bg": "rgba(255,255,255,0.78)",
+        "edge": "rgba(42,18,26,0.10)",
+        "shadow": "0 24px 60px rgba(42,18,26,0.22), inset 0 1px 0 rgba(255,255,255,0.7)"
+      }
     },
     "today": "#e5484d",
-    "inkOpacity": { "primary": 0.95, "body": 0.9, "secondary": 0.6, "tertiary": 0.45, "divider": 0.12, "hairline": 0.06, "fill": 0.05 },
-    "categoryOpacity": { "haloCenter": 0.42, "haloEdge": 0.06, "ring": 0.85, "iconBg": 0.16, "plannedFrame": 0.38 }
+    "inkOpacity": {
+      "primary": 0.95,
+      "body": 0.9,
+      "secondary": 0.6,
+      "tertiary": 0.45,
+      "divider": 0.12,
+      "hairline": 0.06,
+      "fill": 0.05
+    },
+    "categoryOpacity": {
+      "haloCenter": 0.42,
+      "haloEdge": 0.06,
+      "ring": 0.85,
+      "iconBg": 0.16,
+      "plannedFrame": 0.38
+    }
   },
   "typography": {
-    "family": { "sans": "DM Sans", "mono": "JetBrains Mono" },
+    "family": {
+      "sans": "DM Sans",
+      "mono": "JetBrains Mono"
+    },
     "weight": 400,
-    "size": { "micro": 8.5, "caption": 10, "meta": 11, "body": 12, "section": 13, "title": 15, "metric": 17, "display": 22 },
-    "tracking": { "section": "0.14em", "logo": "0.3em" },
+    "size": {
+      "micro": 8.5,
+      "caption": 10,
+      "meta": 11,
+      "body": 12,
+      "section": 13,
+      "title": 15,
+      "metric": 17,
+      "display": 22
+    },
+    "tracking": {
+      "section": "0.14em",
+      "logo": "0.3em",
+      "title": "-0.01em",
+      "caption": "0.06em"
+    },
     "numeric": "tabular-nums"
   },
-  "radius": { "chip": 999, "tile": 16, "card": 24, "sheet": 28, "header": 26, "nav": 30 },
-  "space": [4, 8, 12, 16, 20, 24, 32],
-  "material": { "glassFilter": "blur(24px) saturate(160%)", "scrimFilter": "blur(10px)" },
+  "radius": {
+    "chip": 999,
+    "tile": 16,
+    "card": 24,
+    "sheet": 28,
+    "header": 26,
+    "nav": 30
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32
+  ],
+  "material": {
+    "glassFilter": "blur(24px) saturate(160%)",
+    "scrimFilter": "blur(10px)",
+    "sheetFilter": "blur(40px) saturate(180%)",
+    "sheetInset": 8
+  },
   "motion": {
-    "sheetSpring": { "type": "spring", "damping": 34, "stiffness": 380, "mass": 0.9 },
-    "tabPillSpring": { "type": "spring", "damping": 32, "stiffness": 420, "mass": 0.8 },
-    "sheetDrag": { "elasticTop": 0.06, "elasticBottom": 0.8, "dismissThreshold": 140, "deceleration": 0.998 },
-    "press": { "scale": 0.96, "duration": 150 },
-    "tabFade": { "duration": 150, "ease": "easeOut" },
-    "scrimFade": { "duration": 200 },
-    "sheetExit": { "duration": 200, "ease": "easeOut" },
-    "raceReplay": { "duration": 7000, "speeds": [1, 2] }
+    "sheetSpring": {
+      "type": "spring",
+      "damping": 34,
+      "stiffness": 380,
+      "mass": 0.9
+    },
+    "tabPillSpring": {
+      "type": "spring",
+      "damping": 32,
+      "stiffness": 420,
+      "mass": 0.8
+    },
+    "sheetDrag": {
+      "elasticTop": 0.06,
+      "elasticBottom": 0.8,
+      "dismissThreshold": 140,
+      "deceleration": 0.998
+    },
+    "press": {
+      "scale": 0.96,
+      "duration": 100
+    },
+    "tabFade": {
+      "duration": 150,
+      "ease": "easeOut"
+    },
+    "scrimFade": {
+      "duration": 200
+    },
+    "sheetExit": {
+      "type": "spring",
+      "stiffness": 440,
+      "damping": 42,
+      "mass": 1,
+      "inheritsGestureVelocity": true
+    },
+    "raceReplay": {
+      "duration": 7000,
+      "speeds": [
+        1,
+        2
+      ]
+    },
+    "menuSpring": {
+      "type": "spring",
+      "stiffness": 520,
+      "damping": 46,
+      "mass": 1,
+      "fromScale": 0.92,
+      "origin": "trigger"
+    }
   }
 }

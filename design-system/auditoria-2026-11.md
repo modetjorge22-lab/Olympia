@@ -106,3 +106,31 @@ Sin esto, la auditoría tendrá que repetirse cada pocos meses. Con esto, los P1
 5. **Grupos y Actividad:** detalles.
 
 Cada paso se verifica con `vite build` y una revisión visual en móvil, y se apunta en el historial del README.
+
+---
+
+## Estado tras la v1.2 (2026-11-07)
+
+| Punto | Estado |
+|---|---|
+| P0.1 Tokens en la app | ✅ `index.css` tiene todos los tokens de `olympia-tokens.css` (comprobado por script: no falta ninguno) |
+| P0.2 Piezas reutilizables | ✅ `src/components/ui/` (`Sheet`, `SheetTitle`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`). Las 4 hojas de la app usan `Sheet` |
+| P1.3 Más | ✅ Rehecha con las piezas: sin negritas ni mayúsculas, avatar redondo, segmentado de tema, estados en línea. Se quitan 4 botones (Perfil, Mis Workouts, Estadísticas, Ajustes) que no hacían nada |
+| P1.4 Planificador | ✅ Eliminado: `WeeklyPlanner.jsx` no lo usaba ninguna pantalla. Hoy se planifica desde «Registrar → Planificada» y desde la hoja del día |
+| P1.5 Grupos | ✅ Las mayúsculas y negritas estaban en funciones que no se usaban (`MiniMemberCard`, `PaceRing`, `SportFilterDropdown`), ya eliminadas. El tooltip pasa a radio 16 y el rojo de hoy, a `--today` |
+| P1.6 Comunicado | Se mantiene como está, por decisión de Jorge |
+| P2.7 Código que no se usa | ✅ `Dashboard.jsx`, `FeatureAnnouncement.jsx`, `WeeklyPlanner.jsx`, 12 funciones sin uso y 2 paletas antiguas (`ACTIVITY_COLORS` y `MEMBER_COLORS`) |
+| P2.8 Rojo de hoy | ✅ `var(--today)` en el calendario, Grupos y la ficha de miembro |
+| P2.9 Actividad | ✅ El contador `#fff` estaba en `CalendarGrid`, que no se usaba (eliminado). Trofeo 🏆 sustituido por el icono en acento. Negritas de los tooltips quitadas |
+| P2.10 Login, Reset y Landing | ✅ Botones a píldora, sin negrita y con `.o-press`. Los campos de texto mantienen radio 12 (el sistema aún no define campos) |
+
+### Correcciones a esta auditoría
+
+- **Puntos de la carrera (P1.5):** no usaban la paleta genérica. El código ya les pasaba el color de mezcla de familias; `MEMBER_COLORS` solo quedaba como resto. Se ha eliminado igualmente.
+- **Planificador (P1.4):** no hacía falta migrarlo, porque no se usaba. La primera revisión solo buscó ficheros sin importar en una lista parcial; la segunda los revisó todos.
+
+### Pendiente
+
+- **Revisión visual con sesión iniciada.** Las piezas se probaron en una página de prueba aislada, en móvil y con los temas oscuro y claro (hoja, menú del filtro, abrir y cerrar). Las pantallas reales están detrás del login y no se han visto.
+- **`design-system/index.html`** (guía viva) sigue mostrando la hoja opaca de la v1.1.
+- **Decidir `user-scalable=no`** (ver README §11).

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
 import { X, TrendingUp, Trophy, Minus, Plus, Shield } from 'lucide-react';
 import { iconFor, catColor } from '@/utils/activityIcons';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { MUSCLE_GROUPS, detectMuscleGroups, muscleLabel } from '@/utils/muscles';
-import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
+import { Sheet } from '@/components/ui';
 
 const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
 const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
@@ -25,7 +23,6 @@ function parseLocalDate(dateStr) {
 }
 
 export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitPlan, selectedDate, goals = [], onPrBeaten, editActivity = null, onUpdate, prefillPlan = null }) {
-  const sheet = useSheetDrag(onClose);
   const [mode, setMode] = useState('realized'); // 'realized' | 'planned'
   const [activityType, setActivityType] = useState('');
   const [trainingType, setTrainingType] = useState('');
@@ -192,30 +189,8 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
     <p className="text-[11px] mb-2" style={{ color: TEXT_MUTED, letterSpacing: '0.04em' }}>{children}</p>
   );
 
-  return createPortal(
-    <motion.div
-      className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }}
-      onClick={onClose}
-    >
-      <motion.div
-        className="w-full max-w-lg flex flex-col"
-        style={{
-          maxHeight: '92dvh',
-          background: 'var(--surface)',
-          borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={SHEET_SPRING}
-        {...sheet.dragProps}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Asa + cabecera */}
-        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
-          <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />
+  return (
+    <Sheet onClose={onClose} maxHeight="92dvh" label="Registrar actividad" header={<>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px]" style={{ color: TEXT_PRIMARY, letterSpacing: '0.04em' }}>
               {editActivity ? 'Editar actividad' : prefillPlan ? 'Completar plan' : (mode === 'planned' ? 'Planificar' : 'Registrar actividad')}
@@ -241,7 +216,7 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
               ))}
             </div>
           )}
-        </div>
+      </>}>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-5">
           {/* Tipo de actividad — rejilla de símbolos */}
@@ -487,8 +462,6 @@ export default function LogActivityDialog({ isOpen, onClose, onSubmit, onSubmitP
             )}
           </button>
         </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+    </Sheet>
   );
 }

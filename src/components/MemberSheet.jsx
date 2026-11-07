@@ -1,13 +1,11 @@
 import React, { useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
 import { X, Trophy } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { DayCell, toDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { iconFor, categoryOf, catColor, CATEGORIES } from '@/utils/activityIcons';
-import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
+import { Sheet } from '@/components/ui';
 
 // Snapshot de un miembro — versión resumida de su pestaña "Tú":
 // cifras clave, su semana, su mes en calendario Olympia, desglose por familia,
@@ -29,7 +27,6 @@ function Title({ children }) {
 }
 
 export default function MemberSheet({ member, activities = [], plans = [], goals = [], objectives = [], prDates = new Set(), pacePct = null, onClose }) {
-  const sheet = useSheetDrag(onClose);
   const byDate = useMemo(() => {
     const m = {};
     activities.forEach(a => { const ds = a.date?.slice(0, 10); if (ds) (m[ds] = m[ds] || []).push(a); });
@@ -69,26 +66,8 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
   const recent = [...activities].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
   const initials = member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-  return createPortal(
-    <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
-      <motion.div
-        className="w-full max-w-lg flex flex-col"
-        style={{
-          maxHeight: '90dvh', background: 'var(--surface)',
-          borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={SHEET_SPRING}
-        {...sheet.dragProps}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Cabecera */}
-        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
-          <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: INK(0.18) }} />
+  return (
+    <Sheet onClose={onClose} maxHeight="90dvh" label="Ficha de miembro" header={<>
           <div className="flex items-center gap-3 mb-4">
             {member.avatar_url ? (
               <img src={member.avatar_url} alt={member.name} className="w-11 h-11 rounded-full object-cover img-outline" />
@@ -108,7 +87,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
               <X className="w-4 h-4" style={{ color: INK(0.6) }} />
             </button>
           </div>
-        </div>
+      </>}>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-6 space-y-5">
           {/* Esta semana */}
@@ -119,7 +98,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
                 const ds = toDateStr(d);
                 return (
                   <div key={ds} className="flex flex-col items-center gap-1">
-                    <span className="text-[8.5px]" style={{ fontFamily: MONO, color: ds === toDateStr(now) ? '#e5484d' : 'rgba(var(--accent-rgb),0.55)' }}>{DOW[i]}</span>
+                    <span className="text-[8.5px]" style={{ fontFamily: MONO, color: ds === toDateStr(now) ? 'var(--today)' : 'rgba(var(--accent-rgb),0.55)' }}>{DOW[i]}</span>
                     <DayCell date={d} acts={byDate[ds]} plans={plansByDate[ds]} isPR={prDates.has(ds)} size={36} todayMark={false} redToday={false} />
                   </div>
                 );
@@ -232,8 +211,6 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
             </div>
           )}
         </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+    </Sheet>
   );
 }

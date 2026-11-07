@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
 import { readPalette, blendCats } from '@/utils/blendColors';
-import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
+import { Sheet, SheetTitle } from '@/components/ui';
 
 // Repetición animada de la carrera (line chart race).
 //  · Las líneas se dibujan día a día con interpolación suave.
@@ -141,7 +138,7 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
                   <circle r={10.5} fill={color} />
                   {m.avatar_url
                     ? <image href={m.avatar_url} x={-9} y={-9} width={18} height={18} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
-                    : <text textAnchor="middle" dy="0.35em" fontSize="7.5" fill="#fffdf5" fontWeight="600">{initials}</text>}
+                    : <text textAnchor="middle" dy="0.35em" fontSize="7.5" fill="#fffdf5">{initials}</text>}
                 </g>
               );
             })}
@@ -188,34 +185,12 @@ export default function RaceReplay({ days, members, unit = 'h', onClose }) {
 // Ventana que se abre al pulsar ▶ — mismo formato que la ficha de miembro,
 // para no alterar la gráfica de la pantalla.
 export function RaceReplaySheet({ title, onClose, ...props }) {
-  const sheet = useSheetDrag(onClose);
-  return createPortal(
-    <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
-      <motion.div className="w-full max-w-lg"
-        style={{
-          background: 'var(--surface)', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          boxShadow: '0 -12px 40px rgba(0,0,0,0.35)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
-        }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }} transition={SHEET_SPRING}
-        {...sheet.dragProps}
-        onClick={e => e.stopPropagation()}>
-        <div className="pt-2.5 px-5">
-          <div {...sheet.handleProps}>
-          <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: 'rgba(var(--ink),0.18)' }} />
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[14px]" style={{ letterSpacing: '0.08em', color: 'rgba(var(--ink),0.95)' }}>{title}</p>
-            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(var(--ink),0.07)' }} aria-label="Cerrar">
-              <X className="w-4 h-4" style={{ color: 'rgba(var(--ink),0.6)' }} />
-            </button>
-          </div>
-          </div>
-          <RaceReplay {...props} />
-        </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+  return (
+    <Sheet onClose={onClose} maxHeight="92dvh" label={title}
+      header={<SheetTitle title={title} onClose={onClose} className="mb-3" />}>
+      <div className="px-5 pb-4">
+        <RaceReplay {...props} />
+      </div>
+    </Sheet>
   );
 }

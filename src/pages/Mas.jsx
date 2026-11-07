@@ -1,24 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'react-router-dom';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useData } from '@/lib/DataContext';
-import { User, Settings, LogOut, ChevronRight, BarChart3, Dumbbell, Check, Loader2, RefreshCw, AlertCircle, Camera, Moon, Sun } from 'lucide-react';
+import { LogOut, Check, Loader2, RefreshCw, AlertCircle, Camera, Moon, Sun } from 'lucide-react';
+import { Button, SectionTitle } from '@/components/ui';
 import { useTheme } from '@/lib/theme';
 
-const glassCard = {
- background: 'transparent',
- borderTop: '1px solid rgba(var(--ink),0.12)',
- borderRadius: 0,
- paddingLeft: 0,
- paddingRight: 0,
-};
-
-const TEXT_PRIMARY = 'rgba(var(--ink),0.95)';
-const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
-const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const ACCENT = 'var(--accent)';
 const ON_ACCENT = 'var(--on-accent)';
 
@@ -212,257 +201,164 @@ export default function Mas() {
  const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
  return (
- <div className="px-4 py-5 space-y-5 max-w-lg mx-auto">
- {/* User card */}
- <div className="rounded-2xl p-4 flex items-center gap-4" style={glassCard}>
+ <div className="px-4 py-5 max-w-lg mx-auto">
+ {/* Perfil */}
+ <div className="flex items-center gap-4 pb-6">
  <button
  onClick={handleAvatarClick}
  disabled={uploadingAvatar}
- className="relative group flex-shrink-0"
- style={{ cursor: uploadingAvatar ? 'default' : 'pointer' }}
+ aria-label="Cambiar foto de perfil"
+ className="o-press relative flex-shrink-0"
  >
  {avatarUrl ? (
- <img
- src={avatarUrl}
- alt={userName}
- className="w-14 h-14 rounded-xl object-cover img-outline"
- style={{ border: '1.5px solid rgba(var(--ink),0.22)' }}
- />
+ <img src={avatarUrl} alt={userName} className="w-14 h-14 rounded-full object-cover img-outline" />
  ) : (
- <div
- className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold"
- style={{
- background: 'rgba(var(--ink),0.08)',
- border: '1.5px solid rgba(var(--ink),0.22)',
- color: TEXT_PRIMARY,
- }}
- >
+ <div className="w-14 h-14 rounded-full flex items-center justify-center text-[17px]"
+ style={{ background: INK(0.08), color: INK(0.9) }}>
  {initials}
  </div>
  )}
- {/* Camera badge overlay */}
- <div
- className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
- style={{
- background: ACCENT,
- border: '2px solid var(--bg)',
- boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
- }}
- >
- {uploadingAvatar ? (
- <Loader2 className="w-3 h-3 animate-spin" style={{ color: ON_ACCENT }} />
- ) : (
- <Camera className="w-3 h-3" style={{ color: ON_ACCENT }} />
- )}
+ <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center"
+ style={{ background: ACCENT, border: '2px solid var(--bg)' }}>
+ {uploadingAvatar
+ ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: ON_ACCENT }} />
+ : <Camera className="w-3 h-3" style={{ color: ON_ACCENT }} />}
  </div>
- <input
- ref={fileInputRef}
- type="file"
- accept="image/*"
- onChange={handleAvatarChange}
- style={{ display: 'none' }}
- />
+ <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
  </button>
  <div className="flex-1 min-w-0">
- <p className="text-[15px] font-semibold" style={{ color: TEXT_PRIMARY }}>{userName}</p>
- <p className="text-[13px] truncate" style={{ color: TEXT_SECONDARY }}>{user?.email}</p>
- {avatarError && (
- <p className="text-[11px] mt-1" style={{ color: 'var(--danger)' }}>{avatarError}</p>
- )}
+ <p className="truncate" style={{ fontSize: 'var(--fs-metric)', letterSpacing: 'var(--tracking-title)', color: INK(0.95) }}>{userName}</p>
+ <p className="truncate mt-0.5" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-meta)', color: INK(0.45) }}>{user?.email}</p>
+ {avatarError && <StatusLine type="error">{avatarError}</StatusLine>}
  </div>
  </div>
 
  {/* Apariencia */}
- <div>
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Apariencia</p>
- <div className="grid grid-cols-2 gap-1.5">
- {[['dark', 'Oscuro', Moon], ['light', 'Claro', Sun]].map(([key, label, Icon]) => (
- <button
- key={key}
- onClick={() => setMode(key)}
- className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-ui"
- style={mode === key ? {
- background: ACCENT,
- color: ON_ACCENT,
- } : {
- background: 'rgba(var(--ink),0.07)',
- border: '1px solid rgba(var(--ink),0.12)',
- color: TEXT_MUTED,
- }}
+ <section className="py-5" style={DIVIDER}>
+ <SectionTitle>Apariencia</SectionTitle>
+ <Segmented
+ value={mode}
+ onChange={setMode}
+ options={[['dark', 'Oscuro', Moon], ['light', 'Claro', Sun]]}
+ />
+ </section>
+
+ {/* Integraciones */}
+ <section className="pt-5" style={DIVIDER}>
+ <SectionTitle className="mb-1">Integraciones</SectionTitle>
+ <IntegrationRow
+ logo={<svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="#fc4c02" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>}
+ name="Strava"
+ detail={stravaConnected ? 'Conectado' : 'Importa tus actividades'}
+ connected={stravaConnected}
+ syncing={syncing}
+ onConnect={connectStrava}
+ onSync={syncStrava}
+ onDisconnect={disconnectStrava}
  >
+ {stravaStatus === 'success' && <StatusLine type="success">Strava conectado</StatusLine>}
+ {stravaStatus === 'error' && <StatusLine type="error">No se pudo conectar Strava</StatusLine>}
+ {syncResult && <StatusLine type={syncResult.type}>{syncResult.message}</StatusLine>}
+ </IntegrationRow>
+ <div style={{ height: 1, background: INK(0.06) }} />
+ <IntegrationRow
+ logo={<span className="text-[14px]" style={{ color: '#2dd4bf' }} aria-hidden="true">W</span>}
+ name="Whoop"
+ detail={whoopConnected ? 'Conectado · sueño' : 'Importa tu sueño'}
+ connected={whoopConnected}
+ syncing={whoopSyncing}
+ onConnect={connectWhoop}
+ onSync={syncWhoop}
+ onDisconnect={disconnectWhoop}
+ >
+ {whoopStatus === 'success' && <StatusLine type="success">Whoop conectado</StatusLine>}
+ {whoopStatus === 'error' && <StatusLine type="error">No se pudo conectar Whoop</StatusLine>}
+ {whoopSyncResult && <StatusLine type={whoopSyncResult.type}>{whoopSyncResult.message}</StatusLine>}
+ </IntegrationRow>
+ </section>
+
+ {/* Sesión */}
+ <section className="pt-5" style={DIVIDER}>
+ <button onClick={signOut} className="o-press w-full flex items-center gap-3 py-2">
+ <LogOut className="w-4 h-4" style={{ color: 'var(--danger)' }} />
+ <span className="text-[13px]" style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
+ </button>
+ </section>
+ </div>
+ );
+}
+
+const INK = a => `rgba(var(--ink),${a})`;
+const DIVIDER = { borderTop: '1px solid rgba(var(--ink),0.12)' };
+
+// Selector segmentado del sistema: contenedor ink .06 y píldora activa ink .1
+// que se desliza (transform en el compositor, 420 ms).
+function Segmented({ value, onChange, options }) {
+ const idx = Math.max(0, options.findIndex(([k]) => k === value));
+ return (
+ <div role="radiogroup" className="relative grid p-1 rounded-full"
+ style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)`, background: INK(0.06) }}>
+ <span aria-hidden="true" className="absolute top-1 bottom-1 left-1 rounded-full"
+ style={{
+ width: `calc((100% - 8px) / ${options.length})`,
+ transform: `translateX(${idx * 100}%)`,
+ transition: 'transform 420ms cubic-bezier(.32,.72,0,1)',
+ background: INK(0.1),
+ }} />
+ {options.map(([key, label, Icon]) => (
+ <button key={key} role="radio" aria-checked={value === key} onClick={() => onChange(key)}
+ className="relative z-10 flex items-center justify-center gap-2 py-2 text-[12px]"
+ style={{ color: value === key ? INK(0.95) : INK(0.5), transition: 'color 150ms ease-out' }}>
  <Icon className="w-3.5 h-3.5" />
  {label}
  </button>
  ))}
  </div>
- </div>
+ );
+}
 
- {/* Strava banners */}
- {stravaStatus === 'success' && (
- <div className="rounded-xl px-4 py-3 flex items-center gap-2"
- style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)' }}>
- <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
- <span className="text-[13px] font-medium" style={{ color: 'var(--success)' }}>Strava conectado correctamente</span>
- </div>
- )}
- {stravaStatus === 'error' && (
- <div className="rounded-xl px-4 py-3 flex items-center gap-2"
- style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.35)' }}>
- <AlertCircle className="w-4 h-4" style={{ color: 'var(--danger)' }} />
- <span className="text-[13px] font-medium" style={{ color: 'var(--danger)' }}>Error al conectar Strava</span>
- </div>
- )}
-
- {/* Integrations */}
- <div >
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Integraciones</p>
- <div className="rounded-2xl overflow-hidden" style={glassCard}>
- {/* Strava */}
- <div className="px-4 py-4">
- <div className="flex items-center justify-between mb-2">
+function IntegrationRow({ logo, name, detail, connected, syncing, onConnect, onSync, onDisconnect, children }) {
+ return (
+ <div className="py-4">
  <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(252,76,2,0.18)', border: '1px solid rgba(252,76,2,0.35)' }}>
- <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#fc4c02">
- <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
- </svg>
+ <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: INK(0.06) }}>
+ {logo}
  </div>
- <div>
- <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>Strava</p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{stravaConnected ? 'Conectado' : 'Sincroniza tus actividades'}</p>
- </div>
- </div>
- {stravaConnected ? (
- <div className="flex items-center gap-2">
- <button onClick={disconnectStrava}
- className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
- style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
- Desconectar
+ <div className="flex-1 min-w-0">
+ <p className="text-[13px]" style={{ color: INK(0.95) }}>{name}</p>
+ <p className="text-[11px] mt-0.5" style={{ color: INK(0.45) }}>
+ {detail}
+ {connected && (
+ <>
+ {' · '}
+ <button onClick={onDisconnect} className="underline underline-offset-2" style={{ color: INK(0.45) }}>
+ desconectar
  </button>
- <button onClick={syncStrava} disabled={syncing}
- className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.18)', color: TEXT_PRIMARY }}>
+ </>
+ )}
+ </p>
+ </div>
+ {connected ? (
+ <Button variant="secondary" size="sm" onClick={onSync} disabled={syncing}>
  {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
  Sincronizar
- </button>
- </div>
+ </Button>
  ) : (
- <button onClick={connectStrava}
- className="text-white text-[12px] font-semibold px-3 py-2 rounded-lg transition-colors"
- style={{ background: '#fc4c02' }}>
- Conectar
- </button>
+ <Button variant="secondary" size="sm" onClick={onConnect}>Conectar</Button>
  )}
  </div>
- {syncResult && (
- <div className={`mt-2 px-3 py-2 rounded-lg text-[12px] font-medium`}
- style={{
- background: syncResult.type === 'success' ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
- color: syncResult.type === 'success' ? 'var(--success)' : 'var(--danger)',
- }}>
- {syncResult.message}
+ {children}
  </div>
- )}
- </div>
+ );
+}
 
- <div style={{ height: 1, background: 'rgba(var(--ink),0.08)' }} />
-
- {/* Whoop */}
- <div className="px-4 py-4">
- <div className="flex items-center justify-between mb-2">
- <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(20,184,166,0.18)', border: '1px solid rgba(20,184,166,0.35)' }}>
- <span className="text-sm font-bold" style={{ color: '#2dd4bf' }}>W</span>
- </div>
- <div>
- <p className="text-[14px] font-semibold" style={{ color: TEXT_PRIMARY }}>Whoop</p>
- <p className="text-[11px]" style={{ color: TEXT_MUTED }}>{whoopConnected ? 'Conectado · datos de sueño' : 'Sincroniza tu sueño'}</p>
- </div>
- </div>
- {whoopConnected ? (
- <div className="flex items-center gap-2">
- <button onClick={disconnectWhoop}
- className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors"
- style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
- Desconectar
- </button>
- <button onClick={syncWhoop} disabled={whoopSyncing}
- className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg transition-colors"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.18)', color: TEXT_PRIMARY }}>
- {whoopSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
- Sincronizar
- </button>
- </div>
- ) : (
- <button onClick={connectWhoop}
- className="text-[12px] font-semibold px-3 py-2 rounded-lg"
- style={{ background: '#2dd4bf', color: '#042f2e' }}>
- Conectar
- </button>
- )}
- </div>
- {whoopSyncResult && (
- <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium"
- style={{
- background: whoopSyncResult.type === 'success' ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
- color: whoopSyncResult.type === 'success' ? 'var(--success)' : 'var(--danger)',
- }}>
- {whoopSyncResult.message}
- </div>
- )}
- {whoopStatus === 'success' && (
- <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
- style={{ background: 'rgba(16,185,129,0.18)' }}>
- <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
- <span style={{ color: 'var(--success)' }}>Whoop conectado correctamente</span>
- </div>
- )}
- {whoopStatus === 'error' && (
- <div className="mt-2 px-3 py-2 rounded-lg text-[12px] font-medium flex items-center gap-2"
- style={{ background: 'rgba(239,68,68,0.18)' }}>
- <AlertCircle className="w-4 h-4" style={{ color: 'var(--danger)' }} />
- <span style={{ color: 'var(--danger)' }}>Error al conectar Whoop</span>
- </div>
- )}
- </div>
- </div>
- </div>
-
- {/* Personal menu */}
- <div >
- <p className="text-[11px] font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: 'rgba(var(--ink),0.5)' }}>Personal</p>
- <div className="rounded-2xl overflow-hidden" style={glassCard}>
- {[
- { icon: User, label: 'Perfil', color: 'rgba(99,102,241,0.22)', iconColor: 'var(--info)' },
- { icon: Dumbbell, label: 'Mis Workouts', color: 'rgba(16,185,129,0.22)', iconColor: 'var(--success)' },
- { icon: BarChart3, label: 'Estadísticas', color: 'rgba(245,158,11,0.22)', iconColor: 'var(--warning)' },
- { icon: Settings, label: 'Ajustes', color: 'rgba(var(--ink),0.12)', iconColor: TEXT_SECONDARY },
- ].map((item, idx, arr) => (
- <button key={item.label}
- className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${idx < arr.length - 1 ? 'border-b' : ''}`}
- style={{ borderColor: 'rgba(var(--ink),0.08)' }}>
- <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: item.color }}>
- <item.icon className="w-[15px] h-[15px]" style={{ color: item.iconColor }} />
- </div>
- <p className="text-[13px] font-medium" style={{ color: TEXT_PRIMARY }}>{item.label}</p>
- </div>
- <ChevronRight className="w-4 h-4" style={{ color: TEXT_MUTED }} />
- </button>
- ))}
- </div>
- </div>
-
- {/* Logout */}
- <div >
- <button onClick={signOut}
- className="w-full rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-colors"
- style={glassCard}>
- <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.18)' }}>
- <LogOut className="w-[15px] h-[15px]" style={{ color: 'var(--danger)' }} />
- </div>
- <span className="text-[13px] font-medium" style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
- </button>
- </div>
- </div>
+// Estado en línea, junto a lo que lo causa (sin cajas de color).
+function StatusLine({ type, children }) {
+ const ok = type === 'success';
+ const Icon = ok ? Check : AlertCircle;
+ return (
+ <p role="status" className="flex items-center gap-1.5 mt-2 text-[11px]" style={{ color: ok ? 'var(--success)' : 'var(--danger)' }}>
+ <Icon className="w-3.5 h-3.5 flex-shrink-0" />{children}
+ </p>
  );
 }

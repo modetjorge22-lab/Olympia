@@ -106,7 +106,7 @@ export default function ResetPassword() {
 
               <button
                 type="submit" disabled={loading}
-                className="w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[14px] mt-1 disabled:opacity-60"
+                className="w-full py-3 px-4 rounded-full o-press flex items-center justify-center gap-2 text-[14px] mt-1 disabled:opacity-60"
                 style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Guardar contraseña <ArrowRight className="w-4 h-4" /></>}

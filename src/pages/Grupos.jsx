@@ -1,16 +1,14 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trophy, ChevronDown, Flame, CalendarCheck, Zap, Timer, Layers, Shuffle, Repeat, Sun, AudioWaveform, Target, Sunrise, Medal } from 'lucide-react';
+import { Users, Trophy, Flame, CalendarCheck, Zap, Timer, Layers, Shuffle, Repeat, Sun, AudioWaveform, Target, Sunrise, Medal } from 'lucide-react';
 import { useActivities, ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useWeeklyPlans } from '@/hooks/useWeeklyPlans';
 import { useAuth } from '@/lib/AuthContext';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
-import { DAY_PALETTE } from '@/utils/dayDisplay';
 import { useTeamGoals } from '@/hooks/useGoals';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
-import { DashedFrame } from '@/components/sketch';
 import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import ActivityFilterButton from '@/components/ActivityFilterButton';
 import MemberSheet from '@/components/MemberSheet';
@@ -21,20 +19,7 @@ import { computeTeamRecords } from '@/utils/teamRecords';
 import { useObjectives } from '@/hooks/useObjectives';
 import { objectiveProgress } from '@/utils/objectives';
 
-const MEMBER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-
-// Gradiente según ranking — líder en el acento del tema, descendiendo a tono apagado
-function rankingWine(rank, total, chart) {
- if (total <= 1) return chart.accent;
- const t = rank / (total - 1);
- const from = chart.raceFrom; // líder
- const to = chart.raceTo;     // colista
- const r = Math.round(from.r + (to.r - from.r) * t);
- const g = Math.round(from.g + (to.g - from.g) * t);
- const b = Math.round(from.b + (to.b - from.b) * t);
- return `rgb(${r},${g},${b})`;
-}
 
 function makeMemberDot(member, lastDay, onAccent) {
  return function MemberDot(props) {
@@ -58,7 +43,7 @@ function makeMemberDot(member, lastDay, onAccent) {
  ) : (
  <>
  <circle cx={cx} cy={cy} r={radius} fill={member.color} />
- <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="700"
+ <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize="8" fontWeight="400"
  fill={onAccent} style={{ fontFamily: 'DM Sans, sans-serif' }}>
  {initials}
  </text>
@@ -103,7 +88,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  <div style={{
  background: 'var(--surface)',
  border: '1px solid rgba(var(--ink),0.15)',
- borderRadius: 10, padding: '8px 12px', fontSize: 11,
+ borderRadius: 16, padding: '8px 12px', fontSize: 11,
  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', minWidth: 110,
  }}>
  <p style={{ color: 'rgba(var(--ink),0.5)', fontSize: 10, marginBottom: 4 }}>
@@ -117,7 +102,7 @@ function CustomTooltip({ active, payload, label, memberStats, isTeam, unit = 'h'
  <div style={{ width: 7, height: 7, borderRadius: 2, background: colors[entry.dataKey] || (String(entry.color).startsWith('url') ? 'rgba(var(--ink),0.5)' : entry.color) || entry.fill }} />
  <span style={{ color: 'rgba(var(--ink),0.85)' }}>{m?.name || entry.name}</span>
  </div>
- <span style={{ color: 'rgba(var(--ink),0.95)', fontWeight: 600 }}>{entry.value}{unit}</span>
+ <span style={{ color: 'rgba(var(--ink),0.95)' }}>{entry.value}{unit}</span>
  </div>
  );
  })}
@@ -296,7 +281,7 @@ export default function Grupos() {
  name: member?.full_name || email.split('@')[0],
  avatar_url: member?.avatar_url || null,
  totalMins, totalHours: +(totalMins / 60).toFixed(1), sessions: win.length,
- color: MEMBER_COLORS[idx % MEMBER_COLORS.length],
+
  cum,
  };
  }).sort((a, b) => raceMetric === 'count' ? b.sessions - a.sessions : b.totalMins - a.totalMins);
@@ -493,7 +478,7 @@ export default function Grupos() {
  background: cats.length === 0 ? 'transparent'
  : cats.length === 1 ? cats[0] : `linear-gradient(90deg, ${cats[0]} 0 calc(50% - 0.5px), transparent calc(50% - 0.5px) calc(50% + 0.5px), ${cats[1]} calc(50% + 0.5px) 100%)`,
  border: cats.length ? 'none' : '1px dashed rgba(var(--accent-rgb),0.35)',
- boxShadow: isToday ? '0 0 0 1px #e5484d' : 'none',
+ boxShadow: isToday ? '0 0 0 1px var(--today)' : 'none',
  }} />
  );
  })}
@@ -583,343 +568,6 @@ export default function Grupos() {
  />
  )}
  </AnimatePresence>
- </div>
- );
-}
-
-// Anillo de ritmo — % de horas del miembro respecto a la media del equipo.
-// El arco usa colores JS (CHART[mode]) porque los atributos SVG no resuelven var().
-function PaceRing({ pct, chart }) {
- // Anillo interior: primera vuelta (0-100% de la media).
- // Si se supera la media, el exceso crece como un anillo exterior propio
- // y la primera vuelta se marca como completada con una insignia ✓.
- const R_IN = 25;
- // Hueco fino entre anillos: bordes en 28 y 30 → separación de 2px
- const R_OUT = 32;
- const C_IN = 2 * Math.PI * R_IN;
- const C_OUT = 2 * Math.PI * R_OUT;
- const hasData = pct != null;
- const overLap = hasData && pct > 100;
- const firstDash = hasData ? (Math.max(0, Math.min(pct, 100)) / 100) * C_IN : 0;
- const overDash = overLap ? (Math.min(pct - 100, 100) / 100) * C_OUT : 0;
- return (
- <div className="flex-1 flex flex-col items-center">
- <div style={{ position: 'relative', width: 84, height: 84 }}>
- <svg width="84" height="84" viewBox="0 0 84 84">
- {/* pista interior */}
- <circle cx="42" cy="42" r={R_IN} fill="none" stroke={chart.grid} strokeWidth="6" />
- {/* primera vuelta */}
- {hasData && firstDash > 0 && (
- <circle
- cx="42" cy="42" r={R_IN} fill="none"
- stroke={chart.accent} strokeWidth="6" strokeLinecap="round"
- strokeDasharray={`${firstDash} ${C_IN - firstDash}`}
- transform="rotate(-90 42 42)"
- style={{ transition: 'stroke-dasharray 0.6s ease' }}
- />
- )}
- {/* segunda vuelta — anillo exterior */}
- {overLap && (
- <>
- <circle cx="42" cy="42" r={R_OUT} fill="none" stroke={chart.grid} strokeWidth="4" />
- {overDash > 0 && (
- <circle
- cx="42" cy="42" r={R_OUT} fill="none"
- stroke={chart.accentOver} strokeWidth="4" strokeLinecap="round"
- strokeDasharray={`${overDash} ${C_OUT - overDash}`}
- transform="rotate(-90 42 42)"
- style={{ transition: 'stroke-dasharray 0.6s ease' }}
- />
- )}
- </>
- )}
- {/* marca de vuelta completada — punto en la costura del anillo (estilo Apple) */}
- {overLap && (
- <circle cx="42" cy={42 - R_IN} r="2.4" fill={chart.onAccent} />
- )}
- </svg>
- <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
- {hasData ? (
- <span className="font-normal font-mono" style={{ fontSize: 15, color: 'rgba(var(--ink),0.95)' }}>
- {pct}<span style={{ fontSize: 9, color: 'rgba(var(--ink),0.5)' }}>%</span>
- </span>
- ) : (
- <span className="font-normal font-mono" style={{ fontSize: 14, color: 'rgba(var(--ink),0.3)' }}>–%</span>
- )}
- </div>
- </div>
- <span className="text-[9px] font-normal uppercase tracking-wider mt-1" style={{ color: 'rgba(var(--ink),0.45)' }}>
- Ritmo
- </span>
- </div>
- );
-}
-
-function SportFilterDropdown({ value, onChange, types }) {
- const [open, setOpen] = useState(false);
- const ref = useRef(null);
-
- useEffect(() => {
- function handleClick(e) {
- if (ref.current && !ref.current.contains(e.target)) setOpen(false);
- }
- document.addEventListener('mousedown', handleClick);
- return () => document.removeEventListener('mousedown', handleClick);
- }, []);
-
- const label = value
- ? `${ACTIVITY_TYPES[value]?.emoji || ''} ${ACTIVITY_TYPES[value]?.label || value}`
- : 'Todos';
-
- return (
- <div ref={ref} style={{ position: 'relative' }}>
- <button
- onClick={() => setOpen(o => !o)}
- className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-normal transition-ui"
- style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.12)', color: value ? TEXT_PRIMARY : TEXT_MUTED }}
- >
- {label}
- <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform"
- style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', color: TEXT_MUTED }} />
- </button>
- {open && (
- <div style={{
- position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 50,
- minWidth: 150,
- background: 'var(--surface)',
- border: '1px solid rgba(var(--ink),0.16)',
- borderRadius: 12, padding: 4,
- boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
- }}>
- <button
- onClick={() => { onChange(null); setOpen(false); }}
- className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-ui text-left"
- style={value === null ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
- >
- Todos
- </button>
- {types.map(t => (
- <button key={t}
- onClick={() => { onChange(t); setOpen(false); }}
- className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-ui text-left"
- style={value === t ? { background: 'rgba(var(--ink),0.12)', color: TEXT_PRIMARY } : { color: TEXT_SECONDARY }}
- >
- <span>{ACTIVITY_TYPES[t]?.emoji}</span>{ACTIVITY_TYPES[t]?.label}
- </button>
- ))}
- </div>
- )}
- </div>
- );
-}
-
-function MiniMemberCard({ member, year, month, daysInMonth, plansByDay, memberGoals = [], prDates = new Set(), activityBreakdown = [], teamAvgHours = 0 }) {
- const { chart } = useTheme();
- const pacePct = teamAvgHours > 0 ? Math.round((member.totalHours / teamAvgHours) * 100) : null;
- const now = new Date();
- const [goalsOpen, setGoalsOpen] = useState(false);
- const [expandedDay, setExpandedDay] = useState(null);
- const [filterType, setFilterType] = useState(null);
- const availableTypes = activityBreakdown.map(b => b.type);
- let startDow = new Date(year, month, 1).getDay() - 1;
- if (startDow < 0) startDow = 6;
- const trailing = [];
- for (let i = 0; i < startDow; i++) trailing.push(i);
-
- return (
- <div className="rounded-2xl p-4" style={glassCard}>
- {/* Header */}
- <div className="flex items-center justify-between mb-3">
- <div className="flex items-center gap-2.5">
- {member.avatar_url ? (
- <img src={member.avatar_url} alt={member.name}
- className="w-8 h-8 rounded-full object-cover img-outline" />
- ) : (
- <div className="w-8 h-8 rounded-full flex items-center justify-center font-normal text-[10px]"
- style={{ background: 'rgba(var(--ink),0.08)', border: '1.5px solid rgba(var(--ink),0.22)', color: TEXT_PRIMARY }}>
- {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
- </div>
- )}
- <div>
- <p className="text-[12px] font-normal leading-tight" style={{ color: TEXT_PRIMARY }}>{member.name}</p>
- <p className="text-[10px]" style={{ color: TEXT_SECONDARY }}>{member.totalHours}h · {member.sessions} sesiones</p>
- </div>
- </div>
- {availableTypes.length > 1 && (
- <SportFilterDropdown value={filterType} onChange={setFilterType} types={availableTypes} />
- )}
- </div>
-
- {/* Mini calendario (izquierda) + ritmo vs media (derecha) */}
- <div className="flex items-center gap-2">
- <div style={{ width: '75%', flexShrink: 0 }}>
- <p className="text-[9px] font-normal mb-1" style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.7)' }}>
- {MONTHS_ES[month]} {year}
- </p>
- <div className="grid grid-cols-7 gap-x-1 gap-y-1">
- {['L','M','X','J','V','S','D'].map(d => (
- <span key={`dow-${d}`} className="text-center text-[7px] font-normal"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: 'rgba(var(--accent-rgb),0.55)' }}>
- {d}
- </span>
- ))}
- {trailing.map(i => (
- <div key={`t-${i}`} className="w-7 h-7 mx-auto" aria-hidden="true" />
- ))}
- {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
- const acts = member.actByDay[day] || [];
- const has = acts.length > 0;
- const matchesFilter = !filterType || acts.some(a => a.type === filterType);
- const show = has && matchesFilter;
- const planned = (plansByDay && plansByDay[day]) || [];
- const hasPlan = !has && planned.length > 0;
- const showPlan = hasPlan && !filterType;
- const isToday = day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
- const isFuture = new Date(year, month, day) > now;
- const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
- const isPR = prDates.has(dateStr) && matchesFilter;
- const emoji = isPR ? '🏆'
- : show ? (ACTIVITY_TYPES[filterType || acts[0].type]?.emoji || '🏅')
- : showPlan ? (ACTIVITY_TYPES[planned[0].activity_type]?.emoji || '🏅') : null;
- const isExpanded = expandedDay === day;
- return (
- <div key={day}
- onClick={() => has && setExpandedDay(d => d === day ? null : day)}
- className="w-7 h-7 mx-auto flex items-center justify-center relative"
- style={{
- cursor: has ? 'pointer' : 'default',
- borderRadius: 7,
- ...(isToday ? { border: '1.5px solid rgba(var(--accent-rgb),0.9)' } : {}),
- background: (show || isPR)
- ? `radial-gradient(circle at center, rgba(var(--accent-rgb),${isExpanded ? 0.55 : 0.45}) 0%, rgba(var(--accent-rgb),0.03) 78%)`
- : 'transparent',
- }}>
- {!isToday && (
- <DashedFrame
- color={showPlan ? 'rgba(var(--accent-rgb),0.9)' : undefined}
- opacity={isFuture ? 0.22 : 0.45}
- />
- )}
- <span className="text-[8px] font-normal leading-none"
- style={{ fontFamily: '"JetBrains Mono", monospace', color: isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)' }}>
- {day}
- </span>
- {isPR && <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 7, lineHeight: 1 }}>🏆</span>}
- </div>
- );
- })}
- </div>
- </div>
- <PaceRing pct={pacePct} chart={chart} />
- </div>
-
- {/* Desglose de actividades del mes */}
- {activityBreakdown.length > 0 && (
- <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
- <p className="text-[9px] uppercase tracking-widest font-normal mb-2" style={{ color: TEXT_MUTED }}>
- Desglose del mes
- </p>
- <div className="space-y-1.5">
- {activityBreakdown.map(({ type, label, emoji, hours }) => {
- const pct = member.totalHours > 0 ? (hours / member.totalHours) * 100 : 0;
- return (
- <div key={type} className="flex items-center gap-2">
- <span className="text-[11px] w-4 text-center flex-shrink-0">{emoji}</span>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between mb-0.5">
- <span className="text-[10px] font-medium truncate" style={{ color: TEXT_SECONDARY }}>{label}</span>
- <span className="text-[10px] font-normal font-mono flex-shrink-0 ml-2" style={{ color: TEXT_PRIMARY }}>{hours}h</span>
- </div>
- <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(var(--ink),0.08)' }}>
- <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENT }} />
- </div>
- </div>
- </div>
- );
- })}
- </div>
- </div>
- )}
-
- {/* Entrenos del día expandido */}
- {expandedDay && member.actByDay[expandedDay]?.length > 0 && (
- <div className="mt-2 space-y-1.5">
- <p className="text-[9px] uppercase tracking-widest font-normal px-0.5" style={{ color: TEXT_MUTED }}>
- {expandedDay} {['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][month]}
- </p>
- {member.actByDay[expandedDay].map((act, idx) => (
- <div key={idx} className="flex items-center gap-2 rounded-lg px-2.5 py-2"
- style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.08)' }}>
- <span className="text-[13px]">{ACTIVITY_TYPES[act.type]?.emoji || '🏅'}</span>
- <div className="flex-1 min-w-0">
- <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>
- {ACTIVITY_TYPES[act.type]?.label || act.type}
- </p>
- {act.duration_minutes > 0 && (
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>{act.duration_minutes} min</p>
- )}
- </div>
- {act.match_result?.result && (
- <span className="text-[10px] font-normal px-1.5 py-0.5 rounded"
- style={{
- background: act.match_result.result === 'win' ? 'rgba(16,185,129,0.15)' : act.match_result.result === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(var(--ink),0.08)',
- color: act.match_result.result === 'win' ? 'var(--success)' : act.match_result.result === 'loss' ? 'var(--danger)' : TEXT_MUTED,
- }}>
- {act.match_result.result === 'win' ? 'Victoria' : act.match_result.result === 'loss' ? 'Derrota' : 'Empate'}
- </span>
- )}
- </div>
- ))}
- </div>
- )}
-
- {/* Sección desplegable de Metas */}
- <button
- onClick={() => setGoalsOpen(v => !v)}
- className="w-full flex items-center justify-between mt-3 pt-3"
- style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}
- >
- <div className="flex items-center gap-1.5">
- <Trophy className="w-3 h-3" style={{ color: TEXT_MUTED }} />
- <span className="text-[10px] font-normal uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
- Metas {memberGoals.length > 0 ? `(${memberGoals.length})` : ''}
- </span>
- </div>
- <ChevronDown
- className="w-3.5 h-3.5 transition-transform"
- style={{ color: TEXT_MUTED, transform: goalsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
- />
- </button>
-
- {goalsOpen && (
- <div className="mt-2 space-y-2">
- {memberGoals.length === 0 ? (
- <p className="text-[11px] text-center py-2" style={{ color: TEXT_MUTED }}>Sin metas registradas</p>
- ) : (
- memberGoals.map(goal => (
- <div key={goal.id} className="flex items-center justify-between rounded-lg px-3 py-2"
- style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.08)' }}>
- <div className="min-w-0">
- <p className="text-[12px] font-medium truncate" style={{ color: TEXT_PRIMARY }}>{goal.title}</p>
- {goal.activity_type && (
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
- {ACTIVITY_TYPES[goal.activity_type]?.emoji} {ACTIVITY_TYPES[goal.activity_type]?.label}
- </p>
- )}
- </div>
- {goal.current_value != null && (
- <div className="text-right flex-shrink-0 ml-2">
- <span className="text-[16px] font-normal font-mono" style={{ color: ACCENT }}>
- {goal.current_value}
- </span>
- <span className="text-[10px] ml-0.5" style={{ color: TEXT_MUTED }}>{goal.unit}</span>
- </div>
- )}
- </div>
- ))
- )}
- </div>
- )}
  </div>
  );
 }

@@ -57,6 +57,89 @@
   --info: #4338ca;
 }
 
+
+/* ── Tokens del sistema de diseño (design-system/README.md) ──
+   Comunes a ambos temas. Úsalos en vez de valores escritos a mano. */
+:root {
+  /* Marcador de "hoy": único rojo del sistema */
+  --today: #e5484d;
+
+  /* Escala de tinta: rgba(var(--ink), var(--ink-…)) */
+  --ink-primary: 0.95;
+  --ink-body: 0.9;
+  --ink-secondary: 0.6;
+  --ink-tertiary: 0.45;
+  --ink-divider: 0.12;
+  --ink-hairline: 0.06;
+  --ink-fill: 0.05;
+  --ink-pill-active: 0.1;
+
+  /* Tipografía: sin negritas, la jerarquía sale del tamaño y la tinta */
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --fs-micro: 8.5px;
+  --fs-caption: 10px;
+  --fs-meta: 11px;
+  --fs-body: 12px;
+  --fs-section: 13px;
+  --fs-title: 15px;
+  --fs-metric: 17px;
+  --fs-display: 22px;
+  --tracking-section: 0.14em;
+  --tracking-title: -0.01em;     /* tracking por tamaño: el texto grande se cierra */
+  --tracking-logo: 0.3em;
+
+  /* Radios */
+  --r-chip: 999px;
+  --r-tile: 16px;
+  --r-card: 24px;
+  --r-sheet: 28px;
+
+  /* Materiales */
+  --glass-filter: blur(24px) saturate(160%);
+  --sheet-filter: blur(40px) saturate(180%);   /* material grueso: superficie grande */
+  --sheet-inset: 8px;                          /* las hojas flotan, como header y nav */
+
+  /* Movimiento */
+  --dur-press: 100ms;   /* feedback al pulsar: instantáneo (Apple) */
+  --dur-fade: 150ms;
+  --dur-scrim: 200ms;
+  --dur-theme: 250ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --weight: 400;
+  --header-h: 52px;
+  --nav-h: 60px;
+  --scrim-filter: blur(10px);
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+}
+
+/* Material de hoja: cristal grueso sobre el scrim */
+:root, [data-theme='dark'] {
+  --accent-over: #ffffff;
+  --sheet-bg: rgba(58, 28, 40, 0.74);
+  --sheet-edge: rgba(245, 237, 224, 0.14);
+  --sheet-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+[data-theme='light'] {
+  --accent-over: #96203f;
+  --sheet-bg: rgba(255, 255, 255, 0.78);
+  --sheet-edge: rgba(42, 18, 26, 0.10);
+  --sheet-shadow: 0 24px 60px rgba(42, 18, 26, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Pulsar: respuesta en el pointer-down, 100 ms */
+.o-press { transition: transform var(--dur-press) ease-out; }
+.o-press:active { transform: scale(0.96); }
+
+/* Sin espera de doble toque en controles */
+button, a, [role='button'] { touch-action: manipulation; }
+
+/* Las cifras van en mono */
+.o-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Ajuste óptico de DM Sans según el tamaño */
+body { font-optical-sizing: auto; }
+
 * {
   margin: 0;
   padding: 0;
@@ -99,15 +182,15 @@ body { font-variant-numeric: tabular-nums; }
 
 /* Reducir transparencia → el vidrio se vuelve sólido y legible */
 @media (prefers-reduced-transparency: reduce) {
-  :root, [data-theme='dark'] { --glass-bg: rgba(48, 22, 32, 0.97); }
-  [data-theme='light'] { --glass-bg: rgba(255, 253, 245, 0.97); }
+  :root, [data-theme='dark'] { --glass-bg: rgba(48, 22, 32, 0.97); --sheet-bg: rgba(58, 28, 40, 0.98); }
+  [data-theme='light'] { --glass-bg: rgba(255, 253, 245, 0.97); --sheet-bg: rgba(255, 255, 255, 0.98); }
   * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
 
 /* Más contraste → bordes definidos en las superficies de vidrio */
 @media (prefers-contrast: more) {
-  :root, [data-theme='dark'] { --glass-border: rgba(245, 237, 224, 0.45); }
-  [data-theme='light'] { --glass-border: rgba(42, 18, 26, 0.45); }
+  :root, [data-theme='dark'] { --glass-border: rgba(245, 237, 224, 0.45); --sheet-edge: rgba(245, 237, 224, 0.45); }
+  [data-theme='light'] { --glass-border: rgba(42, 18, 26, 0.45); --sheet-edge: rgba(42, 18, 26, 0.45); }
 }
 
 /* Movimiento reducido: transiciones CSS casi instantáneas (Framer Motion ya

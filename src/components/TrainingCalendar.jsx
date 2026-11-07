@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { DashedFrame } from '@/components/sketch';
-import { iconFor, categoryOf, CATEGORIES } from '@/utils/activityIcons';
+import { iconFor, categoryOf } from '@/utils/activityIcons';
+import ActivityFilterButton from '@/components/ActivityFilterButton';
 
 const EMPTY = [];
 
@@ -37,7 +38,7 @@ const fmtMins = m => {
 //   símbolo en cada mitad.
 // Planificado → marco discontinuo abierto en el color de su familia + halo leve.
 // Hoy → pequeña línea roja que cae desde arriba.
-const TODAY_RED = '#e5484d';
+const TODAY_RED = 'var(--today)';
 
 // Una actividad → halo de su color. Dos (iguales o distintas) → celda partida
 // en vertical, una mitad por sesión, con una fina separación central.
@@ -114,28 +115,10 @@ export const DayCell = React.memo(function DayCell({ date, acts = [], plans = []
           })}
         </span>
       )}
-      {isPR && <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 7, lineHeight: 1 }}>🏆</span>}
+      {isPR && <Trophy aria-label="Marca personal" style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, color: 'var(--accent)' }} strokeWidth={2.4} />}
     </button>
   );
 });
-
-// Leyenda de familias
-export function CategoryLegend() {
-  return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1">
-      {CATEGORIES.map(c => (
-        <span key={c.key} className="flex items-center gap-1 text-[9.5px]" style={{ color: 'rgba(var(--ink),0.5)' }}>
-          <span style={{ width: 7, height: 7, borderRadius: 2, background: `rgba(var(--cat-${c.key}),0.75)` }} />
-          {c.label}
-        </span>
-      ))}
-      <span className="flex items-center gap-1 text-[9.5px]" style={{ color: 'rgba(var(--ink),0.5)' }}>
-        <span style={{ width: 7, height: 7, borderRadius: 2, border: '1px dashed rgba(var(--accent-rgb),0.8)' }} />
-        Planificado
-      </span>
-    </div>
-  );
-}
 
 // ── Semana deslizable de forma continua ──
 // Tira horizontal con scroll libre (sin saltos por semana): se desliza día a
@@ -196,12 +179,12 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
               {isToday && (
                 <span style={{
                   position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-                  width: 1.25, height: 13, borderRadius: 1, background: '#e5484d',
+                  width: 1.25, height: 13, borderRadius: 1, background: 'var(--today)',
                 }} />
               )}
               <span className="text-[9px]" style={{
                 fontFamily: MONO,
-                color: isToday ? '#e5484d' : 'rgba(var(--accent-rgb),0.55)',
+                color: isToday ? 'var(--today)' : 'rgba(var(--accent-rgb),0.55)',
               }}>
                 {DOW_BY_JS[d.getDay()]}
               </span>
@@ -306,20 +289,6 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
 // Título centrado; a la derecha el filtro por actividad, que gobierna toda la
 // pestaña (semana, calendario, Mi Actividad, Ritmo estacional).
 export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange, onVisibleChange, children }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    const h = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const btn = {
-    background: 'var(--glass-bg)',
-    border: '1px solid var(--glass-border)',
-  };
-  const FilterIcon = filter ? iconFor(filter) : SlidersHorizontal;
 
   return (
     <div>
@@ -329,31 +298,7 @@ export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayC
           Entrenamiento
         </h2>
 
-        <div ref={menuRef} className="relative">
-          <button onClick={() => setOpen(o => !o)}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
-            style={{ ...btn, ...(filter ? { boxShadow: 'inset 0 0 0 1.5px var(--accent)' } : {}) }}
-            aria-label="Filtrar por actividad">
-            <FilterIcon className="w-3.5 h-3.5" style={{ color: filter ? 'var(--accent)' : 'rgba(var(--ink),0.75)' }} />
-          </button>
-          {open && (
-            <div className="absolute right-0 z-50 mt-1.5 p-1 min-w-[180px]"
-              style={{ background: 'var(--surface)', border: '1px solid rgba(var(--ink),0.12)', borderRadius: 14, boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
-              {[null, ...usedTypes].map(t => {
-                const Icon = t ? iconFor(t) : SlidersHorizontal;
-                const on = filter === t;
-                return (
-                  <button key={t || 'all'} onClick={() => { onFilterChange?.(t); setOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[12px]"
-                    style={on ? { background: 'rgba(var(--ink),0.07)', color: 'rgba(var(--ink),0.95)' } : { color: 'rgba(var(--ink),0.65)' }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: t ? `rgb(var(--cat-${categoryOf(t)}))` : 'rgba(var(--ink),0.5)' }} />
-                    {t ? (typeLabels[t] || t) : 'Todas las actividades'}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ActivityFilterButton value={filter} onChange={onFilterChange} types={usedTypes} labels={typeLabels} />
       </div>
 
       <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} onVisibleChange={onVisibleChange} />

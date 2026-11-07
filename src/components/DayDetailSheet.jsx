@@ -1,11 +1,9 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
 import { X, Pencil, Trash2, Check, Plus, Trophy, TrendingUp, Shield } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { iconFor, catColor } from '@/utils/activityIcons';
 import { detectMuscleGroups, muscleLabel } from '@/utils/muscles';
-import { SHEET_SPRING, useSheetDrag } from '@/components/sheetDrag';
+import { Sheet } from '@/components/ui';
 
 // Detalle de un día (inspirado en Activity Details de Bevel): resumen del día,
 // tarjeta por actividad con sus métricas y acciones, planes pendientes y
@@ -96,31 +94,13 @@ export default function DayDetailSheet({
   date, activities = [], plans = [], prs = [],
   onClose, onEdit, onDelete, onCompletePlan, onRemovePlan, onDeletePr, onAdd,
 }) {
-  const sheet = useSheetDrag(onClose);
   if (!date) return null;
   const totalMin = activities.reduce((s, a) => s + (a.duration_minutes || 0), 0);
   const isFuture = date > new Date();
   const title = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  return createPortal(
-    <motion.div className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: 'var(--scrim)' }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} onClick={onClose}>
-      <motion.div
-        className="w-full max-w-lg flex flex-col"
-        style={{
-          maxHeight: '88dvh', background: 'var(--surface)',
-          borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.2, ease: 'easeOut' } }}
-        transition={SHEET_SPRING}
-        {...sheet.dragProps}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex-shrink-0 pt-2.5 px-5" {...sheet.handleProps}>
-          <div className="mx-auto mb-3 rounded-full" style={{ width: 36, height: 4, background: INK(0.18) }} />
+  return (
+    <Sheet onClose={onClose} maxHeight="88dvh" label="Detalle del día" header={<>
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-[15px] capitalize" style={{ color: INK(0.95), letterSpacing: '0.03em' }}>{title}</p>
@@ -135,7 +115,7 @@ export default function DayDetailSheet({
               <X className="w-4 h-4" style={{ color: INK(0.6) }} />
             </button>
           </div>
-        </div>
+      </>}>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-3">
           {activities.map(a => (
@@ -211,8 +191,6 @@ export default function DayDetailSheet({
             <Plus className="w-4 h-4" /> {isFuture ? 'Planificar actividad' : 'Añadir actividad'}
           </button>
         </div>
-      </motion.div>
-    </motion.div>,
-    document.body
+    </Sheet>
   );
 }

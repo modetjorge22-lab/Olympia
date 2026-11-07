@@ -134,7 +134,7 @@ export default function Landing() {
           ) : state === 'idle' ? (
             <button
               onClick={() => setState('form')}
-              className="px-3.5 py-2 rounded-lg text-[12px] font-semibold transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
+              className="px-3.5 py-2 rounded-full text-[12px] transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
               {t.cta}
