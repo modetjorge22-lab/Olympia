@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
+import { useWhoopAutoSync } from '@/hooks/useWhoopAutoSync';
 import InfinityMark from './InfinityMark';
 import OfficialAnnouncement from './OfficialAnnouncement';
 
@@ -33,6 +34,7 @@ export default function AppLayout({ children }) {
     location.pathname === path || (path === '/actividad' && location.pathname === '/'));
 
   useStravaAutoSync();
+  useWhoopAutoSync();
 
   // Al cambiar de pestaña, cada página arranca desde arriba (y con las barras completas)
   useEffect(() => {

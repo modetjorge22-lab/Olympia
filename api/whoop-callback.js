@@ -1,91 +1,62 @@
-import { createClient } from '@supabase/supabase-js';
+import { adminClient, verifyState } from './_lib/auth.js';
+import { exchangeCode, fullSync, whoopGet } from './_lib/whoop.js';
 
-const REDIRECT_URI = 'https://olympia-navy.vercel.app/api/whoop-callback';
-
+// WHOOP vuelve aquí tras el "Permitir". El state firmado dice quién es el
+// usuario de Olympia; nunca nos fiamos de un email que llegue en claro.
 export default async function handler(req, res) {
-  const { code, state: email, error } = req.query;
+  const { code, state, error } = req.query;
+  const fail = reason => {
+    console.error('[whoop-callback]', reason);
+    return res.redirect(302, '/mas?whoop=error');
+  };
 
-  console.log('[whoop-callback] code:', !!code, '| email:', email, '| error:', error);
-
-  if (error) {
-    console.error('[whoop-callback] Whoop returned error:', error);
-    return res.redirect('/mas?whoop=error');
-  }
-
-  if (!code) {
-    console.error('[whoop-callback] Missing code');
-    return res.redirect('/mas?whoop=error');
-  }
-
-  if (!email) {
-    console.error('[whoop-callback] Missing email in state');
-    return res.redirect('/mas?whoop=error');
-  }
+  if (error) return fail(`whoop error: ${error}`);
+  if (!code) return fail('missing code');
+  const who = verifyState(state);
+  if (!who) return fail('invalid or expired state');
 
   try {
-    // 1. Intercambiar code por tokens
-    const tokenRes = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: REDIRECT_URI,
-        client_id: process.env.WHOOP_CLIENT_ID,
-        client_secret: process.env.WHOOP_CLIENT_SECRET,
-      }),
-    });
+    const tokens = await exchangeCode(code);
+    const sb = adminClient();
 
-    const tokenText = await tokenRes.text();
-    console.log('[whoop-callback] token exchange status:', tokenRes.status, '| body:', tokenText);
+    const row = {
+      user_id: who.uid,
+      user_email: who.email,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token || null,
+      expires_at: Math.floor(Date.now() / 1000) + (tokens.expires_in || 3600),
+      scope: tokens.scope || null,
+      consent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    if (!tokenRes.ok) {
-      return res.redirect('/mas?whoop=error');
+    // user_id de WHOOP: es lo que traen los webhooks para saber de quién son.
+    const profile = await whoopGet(sb, row, '/v2/user/profile/basic');
+    row.whoop_user_id = profile?.user_id ?? null;
+
+    // Una cuenta de WHOOP solo puede estar enlazada a un usuario de Olympia.
+    if (row.whoop_user_id) {
+      await sb.from('whoop_tokens').delete().eq('whoop_user_id', row.whoop_user_id).neq('user_email', who.email);
     }
 
-    const tokens = JSON.parse(tokenText);
-    const { access_token, refresh_token = '', expires_in } = tokens;
-    const expires_at = Math.floor(Date.now() / 1000) + (expires_in || 3600);
+    const { data: saved, error: upsertError } = await sb.from('whoop_tokens')
+      .upsert(row, { onConflict: 'user_email' }).select('*').single();
+    if (upsertError) return fail(`upsert: ${upsertError.message}`);
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    await sb.from('team_members').update({ whoop_connected: true }).eq('email', who.email);
 
-    // 2. Buscar user_id a partir del email
-    const { data: member } = await supabase
-      .from('team_members')
-      .select('user_id')
-      .eq('email', email)
-      .single();
-
-    const user_id = member?.user_id || null;
-    console.log('[whoop-callback] user_id:', user_id);
-
-    // 3. Guardar tokens
-    const { error: upsertError } = await supabase
-      .from('whoop_tokens')
-      .upsert(
-        { user_email: email, user_id, access_token, refresh_token, expires_at },
-        { onConflict: 'user_email' }
-      );
-
-    if (upsertError) {
-      console.error('[whoop-callback] upsert error:', upsertError.message);
-      return res.redirect('/mas?whoop=error');
+    // Primera importación: últimos 30 días. Si falla, el webhook y el
+    // sync al abrir la app lo completan; la conexión ya está hecha.
+    let counts = null;
+    try {
+      counts = await fullSync(sb, saved, 30);
+    } catch (err) {
+      console.error('[whoop-callback] initial sync failed:', err.message);
     }
 
-    // 4. Marcar whoop_connected en team_members
-    await supabase
-      .from('team_members')
-      .update({ whoop_connected: true })
-      .eq('email', email);
-
-    console.log('[whoop-callback] success for', email);
-    return res.redirect('/mas?whoop=success');
-
+    const q = counts ? `&w=${counts.imported + counts.linked}&s=${counts.sleeps}` : '';
+    return res.redirect(302, `/mas?whoop=success${q}`);
   } catch (err) {
-    console.error('[whoop-callback] unexpected error:', err.message);
-    return res.redirect('/mas?whoop=error');
+    return fail(err.message);
   }
 }

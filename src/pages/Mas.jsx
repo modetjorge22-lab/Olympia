@@ -7,6 +7,7 @@ import { useData } from '@/lib/DataContext';
 import { LogOut, Check, Loader2, RefreshCw, AlertCircle, Camera, Moon, Sun } from 'lucide-react';
 import { Button, SectionTitle } from '@/components/ui';
 import { useTheme } from '@/lib/theme';
+import { apiPost, startOAuth } from '@/lib/api';
 
 const ACCENT = 'var(--accent)';
 const ON_ACCENT = 'var(--on-accent)';
@@ -32,7 +33,12 @@ export default function Mas() {
  if (stravaParam === 'success') setStravaStatus('success');
  else if (stravaParam === 'error') setStravaStatus('error');
  const whoopParam = searchParams.get('whoop');
- if (whoopParam === 'success') setWhoopStatus('success');
+ if (whoopParam === 'success') {
+ setWhoopStatus('success');
+ const w = searchParams.get('w');
+ const s = searchParams.get('s');
+ if (w !== null && s !== null) setWhoopSyncResult({ type: 'success', message: whoopSummary(+w, +s) });
+ }
  else if (whoopParam === 'error') setWhoopStatus('error');
  }, [searchParams]);
 
@@ -41,10 +47,10 @@ export default function Mas() {
  if (!user?.email) return;
  const [strava, whoop] = await Promise.all([
  supabase.from('strava_tokens').select('id').eq('user_email', user.email).limit(1),
- supabase.from('whoop_tokens').select('id').eq('user_email', user.email).limit(1),
+ supabase.from('team_members').select('whoop_connected').eq('email', user.email).limit(1),
  ]);
  setStravaConnected(strava.data?.length > 0);
- setWhoopConnected(whoop.data?.length > 0);
+ setWhoopConnected(Boolean(whoop.data?.[0]?.whoop_connected));
  }
  checkConnections();
  }, [user, stravaStatus, whoopStatus]);
@@ -63,19 +69,27 @@ export default function Mas() {
  setSyncResult(null);
  };
 
- const connectWhoop = () => {
- window.location.href = `/api/whoop-auth?email=${encodeURIComponent(user.email)}`;
+ const connectWhoop = async () => {
+ setWhoopStatus(null);
+ try {
+ await startOAuth('/api/whoop-auth');
+ } catch (err) {
+ console.error('Error connecting WHOOP:', err);
+ setWhoopStatus('error');
+ }
  };
 
  const disconnectWhoop = async () => {
  try {
- const { createClient } = await import('@supabase/supabase-js');
- const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
- await sb.from('whoop_tokens').delete().eq('user_email', user.email);
+ const response = await apiPost('/api/whoop-sync', { action: 'disconnect' });
+ if (!response.ok) throw new Error(`HTTP ${response.status}`);
  setWhoopConnected(false);
+ setWhoopStatus(null);
  setWhoopSyncResult(null);
+ refreshMembers();
  } catch (err) {
- console.error('Error disconnecting Whoop:', err);
+ console.error('Error disconnecting WHOOP:', err);
+ setWhoopSyncResult({ type: 'error', message: 'No se pudo desconectar WHOOP' });
  }
  };
 
@@ -83,18 +97,14 @@ export default function Mas() {
  setWhoopSyncing(true);
  setWhoopSyncResult(null);
  try {
- const response = await fetch('/api/whoop-sync', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ email: user.email }),
- });
- const data = await response.json();
+ const response = await apiPost('/api/whoop-sync', { action: 'sync', days: 30 });
+ const data = await response.json().catch(() => ({}));
  if (response.ok) {
- setWhoopSyncResult({ type: 'success', message: `${data.imported} noches importadas` });
- if (data.imported > 0) refreshData();
+ setWhoopSyncResult({ type: 'success', message: whoopSummary(data.imported + data.linked, data.sleeps) });
+ if (data.imported || data.linked) refreshData();
  } else if (response.status === 401 || data.error === 'reconnect_required') {
  setWhoopConnected(false);
- setWhoopSyncResult({ type: 'error', message: 'Token expirado. Reconecta Whoop para continuar.' });
+ setWhoopSyncResult({ type: 'error', message: 'Vuelve a conectar WHOOP para seguir sincronizando' });
  } else {
  setWhoopSyncResult({ type: 'error', message: data.message || data.error || 'Error al sincronizar' });
  }
@@ -263,16 +273,19 @@ export default function Mas() {
  <div style={{ height: 1, background: INK(0.06) }} />
  <IntegrationRow
  logo={<span className="text-[14px]" style={{ color: '#2dd4bf' }} aria-hidden="true">W</span>}
- name="Whoop"
- detail={whoopConnected ? 'Conectado · sueño' : 'Importa tu sueño'}
+ name="WHOOP"
+ detail={whoopConnected ? 'Conectado · entrenos, sueño y recuperación' : 'Importa entrenos, sueño y recuperación'}
  connected={whoopConnected}
  syncing={whoopSyncing}
  onConnect={connectWhoop}
  onSync={syncWhoop}
  onDisconnect={disconnectWhoop}
  >
- {whoopStatus === 'success' && <StatusLine type="success">Whoop conectado</StatusLine>}
- {whoopStatus === 'error' && <StatusLine type="error">No se pudo conectar Whoop</StatusLine>}
+ <p className="mt-2 text-[11px]" style={{ color: INK(0.45) }}>
+ Tus entrenos de WHOOP aparecen como actividades y el grupo los ve. Sueño y recuperación son solo para ti.
+ </p>
+ {whoopStatus === 'success' && <StatusLine type="success">WHOOP conectado</StatusLine>}
+ {whoopStatus === 'error' && <StatusLine type="error">No se pudo conectar WHOOP</StatusLine>}
  {whoopSyncResult && <StatusLine type={whoopSyncResult.type}>{whoopSyncResult.message}</StatusLine>}
  </IntegrationRow>
  </section>
@@ -289,6 +302,13 @@ export default function Mas() {
 }
 
 const INK = a => `rgba(var(--ink),${a})`;
+
+// «3 entrenos · 12 noches»: cifras primero (voz del sistema).
+function whoopSummary(workouts = 0, nights = 0) {
+ const w = `${workouts} ${workouts === 1 ? 'entreno' : 'entrenos'}`;
+ const n = `${nights} ${nights === 1 ? 'noche' : 'noches'}`;
+ return `${w} · ${n}`;
+}
 const DIVIDER = { borderTop: '1px solid rgba(var(--ink),0.12)' };
 
 // Selector segmentado del sistema: contenedor ink .06 y píldora activa ink .1
