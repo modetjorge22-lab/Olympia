@@ -114,7 +114,9 @@ export function DietStandardsSheet({ onClose }) {
   };
 
   return (
-    <Sheet onClose={onClose} label="Estándares de alimentación" header={
+    // Sin cierre por scrim: en móvil, al ocultarse el teclado la hoja baja y el
+    // toque en «Añadir» caía fuera y la cerraba.
+    <Sheet onClose={onClose} dismissOnScrim={false} label="Estándares de alimentación" header={
       <div className="flex items-start gap-3 mb-4">
         <div className="flex-1 min-w-0">
           <p style={{ fontSize: 'var(--fs-title)', letterSpacing: 'var(--tracking-title)', color: INK(0.95) }}>Tus estándares</p>
@@ -150,7 +152,8 @@ export function DietStandardsSheet({ onClose }) {
               enterKeyHint="done"
               className="flex-1 min-w-0 px-4 py-2.5 rounded-full text-[13px] outline-none"
               style={{ background: INK(0.06), color: INK(0.95) }} />
-            <Button variant="secondary" size="sm" onClick={add}>Añadir</Button>
+            {/* pointerdown sin foco: el teclado sigue abierto para el siguiente */}
+            <Button variant="secondary" size="sm" onPointerDown={e => e.preventDefault()} onClick={add}>Añadir</Button>
           </div>
         )}
         <Button className="w-full mt-6" onClick={save} disabled={saving}>Guardar</Button>
