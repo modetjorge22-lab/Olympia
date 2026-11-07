@@ -4,11 +4,10 @@ export const dstr = d =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
 
-// El día se juzga cuando termina: por la mañana (antes de las 14 h) se
-// pregunta por ayer; a partir de entonces, por hoy. Lo demás se corrige
-// desde el detalle del día.
+// El día se juzga cuando ha terminado: pasadas las 12 de la noche se pregunta
+// siempre por ayer. Los días anteriores se corrigen desde el detalle del día.
 export function pendingDate(byDate, now = new Date()) {
-  const target = now.getHours() < 14 ? dstr(addDays(now, -1)) : dstr(now);
+  const target = dstr(addDays(now, -1));
   return byDate[target] ? null : target;
 }
 

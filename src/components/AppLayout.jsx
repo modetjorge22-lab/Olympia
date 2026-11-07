@@ -7,6 +7,7 @@ import { useWhoopAutoSync } from '@/hooks/useWhoopAutoSync';
 import InfinityMark from './InfinityMark';
 import OfficialAnnouncement from './OfficialAnnouncement';
 import ComunicadoNovedades from './ComunicadoNovedades';
+import { DietDailyPrompt } from './DietPanel';
 
 
 const navItems = [
@@ -93,6 +94,7 @@ export default function AppLayout({ children }) {
     <OfficialAnnouncement />
     {/* Borrador: solo se ve con ?comunicado=preview hasta que se lance */}
     <ComunicadoNovedades />
+    <DietDailyPrompt />
     <div className="min-h-screen flex flex-col">
       {/* Header flotante — píldora de vidrio */}
       <header

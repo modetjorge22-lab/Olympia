@@ -32,9 +32,10 @@ const NOVEDADES = [
   {
     titulo: 'Disciplina alimentaria',
     parrafos: [
-      <>La disciplina también se come. En <Strong>Tú</Strong> define hasta <Strong>3 estándares</Strong> que para ti sean innegociables: sin azúcar, sin alcohol entre semana, lo que quieras.</>,
-      <>Cada día, un toque: ¿has cumplido o no? Si fallas, puedes marcar en cuál. Verás tu racha, tu mejor marca y dónde fallas más.</>,
-      <>En el filtro de la semana eliges qué ver: entrenamiento, alimentación o ambos, también en el calendario.</>,
+      <>La disciplina también se come. Es opcional: actívala abajo del todo en <Strong>Tú</Strong>.</>,
+      <>Si quieres, apunta tus estándares en pequeñas etiquetas: sin azúcar, sin alcohol entre semana, lo que para ti sea innegociable.</>,
+      <>Cada vez que entres después de medianoche, Olympia te preguntará si ayer cumpliste. Un toque: sí o no. Si fallas, puedes marcar en cuál.</>,
+      <>Verás tu racha, tu mejor marca y dónde fallas más. En el filtro de la semana eliges qué ver: entrenamiento, alimentación o ambos, también en el calendario.</>,
       <>Tus estándares y tus fallos son solo para ti. El grupo solo ve tu racha.</>,
     ],
   },

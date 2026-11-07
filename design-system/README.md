@@ -148,10 +148,11 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
   - Hay una sola pieza, `ActivityFilterButton`. Su menú es de vidrio, nace del botón (`transform-origin` arriba a la derecha) con un muelle sin rebote y se cierra con Escape o tocando fuera.
   - Si el usuario tiene alimentación, el menú empieza con la **vista** (Entrenamiento y alimentación / Solo entrenamiento / Solo alimentación), separada de los tipos por un hairline. Sigue siendo un único filtro. El título de la sección cambia con la vista: «Tu semana», «Entrenamiento» o «Alimentación».
 - **Alimentación** (disciplina alimentaria):
-  - Hasta 3 estándares por persona y un sí/no por día. Todo en **tinta**, sin color propio.
+  - **Opcional:** se activa abajo del todo en Tú, en una fila con botón secundario (Activar / Desactivar), como las integraciones de Más. Desactivada, no aparece nada.
+  - Estándares opcionales en **etiquetas** (hasta 6): se escriben y se añaden con Enter; chip `accent .1` con aspa para quitar. Un sí/no por día. Todo en **tinta**, sin color propio.
   - **Celda en vista Solo alimentación:** cumplido = halo de tinta (`.24 → .04`) + anillo `.4` + check; no cumplido = marco vacío + aspa a tinta `.4`; sin responder = marco vacío.
   - **Celda en vista Ambos:** la celda de entreno lleva abajo un punto de 3 px a tinta `.85` (cumplido) o un guion de 5 px a tinta `.45` (no cumplido).
-  - **Pregunta del día:** una línea con dos botones secundarios (Sí / No) bajo la semana, solo si falta responder. Antes de las 14 h pregunta por ayer; después, por hoy. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
+  - **Pregunta del día:** siempre sobre **ayer** (pasada la medianoche el día está cerrado). Al entrar en la app, si ayer sigue sin responder, sale una **hoja** (meta «Alimentación · {día}», pregunta en DM Sans 17, etiquetas de solo lectura, dos botones secundarios Sí / No y X «Ahora no»), una vez por visita y nunca encima de otra hoja. La misma pregunta aparece en línea bajo la semana. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
   - **Racha:** cifra en mono (acento si es mayor que 0) + «días seguidos», y meta en mono 11: «mejor N · N/30 días · N fallos».
   - Los días pasados se corrigen desde el detalle del día. El grupo solo ve la racha (en la ficha de miembro); los estándares y los fallos son privados.
 - **Estado en línea:** los resultados (sincronizado, error) van en una línea de 11 px junto a lo que los causa, con icono y color `--success`/`--danger`, sin cajas de color.

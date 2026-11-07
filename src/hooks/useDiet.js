@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
-
-// Disciplina alimentaria: hasta 3 estándares y un sí/no por día. Privado
-// (RLS); el grupo solo ve la racha vía diet_streaks().
-
-export const MAX_STANDARDS = 3;
-
+import { hasFeature } from '@/lib/features';
 import { dstr, addDays, pendingDate, computeDietStats } from '@/utils/dietStats';
+
+// Disciplina alimentaria. Opcional: cada uno la activa (team_members.diet_enabled)
+// abajo del todo en Tú. Estándares en tags y un sí/no por día, siempre sobre
+// el día anterior. Privado (RLS); el grupo solo ve la racha vía diet_streaks().
+
 export { pendingDate, computeDietStats };
+export const MAX_STANDARDS = 6;
 
 // Rachas del grupo (solo la cifra; estándares y fallos siguen privados).
 let streaksCache = null;
@@ -26,27 +27,39 @@ export function useDietStreaks() {
   return map;
 }
 
-export function useDiet() {
+const DietContext = createContext(null);
+
+export function DietProvider({ children }) {
   const { user } = useAuth();
+  const available = hasFeature('diet', user?.email);
+  const [enabled, setEnabledState] = useState(false);
   const [standards, setStandards] = useState([]);
   const [byDate, setByDate] = useState({});
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.email || !available) return;
     const since = dstr(addDays(new Date(), -400));
-    const [s, d] = await Promise.all([
+    const [p, s, d] = await Promise.all([
+      supabase.from('team_members').select('diet_enabled').eq('email', user.email).maybeSingle(),
       supabase.from('diet_standards').select('id, text, position')
         .eq('user_email', user.email).eq('archived', false).order('position'),
       supabase.from('diet_days').select('date, met, failed_ids')
         .eq('user_email', user.email).gte('date', since),
     ]);
+    if (!p.error) setEnabledState(Boolean(p.data?.diet_enabled));
     if (!s.error) setStandards(s.data || []);
     if (!d.error) setByDate(Object.fromEntries((d.data || []).map(r => [r.date, { met: r.met, failed_ids: r.failed_ids || [] }])));
     setLoaded(true);
-  }, [user?.email]);
+  }, [user?.email, available]);
 
   useEffect(() => { load(); }, [load]);
+
+  const setEnabled = useCallback(async (on) => {
+    setEnabledState(on);
+    const { error } = await supabase.from('team_members').update({ diet_enabled: on }).eq('email', user.email);
+    if (error) { console.error('diet setEnabled', error); load(); }
+  }, [user, load]);
 
   const setDay = useCallback(async (date, met, failedIds = []) => {
     const entry = { met, failed_ids: met ? [] : failedIds };
@@ -78,6 +91,18 @@ export function useDiet() {
   }, [standards, user, load]);
 
   const stats = useMemo(() => computeDietStats(byDate, standards), [byDate, standards]);
+  const active = available && enabled;
 
-  return { loaded, standards, byDate, stats, setDay, clearDay, saveStandards, active: standards.length > 0 };
+  const value = useMemo(() => ({
+    available, loaded, enabled, active, standards, byDate: active ? byDate : {}, stats,
+    setEnabled, setDay, clearDay, saveStandards, reload: load,
+  }), [available, loaded, enabled, active, standards, byDate, stats, setEnabled, setDay, clearDay, saveStandards, load]);
+
+  return React.createElement(DietContext.Provider, { value }, children);
+}
+
+const EMPTY = { available: false, loaded: false, enabled: false, active: false, standards: [], byDate: {}, stats: computeDietStats({}, []) };
+
+export function useDiet() {
+  return useContext(DietContext) || EMPTY;
 }

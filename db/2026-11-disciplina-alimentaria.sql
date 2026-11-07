@@ -42,3 +42,6 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function diet_streaks() from public;
 grant execute on function diet_streaks() to authenticated;
+
+-- Es opcional: cada uno la activa abajo del todo en Tú.
+alter table team_members add column if not exists diet_enabled boolean not null default false;

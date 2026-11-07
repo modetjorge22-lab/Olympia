@@ -20,8 +20,7 @@ import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
 import { useDiet } from '@/hooks/useDiet';
-import { hasFeature } from '@/lib/features';
-import DietPanel, { DietDayRow, DietSheetHost, useDietSheet } from '@/components/DietPanel';
+import DietPanel, { DietDayRow, DietSheetHost, DietSettingsRow, useDietSheet } from '@/components/DietPanel';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -148,8 +147,7 @@ export default function Actividad() {
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
  const [detailDate, setDetailDate] = useState(null); // día abierto en la hoja de detalle
  // Disciplina alimentaria + qué se ve en semana y calendario (filtro único)
- const dietData = useDiet();
- const diet = hasFeature('diet', user?.email) ? dietData : { ...dietData, active: false, loaded: false, byDate: {} };
+ const diet = useDiet();
  const dietSheet = useDietSheet();
  const [viewMode, setViewModeState] = useState(() => {
  try { return localStorage.getItem('olympia_tu_view') || 'both'; } catch { return 'both'; }
@@ -855,7 +853,7 @@ export default function Actividad() {
  view={view}
  onViewChange={diet.active ? setViewMode : undefined}
  >
- <DietPanel diet={diet} view={diet.active ? viewMode : 'both'} onEdit={dietSheet.show} />
+ <DietPanel view={view} onEdit={dietSheet.show} />
  {/* Snapshot fijo — últimos 7 días vs media y tendencia de 16 semanas */}
  {view !== 'food' && (
  <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
@@ -992,6 +990,13 @@ export default function Actividad() {
  })()}
  </div>
 
+ {/* Disciplina alimentaria — opcional, se activa aquí */}
+ {diet.available && (
+ <div className="pt-5" style={{ borderTop: '1px solid rgba(var(--ink),0.12)' }}>
+ <DietSettingsRow onEdit={dietSheet.show} />
+ </div>
+ )}
+
  {/* FAB — usa el color del fondo de la app */}
  <button
  onClick={() => { setSelectedDate(new Date()); setShowLogDialog(true); }}
@@ -1017,11 +1022,11 @@ export default function Actividad() {
  onRemovePlan={(id) => removePlan(id)}
  onDeletePr={(id) => deletePrAchievement(id)}
  onAdd={(d) => { setDetailDate(null); setSelectedDate(d); setShowLogDialog(true); }}
- dietRow={detailDate <= new Date() ? <DietDayRow diet={diet} date={tcDateStr(detailDate)} /> : null}
+ dietRow={detailDate <= new Date() ? <DietDayRow date={tcDateStr(detailDate)} /> : null}
  />
  )}
  </AnimatePresence>
- <DietSheetHost diet={diet} sheet={dietSheet} />
+ <DietSheetHost sheet={dietSheet} />
 
  <AnimatePresence>
  {(showLogDialog || !!editActivity || !!convertPlan) && (

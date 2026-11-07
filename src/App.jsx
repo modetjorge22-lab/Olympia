@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/theme';
 import { MonthProvider } from '@/lib/MonthContext';
 import { DataProvider } from '@/lib/DataContext';
+import { DietProvider } from '@/hooks/useDiet';
 import AppLayout from '@/components/AppLayout';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -62,11 +63,13 @@ function AuthedLayout() {
   return (
     <MonthProvider>
       <DataProvider>
-        <AppLayout>
-          <Suspense fallback={<PageFallback />}>
-            <Outlet />
-          </Suspense>
-        </AppLayout>
+        <DietProvider>
+          <AppLayout>
+            <Suspense fallback={<PageFallback />}>
+              <Outlet />
+            </Suspense>
+          </AppLayout>
+        </DietProvider>
       </DataProvider>
     </MonthProvider>
   );
