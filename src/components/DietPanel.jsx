@@ -163,7 +163,6 @@ export function DietStandardsSheet({ onClose }) {
 export default function DietPanel({ view, onEdit }) {
   const diet = useDiet();
   if (!diet.active || !diet.loaded || view === 'train') return null;
-  const date = pendingDate(diet.byDate);
 
   return (
     <div className="mt-4 pt-3 space-y-4" style={{ borderTop: `1px solid ${INK(0.06)}` }}>
@@ -176,13 +175,6 @@ export default function DietPanel({ view, onEdit }) {
           estándares
         </button>
       </div>
-
-      {date && (
-        <div>
-          <p className="text-[12px] mb-2.5" style={{ color: INK(0.9) }}>{questionFor(diet)}</p>
-          <Answer diet={diet} date={date} compact />
-        </div>
-      )}
 
       {view === 'food' && diet.stats.failsByStandard.length > 0 && (
         <div>
@@ -252,7 +244,7 @@ export function DietDailyPrompt() {
   return (
     <AnimatePresence>
       {open && date && (
-        <Sheet onClose={close} label="Alimentación de ayer" header={
+        <Sheet onClose={close} dismissOnScrim={false} label="Alimentación de ayer" header={
           <div className="flex items-start gap-3 mb-4">
             <div className="flex-1 min-w-0">
               <p style={{ fontFamily: MONO, fontSize: 11, color: INK(0.45) }}>Alimentación · {dayLabel(date)}</p>
