@@ -1,4 +1,4 @@
-# Olympia · Sistema de diseño v1.0
+# Olympia · Sistema de diseño v1.1
 
 > Constancia que se ve. Competición que se siente.
 
@@ -140,6 +140,25 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
 - **Carrera:**
   - Líneas acumuladas con gradiente por día (mezcla de familias), sin rejilla vertical y con ejes a `.18`.
   - El replay dura 7 s, a 1× o 2×, y se abre en una hoja.
+- **Comunicado** (mensaje oficial a todos los usuarios, una sola vez):
+  - Es una **hoja** (ver §4): sube desde abajo con `SHEET_SPRING` y `useSheetDrag`, tiene fondo `--surface`, radio superior de 28, asa y scrim `--scrim`. No es una ventana centrada ni lleva cabecera de color o degradado.
+  - **Cabecera:**
+    - Meta en mono 11 a tinta .45 con «Comunicado · {mes año}», sin mayúsculas forzadas.
+    - Título en DM Sans 17 a tinta .95.
+    - Botón de icono X de 32 px a la derecha.
+  - **Cuerpo:**
+    - DM Sans 12 a tinta .90, en párrafos cortos separados con aire.
+    - Los nombres propios o datos clave van a tinta .95, nunca en negrita.
+    - Cifras en mono.
+  - **Firma:** «— La cúpula de Olympia» en DM Sans 11 a tinta .45.
+  - **Cierre:**
+    - Un único botón primario («Entendido»). También se cierra con la X o arrastrando hacia abajo.
+    - Tocar el scrim **no** lo cierra, para que no se descarte sin leerlo.
+  - **Una vez por usuario:**
+    - Clave `olympia_comunicado_{aaaa_mm}_v{n}` en localStorage (con try/catch).
+    - Aparece 800 ms después de cargar.
+    - Solo hay un comunicado activo a la vez, montado en `AppLayout`.
+  - **Voz:** la de §9, con un tono algo más institucional. Una exclamación o un guiño final solo si el mensaje lo pide.
 
 ## 7. Movimiento
 
@@ -185,3 +204,10 @@ Olympia habla en español, de tú, breve y en positivo: «¿a por ella?», «¡m
 | Un filtro arriba a la derecha | Leyendas (si hace falta leyenda, el código visual falla) |
 | Hojas para detalle y edición | Rojo para algo que no sea hoy o un error |
 | Pocas cifras, grandes y en mono | Zoom, podios o adornos que compitan con los datos |
+
+## 11. Historial
+
+| Versión | Fecha | Cambios |
+|---|---|---|
+| 1.0 | 2026-10-18 | Primera versión del sistema. |
+| 1.1 | 2026-11-07 | Añade el patrón **Comunicado** (§6). Desde esta versión, toda sesión que toque la interfaz lee este documento primero (ver `CLAUDE.md`). Nota: `OfficialAnnouncement.jsx` (comunicado de noviembre de 2026) es anterior a este patrón y no lo sigue. |
