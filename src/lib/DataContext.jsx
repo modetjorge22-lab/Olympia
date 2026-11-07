@@ -130,6 +130,38 @@ export function DataProvider({ children }) {
 
   // ─── MUTATIONS ───
   const createActivity = useCallback(async (activityData) => {
+    // Si WHOOP ya importó esta sesión (mismo día, duración ±15 min), lo que
+    // apunta el usuario la corrige en vez de duplicarla. Se prefiere el mismo
+    // tipo, pero vale otro: WHOOP a veces clasifica mal (tenis por pádel).
+    if (activityData.date && activityData.duration_minutes) {
+      const { data: fromWhoop } = await supabase
+        .from('activities')
+        .select('id, type, duration_minutes')
+        .eq('user_email', user.email)
+        .eq('date', activityData.date)
+        .eq('source', 'whoop')
+        .not('whoop_id', 'is', null);
+      const near = (fromWhoop || []).filter(a =>
+        Math.abs((a.duration_minutes || 0) - Number(activityData.duration_minutes)) <= 15);
+      const twin = near.find(a => a.type === activityData.type) || near[0];
+      if (twin) {
+        const { data: merged, error: mergeError } = await supabase
+          .from('activities')
+          .update({ ...activityData, manually_edited: true })
+          .eq('id', twin.id)
+          .select()
+          .single();
+        if (!mergeError && merged) {
+          const swap = list => (list || []).map(a => (a.id === merged.id ? merged : a));
+          monthCache.current[mKey] = swap(monthCache.current[mKey]);
+          allActsCache.current = swap(allActsCache.current);
+          setActivities(monthCache.current[mKey]);
+          setAllActivities(allActsCache.current);
+          return merged;
+        }
+      }
+    }
+
     let { data, error } = await supabase
       .from('activities')
       .insert({ ...activityData, user_id: user.id, user_email: user.email })
@@ -162,6 +194,14 @@ export function DataProvider({ children }) {
   }, [user, mKey]);
 
   const deleteActivity = useCallback(async (id) => {
+    // Si venía de WHOOP, se recuerda para que la próxima sincronización no la
+    // vuelva a crear.
+    const target = [...(monthCache.current[mKey] || []), ...(allActsCache.current || [])].find(a => a.id === id);
+    if (target?.whoop_id) {
+      // insert (no upsert: RLS no da UPDATE); si ya existía, el error da igual.
+      await supabase.from('whoop_dismissed')
+        .insert({ whoop_id: target.whoop_id, user_email: user.email });
+    }
     const { error } = await supabase.from('activities').delete().eq('id', id);
     if (error) {
       console.error('deleteActivity error:', error);
@@ -175,7 +215,7 @@ export function DataProvider({ children }) {
       allActsCache.current = allActsCache.current.filter(a => a.id !== id);
       setAllActivities(allActsCache.current);
     }
-  }, [mKey]);
+  }, [mKey, user]);
 
   // Actualiza campos de una actividad existente (típicamente training_type)
   const updateActivity = useCallback(async (id, patch) => {

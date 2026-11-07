@@ -6,6 +6,7 @@ import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import { useWhoopAutoSync } from '@/hooks/useWhoopAutoSync';
 import InfinityMark from './InfinityMark';
 import OfficialAnnouncement from './OfficialAnnouncement';
+import ComunicadoNovedades from './ComunicadoNovedades';
 
 
 const navItems = [
@@ -90,6 +91,8 @@ export default function AppLayout({ children }) {
   return (
     <>
     <OfficialAnnouncement />
+    {/* Borrador: solo se ve con ?comunicado=preview hasta que se lance */}
+    <ComunicadoNovedades />
     <div className="min-h-screen flex flex-col">
       {/* Header flotante — píldora de vidrio */}
       <header

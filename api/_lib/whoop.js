@@ -187,6 +187,12 @@ export async function importWorkout(sb, row, w) {
   // 1. Ya importado: refresca métricas (las cifras solo si no lo editó el usuario).
   const { data: linked } = await sb.from('activities')
     .select('id, source, manually_edited').eq('whoop_id', w.id).maybeSingle();
+  // El usuario la borró a propósito: no se vuelve a crear.
+  if (!linked) {
+    const { data: dismissed } = await sb.from('whoop_dismissed').select('whoop_id').eq('whoop_id', w.id).maybeSingle();
+    if (dismissed) return 'dismissed';
+  }
+
   if (linked) {
     const patch = { whoop_data: whoopData };
     if (linked.source === 'whoop' && !linked.manually_edited) Object.assign(patch, numbers, { type, title: TYPE_LABELS[type], date });
