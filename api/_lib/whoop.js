@@ -8,6 +8,11 @@ export const WHOOP_REDIRECT_URI = 'https://olympia-navy.vercel.app/api/whoop-cal
 export const WHOOP_SCOPES = 'offline read:profile read:workout read:sleep read:recovery read:cycles';
 
 const MIN_WORKOUT_MINUTES = 10;
+
+// WHOOP detecta solo paseos y "activity" genérica casi a diario. No son
+// entrenos: no crean actividad (llenarían el feed e inflarían las horas),
+// solo se enlazan si ya existe una sesión registrada que coincida.
+const PASSIVE_SPORTS = new Set(['walking', 'activity']);
 const MATCH_TOLERANCE_MINUTES = 15;
 
 const TYPE_LABELS = {
@@ -192,6 +197,8 @@ export async function importWorkout(sb, row, w) {
     await sb.from('activities').update({ whoop_id: w.id, whoop_data: whoopData }).eq('id', match.id);
     return 'linked';
   }
+
+  if (PASSIVE_SPORTS.has(String(w.sport_name || '').toLowerCase())) return 'passive';
 
   // 3. Nueva. Si había un plan para ese día y tipo, se cumple y su nota da el nombre.
   const { data: plans } = await sb.from('weekly_plans')
