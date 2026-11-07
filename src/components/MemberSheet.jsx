@@ -6,6 +6,9 @@ import MuscleLoad from '@/components/MuscleLoad';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { iconFor, categoryOf, catColor, CATEGORIES } from '@/utils/activityIcons';
 import { Sheet } from '@/components/ui';
+import { useDietStreaks } from '@/hooks/useDiet';
+import { useAuth } from '@/lib/AuthContext';
+import { hasFeature } from '@/lib/features';
 
 // Snapshot de un miembro — versión resumida de su pestaña "Tú":
 // cifras clave, su semana, su mes en calendario Olympia, desglose por familia,
@@ -27,6 +30,9 @@ function Title({ children }) {
 }
 
 export default function MemberSheet({ member, activities = [], plans = [], goals = [], objectives = [], prDates = new Set(), pacePct = null, onClose }) {
+  const { user } = useAuth();
+  const streaks = useDietStreaks();
+  const dietStreak = hasFeature('diet', user?.email) ? (streaks[member.email]?.streak || 0) : 0;
   const byDate = useMemo(() => {
     const m = {};
     activities.forEach(a => { const ds = a.date?.slice(0, 10); if (ds) (m[ds] = m[ds] || []).push(a); });
@@ -80,6 +86,7 @@ export default function MemberSheet({ member, activities = [], plans = [], goals
               <p className="text-[10.5px]" style={{ fontFamily: MONO, color: INK(0.5) }}>
                 {fmt(monthMins)} · {monthActs.length} {monthActs.length === 1 ? 'sesión' : 'sesiones'}
                 {pacePct != null && ` · ritmo ${pacePct}%`}
+                {dietStreak > 0 && ` · alimentación ${dietStreak} ${dietStreak === 1 ? 'día' : 'días'}`}
               </p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"

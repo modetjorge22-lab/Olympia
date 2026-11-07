@@ -92,7 +92,7 @@ function ActivityCard({ act, onEdit, onDelete }) {
 
 export default function DayDetailSheet({
   date, activities = [], plans = [], prs = [],
-  onClose, onEdit, onDelete, onCompletePlan, onRemovePlan, onDeletePr, onAdd,
+  onClose, onEdit, onDelete, onCompletePlan, onRemovePlan, onDeletePr, onAdd, dietRow = null,
 }) {
   if (!date) return null;
   const totalMin = activities.reduce((s, a) => s + (a.duration_minutes || 0), 0);
@@ -118,6 +118,7 @@ export default function DayDetailSheet({
       </>}>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-3">
+          {dietRow && <div className="pb-3" style={{ borderBottom: '1px solid rgba(var(--ink),0.12)' }}>{dietRow}</div>}
           {activities.map(a => (
             <ActivityCard key={a.id} act={a} onEdit={onEdit} onDelete={onDelete} />
           ))}

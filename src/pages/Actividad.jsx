@@ -19,6 +19,9 @@ import DayDetailSheet from '@/components/DayDetailSheet';
 import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
+import { useDiet } from '@/hooks/useDiet';
+import { hasFeature } from '@/lib/features';
+import DietPanel, { DietDayRow, DietSheetHost, useDietSheet } from '@/components/DietPanel';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -144,6 +147,15 @@ export default function Actividad() {
  const [muscleTF, setMuscleTF] = useState('1m'); // '1m' | '3m' | '6m'
  const [seasonTF, setSeasonTF] = useState('1m'); // ritmo estacional: '1m' | '3m'
  const [detailDate, setDetailDate] = useState(null); // día abierto en la hoja de detalle
+ // Disciplina alimentaria + qué se ve en semana y calendario (filtro único)
+ const dietData = useDiet();
+ const diet = hasFeature('diet', user?.email) ? dietData : { ...dietData, active: false, loaded: false, byDate: {} };
+ const dietSheet = useDietSheet();
+ const [viewMode, setViewModeState] = useState(() => {
+ try { return localStorage.getItem('olympia_tu_view') || 'both'; } catch { return 'both'; }
+ });
+ const setViewMode = (v) => { setViewModeState(v); try { localStorage.setItem('olympia_tu_view', v); } catch { /* sin almacenamiento */ } };
+ const view = diet.active ? viewMode : 'train';
  const [editCards, setEditCards] = useState(false);
  const [cardOrder, setCardOrder] = useState(() => {
  try {
@@ -839,8 +851,13 @@ export default function Actividad() {
  typeLabels={Object.fromEntries(Object.entries(ACTIVITY_TYPES).map(([k, v]) => [k, v.label]))}
  filter={typeFilter}
  onFilterChange={(t) => setActFilter(t || 'accumulated')}
+ dietByDate={diet.byDate}
+ view={view}
+ onViewChange={diet.active ? setViewMode : undefined}
  >
+ <DietPanel diet={diet} view={diet.active ? viewMode : 'both'} onEdit={dietSheet.show} />
  {/* Snapshot fijo — últimos 7 días vs media y tendencia de 16 semanas */}
+ {view !== 'food' && (
  <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
  <div className="flex items-end justify-between mb-2">
  <div>
@@ -887,6 +904,7 @@ export default function Actividad() {
  </ResponsiveContainer>
  </div>
  </div>
+ )}
  </TrainingSection>
  </div>
 
@@ -897,6 +915,8 @@ export default function Actividad() {
  plansByDate={fPlansByDate}
  prDates={prDates}
  onDayClick={setDetailDate}
+ dietByDate={diet.byDate}
+ view={view}
  />
  </div>
 
@@ -997,9 +1017,11 @@ export default function Actividad() {
  onRemovePlan={(id) => removePlan(id)}
  onDeletePr={(id) => deletePrAchievement(id)}
  onAdd={(d) => { setDetailDate(null); setSelectedDate(d); setShowLogDialog(true); }}
+ dietRow={detailDate <= new Date() ? <DietDayRow diet={diet} date={tcDateStr(detailDate)} /> : null}
  />
  )}
  </AnimatePresence>
+ <DietSheetHost diet={diet} sheet={dietSheet} />
 
  <AnimatePresence>
  {(showLogDialog || !!editActivity || !!convertPlan) && (

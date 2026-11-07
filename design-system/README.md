@@ -1,4 +1,4 @@
-# Olympia · Sistema de diseño v1.2
+# Olympia · Sistema de diseño v1.3
 
 > Constancia que se ve. Competición que se siente.
 
@@ -26,7 +26,7 @@ Lo nuevo se construye con esas piezas. Si cambias algo allí, actualiza también
 2. **El beige es acento, no superficie.** Se usa en las cifras protagonistas, el botón primario y la familia fuerza. Nunca va como fondo de tarjeta.
 3. **Sin negritas.** Todo es peso 400 (300 solo en titulares display). La jerarquía sale del tamaño, el tracking y la opacidad de la tinta.
 4. **Las cifras van en mono.** Usa JetBrains Mono tabular para horas, fechas y marcas.
-5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy.
+5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy. Lo que no es actividad (la alimentación) se dibuja en tinta, nunca con un color nuevo.
 6. **Hecho vs. planificado.** Lo hecho es sólido, con halo; lo planificado es un marco discontinuo.
 7. **El vidrio en todo lo que flota, y solo ahí.**
    - Header, nav, hojas, menús y controles superpuestos son vidrio. Cuanto más grande es la superficie, más grueso es el material (más desenfoque y más sombra).
@@ -146,6 +146,14 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
 - **Filtro:**
   - Botón arriba a la derecha de la sección. Afecta a todo lo que hay debajo (semana, calendario, tendencia, ritmo).
   - Hay una sola pieza, `ActivityFilterButton`. Su menú es de vidrio, nace del botón (`transform-origin` arriba a la derecha) con un muelle sin rebote y se cierra con Escape o tocando fuera.
+  - Si el usuario tiene alimentación, el menú empieza con la **vista** (Entrenamiento y alimentación / Solo entrenamiento / Solo alimentación), separada de los tipos por un hairline. Sigue siendo un único filtro. El título de la sección cambia con la vista: «Tu semana», «Entrenamiento» o «Alimentación».
+- **Alimentación** (disciplina alimentaria):
+  - Hasta 3 estándares por persona y un sí/no por día. Todo en **tinta**, sin color propio.
+  - **Celda en vista Solo alimentación:** cumplido = halo de tinta (`.24 → .04`) + anillo `.4` + check; no cumplido = marco vacío + aspa a tinta `.4`; sin responder = marco vacío.
+  - **Celda en vista Ambos:** la celda de entreno lleva abajo un punto de 3 px a tinta `.85` (cumplido) o un guion de 5 px a tinta `.45` (no cumplido).
+  - **Pregunta del día:** una línea con dos botones secundarios (Sí / No) bajo la semana, solo si falta responder. Antes de las 14 h pregunta por ayer; después, por hoy. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
+  - **Racha:** cifra en mono (acento si es mayor que 0) + «días seguidos», y meta en mono 11: «mejor N · N/30 días · N fallos».
+  - Los días pasados se corrigen desde el detalle del día. El grupo solo ve la racha (en la ficha de miembro); los estándares y los fallos son privados.
 - **Estado en línea:** los resultados (sincronizado, error) van en una línea de 11 px junto a lo que los causa, con icono y color `--success`/`--danger`, sin cajas de color.
 - **Nada que parezca pulsable sin hacer nada:** si una fila o botón aún no tiene destino, no se muestra.
 - **Anillo de ritmo:**
@@ -172,6 +180,7 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
     - DM Sans 12 a tinta .90, en párrafos cortos separados con aire.
     - Los nombres propios o datos clave van a tinta .95, nunca en negrita.
     - Cifras en mono.
+  - **Varias novedades:** cada una con su título en estilo Sección (DM Sans 13, tracking `.14em`, tinta .95), separadas por un hairline `ink .12` y aire.
   - **Firma:** «— La cúpula de Olympia» en DM Sans 11 a tinta .45.
   - **Cierre:**
     - Un único botón primario («Entendido»). También se cierra con la X o arrastrando hacia abajo.
@@ -265,3 +274,4 @@ Contraste con los principios de diseño fluido de Apple (*Designing Fluid Interf
 | 1.0 | 2026-10-18 | Primera versión del sistema. |
 | 1.1 | 2026-11-07 | Añade el patrón **Comunicado** (§6). Desde esta versión, toda sesión que toque la interfaz lee este documento primero (ver `CLAUDE.md`). Nota: `OfficialAnnouncement.jsx` (comunicado de noviembre de 2026) es anterior a este patrón y no lo sigue. |
 | 1.2 | 2026-11-07 | El sistema pasa al código: `index.css` lleva todos los tokens y `src/components/ui/` las piezas (`Sheet`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`). Contraste con Apple (§11): **hojas de cristal flotantes** (regla 7 revisada), salida con traspaso de velocidad, pulsación a 100 ms, filtro único con menú anclado al botón y tracking según el tamaño. Más rediseñada con las piezas. Se elimina el código que no se usaba (Dashboard, Planificador semanal, pop-up de Metas, otras 12 funciones y 2 paletas antiguas). |
+| 1.3 | 2026-11-08 | Patrón **Alimentación** (§6): marcas en tinta en la celda del día, pregunta del día y racha; la regla 5 aclara que lo que no es actividad va en tinta. El **filtro** gana la vista (entrenamiento, alimentación o ambos) sin dejar de ser uno. El **Comunicado** admite varias novedades separadas por hairline. |

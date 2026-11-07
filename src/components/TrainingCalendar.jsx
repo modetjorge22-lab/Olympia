@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, Check, X } from 'lucide-react';
 import { DashedFrame } from '@/components/sketch';
 import { iconFor, categoryOf } from '@/utils/activityIcons';
 import ActivityFilterButton from '@/components/ActivityFilterButton';
@@ -54,7 +54,61 @@ function cellBackground(types) {
   return `linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(var(--ink),0.16) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 100% 100% no-repeat, ${halo(cats[0])} left / 50% 100% no-repeat, ${halo(cats[1])} right / 50% 100% no-repeat`;
 }
 
-export const DayCell = React.memo(function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true }) {
+// ── Alimentación (en tinta: no es una familia de actividad) ──
+// Vista «Alimentación»: cumplido = halo de tinta + check; fallado = marco
+// vacío + aspa tenue; sin responder = marco vacío.
+// Vista «Ambos»: la celda de entreno lleva abajo un punto (cumplido) o un
+// guion (fallado).
+function DietMark({ diet }) {
+  if (!diet) return null;
+  return (
+    <span aria-label={diet.met ? 'Alimentación cumplida' : 'Alimentación no cumplida'} style={{
+      position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)',
+      ...(diet.met
+        ? { width: 3, height: 3, borderRadius: '50%', background: 'rgba(var(--ink),0.85)' }
+        : { width: 5, height: 1.25, borderRadius: 1, background: 'rgba(var(--ink),0.45)' }),
+    }} />
+  );
+}
+
+function FoodCell({ date, diet, size, onClick, showNumber, todayMark, redToday }) {
+  const today = new Date();
+  const isToday = toDateStr(date) === toDateStr(today);
+  const isFuture = date > today && !isToday;
+  const met = diet?.met === true;
+  const failed = diet?.met === false;
+  return (
+    <button
+      onClick={() => onClick?.(date)}
+      aria-label={met ? 'Cumplido' : failed ? 'No cumplido' : 'Sin responder'}
+      className="relative flex flex-col items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
+      style={{
+        width: size, height: size, borderRadius: 9,
+        background: met ? 'radial-gradient(circle at center, rgba(var(--ink),0.24) 0%, rgba(var(--ink),0.04) 82%)' : 'transparent',
+        boxShadow: met ? 'inset 0 0 0 1px rgba(var(--ink),0.4)' : 'none',
+      }}
+    >
+      {!met && <DashedFrame opacity={isFuture ? 0.2 : 0.4} />}
+      {isToday && todayMark && (
+        <span style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', width: 1.5, height: 7, borderRadius: 1, background: TODAY_RED }} />
+      )}
+      {showNumber && (
+        <span style={{
+          position: 'absolute', top: 5, left: 0, right: 0, textAlign: 'center',
+          fontFamily: MONO, fontSize: 7, lineHeight: 1,
+          color: isToday && redToday ? TODAY_RED : isFuture ? 'rgba(var(--accent-rgb),0.45)' : 'var(--accent)',
+        }}>
+          {date.getDate()}
+        </span>
+      )}
+      {met && <Check style={{ width: 10, height: 10, marginTop: 8, color: 'rgba(var(--ink),0.85)' }} strokeWidth={2.3} />}
+      {failed && <X style={{ width: 10, height: 10, marginTop: 8, color: 'rgba(var(--ink),0.4)' }} strokeWidth={1.8} />}
+    </button>
+  );
+}
+
+export const DayCell = React.memo(function DayCell({ date, acts = [], plans = [], isPR, size = 34, onClick, showNumber = true, todayMark = true, redToday = true, diet = null, view = 'train' }) {
+  if (view === 'food') return <FoodCell date={date} diet={diet} size={size} onClick={onClick} showNumber={showNumber} todayMark={todayMark} redToday={redToday} />;
   const today = new Date();
   const isToday = toDateStr(date) === toDateStr(today);
   const isFuture = date > today && !isToday;
@@ -116,6 +170,7 @@ export const DayCell = React.memo(function DayCell({ date, acts = [], plans = []
         </span>
       )}
       {isPR && <Trophy aria-label="Marca personal" style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, color: 'var(--accent)' }} strokeWidth={2.4} />}
+      {view === 'both' && <DietMark diet={diet} />}
     </button>
   );
 });
@@ -126,7 +181,7 @@ export const DayCell = React.memo(function DayCell({ date, acts = [], plans = []
 // y una pequeña línea roja desde arriba marca el día de hoy.
 const DOW_BY_JS = ['D','L','M','X','J','V','S'];
 
-export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, onVisibleChange, weeksBack = 26, weeksForward = 12 }) {
+export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, onVisibleChange, weeksBack = 26, weeksForward = 12, dietByDate = {}, view = 'train' }) {
   const scrollRef = useRef(null);
   const [colW, setColW] = useState(0);
 
@@ -197,6 +252,8 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
                 onClick={onDayClick}
                 todayMark={false}
                 redToday={false}
+                diet={dietByDate[ds]}
+                view={view}
               />
             </div>
           );
@@ -211,7 +268,7 @@ export function WeekStrip({ activitiesByDate, plansByDate, prDates = new Set(), 
 // Cada mes ocupa exactamente el alto del marco (6 filas máx.), con snap
 // obligatorio: en reposo solo se ve un mes, nunca el anterior o el siguiente.
 const MONTH_H = 294; // título + días de la semana + 6 filas de 36px
-export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, monthsBack = 12, monthsForward = 3 }) {
+export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set(), onDayClick, monthsBack = 12, monthsForward = 3, dietByDate = {}, view = 'train' }) {
   const scrollRef = useRef(null);
   const currentRef = useRef(null);
 
@@ -240,9 +297,11 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
         const y = m.getFullYear(), mo = m.getMonth();
         const dim = new Date(y, mo + 1, 0).getDate();
         const lead = (new Date(y, mo, 1).getDay() + 6) % 7;
-        let mins = 0;
+        let mins = 0, metDays = 0;
         for (let d = 1; d <= dim; d++) {
-          (activitiesByDate[toDateStr(new Date(y, mo, d))] || []).forEach(a => { mins += a.duration_minutes || 0; });
+          const k = toDateStr(new Date(y, mo, d));
+          (activitiesByDate[k] || []).forEach(a => { mins += a.duration_minutes || 0; });
+          if (dietByDate[k]?.met) metDays++;
         }
         const isCurrent = `${y}-${mo}` === nowKey;
         return (
@@ -252,7 +311,9 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
               <span style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)' }}>
                 {MONTHS_FULL[mo]} {y}
               </span>
-              <span className="text-[11px]" style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMins(mins)}</span>
+              <span className="text-[11px]" style={{ fontFamily: MONO, color: 'var(--accent)' }}>
+                {view === 'food' ? `${metDays} ${metDays === 1 ? 'día cumplido' : 'días cumplidos'}` : fmtMins(mins)}
+              </span>
             </div>
             <div className="grid grid-cols-7 gap-y-1.5 max-w-[340px] mx-auto">
               {DOW.map(d => (
@@ -267,6 +328,8 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
                     <DayCell
                       date={d}
                       acts={activitiesByDate[ds]}
+                      diet={dietByDate[ds]}
+                      view={view}
                       plans={plansByDate[ds]}
                       isPR={prDates.has(ds)}
                       size={36}
@@ -288,20 +351,23 @@ export function MonthScroller({ activitiesByDate, plansByDate, prDates = new Set
 // ── Sección de Entrenamiento (semana) ──
 // Título centrado; a la derecha el filtro por actividad, que gobierna toda la
 // pestaña (semana, calendario, Mi Actividad, Ritmo estacional).
-export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange, onVisibleChange, children }) {
+const VIEW_TITLES = { train: 'Entrenamiento', food: 'Alimentación', both: 'Tu semana' };
+
+export function TrainingSection({ activitiesByDate, plansByDate, prDates, onDayClick, usedTypes = [], typeLabels = {}, filter = null, onFilterChange, onVisibleChange, dietByDate = {}, view = 'train', onViewChange, children }) {
 
   return (
     <div>
       <div className="relative flex items-center justify-end mb-3" style={{ minHeight: 32 }}>
         <h2 className="absolute left-1/2 -translate-x-1/2"
           style={{ fontSize: 13, letterSpacing: '0.14em', color: 'rgba(var(--ink),0.95)', fontWeight: 400 }}>
-          Entrenamiento
+          {VIEW_TITLES[view] || VIEW_TITLES.train}
         </h2>
 
-        <ActivityFilterButton value={filter} onChange={onFilterChange} types={usedTypes} labels={typeLabels} />
+        <ActivityFilterButton value={filter} onChange={onFilterChange} types={usedTypes} labels={typeLabels}
+          view={onViewChange ? view : undefined} onViewChange={onViewChange} />
       </div>
 
-      <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} onVisibleChange={onVisibleChange} />
+      <WeekStrip activitiesByDate={activitiesByDate} plansByDate={plansByDate} prDates={prDates} onDayClick={onDayClick} onVisibleChange={onVisibleChange} dietByDate={dietByDate} view={view} />
       {children}
     </div>
   );
