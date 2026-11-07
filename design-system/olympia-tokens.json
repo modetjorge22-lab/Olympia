@@ -26,6 +26,7 @@
       },
       "semantic": {
         "success": "#34d399",
+        "dietGlow": "rgb(52, 211, 153)",
         "warning": "#fbbf24",
         "danger": "#f87171",
         "info": "#a5b4fc"
@@ -66,6 +67,7 @@
       },
       "semantic": {
         "success": "#047857",
+        "dietGlow": "rgb(5, 150, 105)",
         "warning": "#b45309",
         "danger": "#b91c1c",
         "info": "#4338ca"

@@ -1,4 +1,4 @@
-# Olympia · Sistema de diseño v1.3
+# Olympia · Sistema de diseño v1.4
 
 > Constancia que se ve. Competición que se siente.
 
@@ -26,7 +26,7 @@ Lo nuevo se construye con esas piezas. Si cambias algo allí, actualiza también
 2. **El beige es acento, no superficie.** Se usa en las cifras protagonistas, el botón primario y la familia fuerza. Nunca va como fondo de tarjeta.
 3. **Sin negritas.** Todo es peso 400 (300 solo en titulares display). La jerarquía sale del tamaño, el tracking y la opacidad de la tinta.
 4. **Las cifras van en mono.** Usa JetBrains Mono tabular para horas, fechas y marcas.
-5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy. Lo que no es actividad (la alimentación) se dibuja en tinta, nunca con un color nuevo.
+5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy. Única excepción: el resplandor esmeralda (`--diet-glow`) del día de alimentación cumplido, siempre fuera del borde y nunca como relleno.
 6. **Hecho vs. planificado.** Lo hecho es sólido, con halo; lo planificado es un marco discontinuo.
 7. **El vidrio en todo lo que flota, y solo ahí.**
    - Header, nav, hojas, menús y controles superpuestos son vidrio. Cuanto más grande es la superficie, más grueso es el material (más desenfoque y más sombra).
@@ -149,11 +149,12 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
   - Si el usuario tiene alimentación, el menú empieza con la **vista** (Entrenamiento y alimentación / Solo entrenamiento / Solo alimentación), separada de los tipos por un hairline. Sigue siendo un único filtro. El título de la sección cambia con la vista: «Tu semana», «Entrenamiento» o «Alimentación».
 - **Alimentación** (disciplina alimentaria):
   - **Opcional:** se activa abajo del todo en Tú, en una fila con botón secundario (Activar / Desactivar), como las integraciones de Más. Desactivada, no aparece nada.
-  - Estándares opcionales en **etiquetas** (hasta 6): se escriben y se añaden con Enter; chip `accent .1` con aspa para quitar. Un sí/no por día. Todo en **tinta**, sin color propio.
-  - **Celda en vista Solo alimentación:** cumplido = halo de tinta (`.24 → .04`) + anillo `.4` + check; no cumplido = marco vacío + aspa a tinta `.4`; sin responder = marco vacío.
-  - **Celda en vista Ambos:** la celda de entreno lleva abajo un punto de 3 px a tinta `.85` (cumplido) o un guion de 5 px a tinta `.45` (no cumplido).
-  - **Pregunta del día:** siempre sobre **ayer** (pasada la medianoche el día está cerrado). Al entrar en la app, si ayer sigue sin responder, sale una **hoja** (meta «Alimentación · {día}», pregunta en DM Sans 17, etiquetas de solo lectura, dos botones secundarios Sí / No y X «Ahora no»), una vez por visita y nunca encima de otra hoja; como los comunicados, tocar el scrim no la cierra. Respondida, no vuelve hasta el día siguiente. Es el único sitio donde se pregunta: bajo la semana solo queda la racha. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
-  - **Racha:** cifra en mono (acento si es mayor que 0) + «días seguidos», y meta en mono 11: «mejor N · N/30 días · N fallos».
+  - Estándares opcionales en **etiquetas** (hasta 6): se escriben y se añaden con Enter o «Añadir» (que no quita el foco); chip `accent .1` con aspa para quitar. Un sí/no por día.
+  - **Casi invisible:** bajo la semana no hay nada. Solo se ve en las celdas de los días (semana y calendario).
+  - **Día cumplido:** resplandor esmeralda muy difuminado fuera del borde, `0 0 7px 1px rgba(var(--diet-glow), .38)`. No cumplido o sin responder: nada. No se confunde con Deporte porque las familias van dentro (halo) y esto va fuera.
+  - **Vista Solo alimentación:** el mismo resplandor + check a tinta `.85` (cumplido) o aspa a tinta `.4` (no cumplido), sobre el marco vacío.
+  - **Pregunta del día:** siempre sobre **ayer** (pasada la medianoche el día está cerrado). Al entrar en la app, si ayer sigue sin responder, sale una **hoja** (meta «Alimentación · {día}», pregunta en DM Sans 17, etiquetas de solo lectura, dos botones secundarios Sí / No y X «Ahora no»), una vez por visita y nunca encima de otra hoja; como los comunicados, tocar el scrim no la cierra. Respondida, no vuelve hasta el día siguiente. Es el único sitio donde se pregunta. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
+  - **Racha:** solo en el pop-up («llevas N días seguidos») y, para el grupo, en la ficha de miembro.
   - Los días pasados se corrigen desde el detalle del día. El grupo solo ve la racha (en la ficha de miembro); los estándares y los fallos son privados.
 - **Estado en línea:** los resultados (sincronizado, error) van en una línea de 11 px junto a lo que los causa, con icono y color `--success`/`--danger`, sin cajas de color.
 - **Nada que parezca pulsable sin hacer nada:** si una fila o botón aún no tiene destino, no se muestra.
@@ -276,3 +277,4 @@ Contraste con los principios de diseño fluido de Apple (*Designing Fluid Interf
 | 1.1 | 2026-11-07 | Añade el patrón **Comunicado** (§6). Desde esta versión, toda sesión que toque la interfaz lee este documento primero (ver `CLAUDE.md`). Nota: `OfficialAnnouncement.jsx` (comunicado de noviembre de 2026) es anterior a este patrón y no lo sigue. |
 | 1.2 | 2026-11-07 | El sistema pasa al código: `index.css` lleva todos los tokens y `src/components/ui/` las piezas (`Sheet`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`). Contraste con Apple (§11): **hojas de cristal flotantes** (regla 7 revisada), salida con traspaso de velocidad, pulsación a 100 ms, filtro único con menú anclado al botón y tracking según el tamaño. Más rediseñada con las piezas. Se elimina el código que no se usaba (Dashboard, Planificador semanal, pop-up de Metas, otras 12 funciones y 2 paletas antiguas). |
 | 1.3 | 2026-11-08 | Patrón **Alimentación** (§6): marcas en tinta en la celda del día, pregunta del día y racha; la regla 5 aclara que lo que no es actividad va en tinta. El **filtro** gana la vista (entrenamiento, alimentación o ambos) sin dejar de ser uno. El **Comunicado** admite varias novedades separadas por hairline. |
+| 1.4 | 2026-11-08 | La alimentación pasa a ser casi invisible: fuera el bloque bajo la semana y el día cumplido se marca con un resplandor esmeralda exterior (token `--diet-glow`), primera excepción a la regla 5 por decisión de Jorge. La pregunta diaria vive solo en el pop-up. |

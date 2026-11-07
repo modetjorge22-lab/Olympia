@@ -54,22 +54,12 @@ function cellBackground(types) {
   return `linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(var(--ink),0.16) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 100% 100% no-repeat, ${halo(cats[0])} left / 50% 100% no-repeat, ${halo(cats[1])} right / 50% 100% no-repeat`;
 }
 
-// ── Alimentación (en tinta: no es una familia de actividad) ──
-// Vista «Alimentación»: cumplido = halo de tinta + check; fallado = marco
-// vacío + aspa tenue; sin responder = marco vacío.
-// Vista «Ambos»: la celda de entreno lleva abajo un punto (cumplido) o un
-// guion (fallado).
-function DietMark({ diet }) {
-  if (!diet) return null;
-  return (
-    <span aria-label={diet.met ? 'Alimentación cumplida' : 'Alimentación no cumplida'} style={{
-      position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)',
-      ...(diet.met
-        ? { width: 3, height: 3, borderRadius: '50%', background: 'rgba(var(--ink),0.85)' }
-        : { width: 5, height: 1.25, borderRadius: 1, background: 'rgba(var(--ink),0.45)' }),
-    }} />
-  );
-}
+// ── Alimentación: casi invisible ──
+// Día cumplido = resplandor esmeralda muy difuminado FUERA del borde
+// (--diet-glow). Nunca relleno: dentro van los halos de las familias, y el
+// verde de Deporte no se confunde con un resplandor exterior.
+// Vista «Solo alimentación»: además, check (cumplido) o aspa tenue (fallado).
+const DIET_GLOW = '0 0 7px 1px rgba(var(--diet-glow),0.38)';
 
 function FoodCell({ date, diet, size, onClick, showNumber, todayMark, redToday }) {
   const today = new Date();
@@ -84,11 +74,11 @@ function FoodCell({ date, diet, size, onClick, showNumber, todayMark, redToday }
       className="relative flex flex-col items-center justify-center transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
       style={{
         width: size, height: size, borderRadius: 9,
-        background: met ? 'radial-gradient(circle at center, rgba(var(--ink),0.24) 0%, rgba(var(--ink),0.04) 82%)' : 'transparent',
-        boxShadow: met ? 'inset 0 0 0 1px rgba(var(--ink),0.4)' : 'none',
+        background: 'transparent',
+        boxShadow: met ? DIET_GLOW : 'none',
       }}
     >
-      {!met && <DashedFrame opacity={isFuture ? 0.2 : 0.4} />}
+      <DashedFrame opacity={isFuture ? 0.2 : 0.4} />
       {isToday && todayMark && (
         <span style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', width: 1.5, height: 7, borderRadius: 1, background: TODAY_RED }} />
       )}
@@ -127,7 +117,10 @@ export const DayCell = React.memo(function DayCell({ date, acts = [], plans = []
         background: trained ? cellBackground(types)
           : planned ? `radial-gradient(circle at center, rgba(var(--cat-${categoryOf(plans[0].activity_type)}),0.14) 0%, transparent 75%)`
           : 'transparent',
-        boxShadow: trained ? `inset 0 0 0 1px rgba(var(--cat-${mainCat}),0.55)` : 'none',
+        boxShadow: [
+          trained ? `inset 0 0 0 1px rgba(var(--cat-${mainCat}),0.55)` : null,
+          view === 'both' && diet?.met ? DIET_GLOW : null,
+        ].filter(Boolean).join(', ') || 'none',
       }}
     >
       {!trained && (
@@ -170,7 +163,6 @@ export const DayCell = React.memo(function DayCell({ date, acts = [], plans = []
         </span>
       )}
       {isPR && <Trophy aria-label="Marca personal" style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, color: 'var(--accent)' }} strokeWidth={2.4} />}
-      {view === 'both' && <DietMark diet={diet} />}
     </button>
   );
 });

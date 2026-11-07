@@ -35,7 +35,7 @@ const NOVEDADES = [
       <>La disciplina también se come. Es opcional: actívala abajo del todo en <Strong>Tú</Strong>.</>,
       <>Si quieres, apunta tus estándares en pequeñas etiquetas: sin azúcar, sin alcohol entre semana, lo que para ti sea innegociable.</>,
       <>Cada día, al abrir Olympia, te saldrá una pregunta: ¿ayer cumpliste? Un toque, sí o no, y listo hasta mañana. Si fallas, puedes marcar en cuál. Y si te equivocas, lo cambias desde el detalle del día.</>,
-      <>Verás tu racha, tu mejor marca y dónde fallas más. En el filtro de la semana eliges qué ver: entrenamiento, alimentación o ambos, también en el calendario.</>,
+      <>Los días que cumplas se iluminarán con un leve resplandor verde en tu calendario. Y en el filtro de la semana puedes ver solo la alimentación.</>,
       <>Tus estándares y tus fallos son solo para ti. El grupo solo ve tu racha.</>,
     ],
   },

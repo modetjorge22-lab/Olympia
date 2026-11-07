@@ -20,7 +20,7 @@ import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
 import { useDiet } from '@/hooks/useDiet';
-import DietPanel, { DietDayRow, DietSheetHost, DietSettingsRow, useDietSheet } from '@/components/DietPanel';
+import { DietDayRow, DietSheetHost, DietSettingsRow, useDietSheet } from '@/components/DietPanel';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
 const glassCard = {
@@ -853,7 +853,6 @@ export default function Actividad() {
  view={view}
  onViewChange={diet.active ? setViewMode : undefined}
  >
- <DietPanel view={view} onEdit={dietSheet.show} />
  {/* Snapshot fijo — últimos 7 días vs media y tendencia de 16 semanas */}
  {view !== 'food' && (
  <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
