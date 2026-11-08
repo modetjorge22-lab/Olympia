@@ -762,7 +762,7 @@ export default function Actividad() {
  </div>
  </>),
  sueno: whoopSleepData.length > 0 ? <SleepWeeklyCard weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
- noche: whoopSleepData.length > 0 ? <SleepNightCard points={nightPoints} CH={CH} glassCard={glassCard} /> : null,
+ noche: whoopSleepData.length > 0 ? <SleepNightCard points={nightPoints} weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
  fuerza: (<>
  {/* ── Fuerza — volumen por grupo muscular ── */}
  {muscleData.strengthCount > 0 && (

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 // Sueño × actividad (privado: solo tus datos de WHOOP).
@@ -135,41 +135,75 @@ export function buildNightPoints(activities, sleeps, days = 60) {
   return out;
 }
 
-export function SleepNightCard({ points, CH, glassCard }) {
-  const trained = points.filter(p => p.mins >= 30).map(p => p.sleepH);
-  const rest = points.filter(p => p.mins === 0).map(p => p.sleepH);
-  const enough = trained.length >= 4 && rest.length >= 4;
-  const diffMin = enough ? (avg(trained) - avg(rest)) * 60 : null;
+// Días: cada punto es un día (ruidoso). Semanas: cada punto es una semana
+// (horas entrenadas × sueño medio por noche); con medias se ve mejor la tendencia.
+export function SleepNightCard({ points, weeks = [], CH, glassCard }) {
+  const [mode, setMode] = useState(() => { try { return localStorage.getItem('olympia_noche_mode') || 'days'; } catch { return 'days'; } });
+  const pick = m => { setMode(m); try { localStorage.setItem('olympia_noche_mode', m); } catch { /* sin almacenamiento */ } };
+  const byWeek = mode === 'weeks';
 
-  const headline = !enough ? 'Con más noches (entrenando y descansando) verás si hay relación.'
-    : Math.abs(diffMin) < 10 ? 'Duermes lo mismo entrenes o no.'
-    : <>Después de entrenar duermes <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMinDiff(diffMin)}</span></>;
-  const meta = enough ? `${fmtH(avg(trained))} vs ${fmtH(avg(rest))} en reposo · ${points.length} noches` : `${points.length} noches`;
+  let headline, meta, data;
+  if (byWeek) {
+    data = weeks.filter(w => w.sleepHours != null).map(w => ({ label: w.intervalLabel, x: +(w.hours || 0).toFixed(1), sleepH: w.sleepHours, weekly: true }));
+    const sorted = data.map(d => d.x).sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const hi = data.filter(d => d.x > median).map(d => d.sleepH);
+    const lo = data.filter(d => d.x <= median).map(d => d.sleepH);
+    const enough = hi.length >= 2 && lo.length >= 2;
+    const diffMin = enough ? (avg(hi) - avg(lo)) * 60 : null;
+    headline = !enough ? 'Con unas semanas más de datos verás el patrón.'
+      : Math.abs(diffMin) < 10 ? 'Tus semanas más activas no cambian tu sueño.'
+      : <>En tus semanas más activas duermes <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMinDiff(diffMin)}</span> por noche</>;
+    meta = enough ? `${fmtH(avg(hi))} vs ${fmtH(avg(lo))} · ${data.length} semanas` : `${data.length} semanas`;
+  } else {
+    data = points.map(p => ({ ...p, x: p.mins }));
+    const trained = points.filter(p => p.mins >= 30).map(p => p.sleepH);
+    const rest = points.filter(p => p.mins === 0).map(p => p.sleepH);
+    const enough = trained.length >= 4 && rest.length >= 4;
+    const diffMin = enough ? (avg(trained) - avg(rest)) * 60 : null;
+    headline = !enough ? 'Con más noches (entrenando y descansando) verás si hay relación.'
+      : Math.abs(diffMin) < 10 ? 'Duermes lo mismo entrenes o no.'
+      : <>Después de entrenar duermes <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMinDiff(diffMin)}</span></>;
+    meta = enough ? `${fmtH(avg(trained))} vs ${fmtH(avg(rest))} en reposo · ${points.length} noches` : `${points.length} noches`;
+  }
 
   return (
     <div className="rounded-2xl p-4" style={glassCard}>
-      <Header title="La noche después" headline={headline} meta={meta} />
+      <div className="flex items-start justify-between gap-3">
+        <Header title={byWeek ? 'Semana a semana' : 'La noche después'} headline={headline} meta={meta} />
+        <div className="flex items-center gap-0.5 rounded-full p-1 flex-shrink-0" role="radiogroup"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+          {[['days', 'Días'], ['weeks', 'Semanas']].map(([k, l]) => (
+            <button key={k} role="radio" aria-checked={mode === k} onClick={() => pick(k)}
+              className="px-2.5 py-1 rounded-full text-[10px] whitespace-nowrap"
+              style={mode === k ? { background: INK(0.1), color: INK(0.95) } : { color: INK(0.45) }}>{l}</button>
+          ))}
+        </div>
+      </div>
       <div className="h-[170px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 10, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} />
-            <XAxis type="number" dataKey="mins" name="Entreno" tick={{ fontSize: 9, fill: CH.tick }}
-              axisLine={{ stroke: CH.axis }} tickLine={false} tickFormatter={v => `${v}′`}
-              domain={[0, dataMax => Math.max(60, Math.ceil(dataMax / 30) * 30)]} />
+            <XAxis type="number" dataKey="x" name="Entreno" tick={{ fontSize: 9, fill: CH.tick }}
+              axisLine={{ stroke: CH.axis }} tickLine={false} tickFormatter={v => (byWeek ? `${v}h` : `${v}′`)}
+              domain={byWeek ? [0, dataMax => Math.max(2, Math.ceil(dataMax))] : [0, dataMax => Math.max(60, Math.ceil(dataMax / 30) * 30)]}
+              allowDecimals={false} />
             <YAxis type="number" dataKey="sleepH" name="Sueño" tick={{ fontSize: 9, fill: CH.tick }}
               axisLine={false} tickLine={false} width={26} tickFormatter={v => `${v}h`}
               domain={[dataMin => Math.max(0, Math.floor(dataMin) - 1), dataMax => Math.ceil(dataMax) + 1]} allowDecimals={false} />
             <ZAxis range={[64, 64]} />
             <Tooltip cursor={{ stroke: CH.cursor, strokeDasharray: '3 3' }} content={p => (
-              <Tip {...p} render={d => (<><TipHead>{d.label}</TipHead>
-                <TipVal>{d.mins ? `${d.mins} min entrenados` : 'descanso'}</TipVal>
-                <TipVal>{fmtH(d.sleepH)} de sueño esa noche</TipVal></>)} />
+              <Tip {...p} render={d => (d.weekly
+                ? <><TipHead>{d.label}</TipHead><TipVal>{fmtH(d.x)} entrenadas</TipVal><TipVal>{fmtH(d.sleepH)} / noche de media</TipVal></>
+                : <><TipHead>{d.label}</TipHead><TipVal>{d.mins ? `${d.mins} min entrenados` : 'descanso'}</TipVal><TipVal>{fmtH(d.sleepH)} de sueño esa noche</TipVal></>)} />
             )} />
-            <Scatter data={points} fill={CH.accent} fillOpacity={0.75} stroke="var(--bg)" strokeWidth={2} isAnimationActive={false} />
+            <Scatter data={data} fill={CH.accent} fillOpacity={0.75} stroke="var(--bg)" strokeWidth={2} isAnimationActive={false} />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      <p className="text-[10px] mt-1 text-center" style={{ fontFamily: MONO, color: INK(0.45) }}>minutos entrenados ese día → sueño de esa noche</p>
+      <p className="text-[10px] mt-1 text-center" style={{ fontFamily: MONO, color: INK(0.45) }}>
+        {byWeek ? 'horas entrenadas en la semana → sueño medio por noche' : 'minutos entrenados ese día → sueño de esa noche'}
+      </p>
     </div>
   );
 }
