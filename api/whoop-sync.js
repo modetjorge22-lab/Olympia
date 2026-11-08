@@ -32,7 +32,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, ...counts });
   } catch (err) {
     if (err.code === 'reconnect_required') {
-      await sb.from('whoop_tokens').delete().eq('id', row.id);
+      // No se borra el token: un fallo puntual de refresco no debe desconectar.
+      // Se marca para reconectar; al volver a conectar se sobrescribe.
       await sb.from('team_members').update({ whoop_connected: false }).eq('email', user.email);
       return res.status(401).json({ error: 'reconnect_required', message: 'Vuelve a conectar WHOOP.' });
     }

@@ -106,12 +106,18 @@ async function refreshAccess(sb, row) {
     Object.assign(row, update);
     return row.access_token;
   } catch (err) {
-    const { data: fresh } = await sb.from('whoop_tokens').select('*').eq('id', row.id).maybeSingle();
-    if (fresh && fresh.refresh_token !== row.refresh_token && fresh.expires_at > nowSec() + 60) {
-      Object.assign(row, fresh);
-      return row.access_token;
+    // Otro proceso (p. ej. los avisos de sueño y recuperación que llegan a la
+    // vez) puede estar refrescando en paralelo: esperamos a que guarde su
+    // token nuevo antes de rendirnos.
+    for (let i = 0; i < 6; i++) {
+      const { data: fresh } = await sb.from('whoop_tokens').select('*').eq('id', row.id).maybeSingle();
+      if (fresh && fresh.refresh_token !== row.refresh_token && fresh.expires_at > nowSec() + 60) {
+        Object.assign(row, fresh);
+        return row.access_token;
+      }
+      await new Promise(r => setTimeout(r, 700));
     }
-    console.error('[whoop] refresh failed for', row.user_email, err.message);
+    console.error('[whoop] refresh failed for', row.user_email, err.status, err.message);
     throw new ReconnectRequired();
   }
 }
