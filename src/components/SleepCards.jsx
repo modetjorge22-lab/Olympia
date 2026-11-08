@@ -53,7 +53,7 @@ export function SleepWeeklyCard({ weeks, CH, glassCard }) {
 
   // Frase: semanas por encima vs por debajo de tu mediana de actividad.
   const insight = useMemo(() => {
-    if (withSleep.length < 6) return null;
+    if (withSleep.length < 4) return null;
     const sorted = [...withSleep].map(w => w.hours).sort((a, b) => a - b);
     const median = sorted[Math.floor(sorted.length / 2)];
     const hi = withSleep.filter(w => w.hours > median).map(w => w.sleepHours);
@@ -157,15 +157,25 @@ export function SleepNightCard({ points, weeks = [], CH, glassCard }) {
     meta = enough ? `${fmtH(avg(hi))} vs ${fmtH(avg(lo))} · ${data.length} semanas` : `${data.length} semanas`;
   } else {
     data = points.map(p => ({ ...p, x: p.mins }));
-    const trained = points.filter(p => p.mins >= 30).map(p => p.sleepH);
-    const rest = points.filter(p => p.mins === 0).map(p => p.sleepH);
-    const enough = trained.length >= 4 && rest.length >= 4;
-    const diffMin = enough ? (avg(trained) - avg(rest)) * 60 : null;
-    headline = !enough ? 'Con más noches (entrenando y descansando) verás si hay relación.'
-      : Math.abs(diffMin) < 10 ? 'Duermes lo mismo entrenes o no.'
-      : <>Después de entrenar duermes <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMinDiff(diffMin)}</span></>;
-    meta = enough ? `${fmtH(avg(trained))} vs ${fmtH(avg(rest))} en reposo · ${points.length} noches` : `${points.length} noches`;
+    // Días de más entreno vs más suaves (corte en tu mediana): funciona aunque
+    // casi nunca descanses del todo.
+    const sorted = points.map(p => p.mins).sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    const heavy = points.filter(p => p.mins > median).map(p => p.sleepH);
+    const light = points.filter(p => p.mins <= median).map(p => p.sleepH);
+    const enough = heavy.length >= 4 && light.length >= 4;
+    const diffMin = enough ? (avg(heavy) - avg(light)) * 60 : null;
+    headline = !enough ? 'Con más noches verás si hay relación.'
+      : Math.abs(diffMin) < 10 ? 'Duermes lo mismo entrenes más o menos.'
+      : <>Los días que más entrenas duermes <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{fmtMinDiff(diffMin)}</span></>;
+    meta = enough ? `${fmtH(avg(heavy))} vs ${fmtH(avg(light))} en días más suaves · ${points.length} noches` : `${points.length} noches`;
   }
+
+  // Eje X con marcas limpias: cada 60 min (días) o cada 2-5 h (semanas).
+  const rawMax = Math.max(0, ...data.map(d => d.x));
+  const step = byWeek ? (rawMax > 12 ? 5 : 2) : (rawMax > 240 ? 120 : 60);
+  const xMax = Math.max(step, Math.ceil(rawMax / step) * step);
+  const xTicks = Array.from({ length: xMax / step + 1 }, (_, i) => i * step);
 
   return (
     <div className="rounded-2xl p-4" style={glassCard}>
@@ -186,8 +196,7 @@ export function SleepNightCard({ points, weeks = [], CH, glassCard }) {
             <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} />
             <XAxis type="number" dataKey="x" name="Entreno" tick={{ fontSize: 9, fill: CH.tick }}
               axisLine={{ stroke: CH.axis }} tickLine={false} tickFormatter={v => (byWeek ? `${v}h` : `${v}′`)}
-              domain={byWeek ? [0, dataMax => Math.max(2, Math.ceil(dataMax))] : [0, dataMax => Math.max(60, Math.ceil(dataMax / 30) * 30)]}
-              allowDecimals={false} />
+              domain={[0, xMax]} ticks={xTicks} allowDecimals={false} />
             <YAxis type="number" dataKey="sleepH" name="Sueño" tick={{ fontSize: 9, fill: CH.tick }}
               axisLine={false} tickLine={false} width={26} tickFormatter={v => `${v}h`}
               domain={[dataMin => Math.max(0, Math.floor(dataMin) - 1), dataMax => Math.ceil(dataMax) + 1]} allowDecimals={false} />
