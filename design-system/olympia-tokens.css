@@ -43,6 +43,7 @@
   /* Semánticos */
   --success: #34d399;
   --diet-glow: 52, 211, 153;
+  --sleep-line: 125, 214, 190;
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #a5b4fc;
@@ -77,6 +78,7 @@
 
   --success: #047857;
   --diet-glow: 5, 150, 105;
+  --sleep-line: 40, 140, 118;
   --warning: #b45309;
   --danger: #b91c1c;
   --info: #4338ca;

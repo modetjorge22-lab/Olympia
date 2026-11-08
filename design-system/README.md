@@ -1,4 +1,4 @@
-# Olympia · Sistema de diseño v1.4
+# Olympia · Sistema de diseño v1.5
 
 > Constancia que se ve. Competición que se siente.
 
@@ -26,7 +26,7 @@ Lo nuevo se construye con esas piezas. Si cambias algo allí, actualiza también
 2. **El beige es acento, no superficie.** Se usa en las cifras protagonistas, el botón primario y la familia fuerza. Nunca va como fondo de tarjeta.
 3. **Sin negritas.** Todo es peso 400 (300 solo en titulares display). La jerarquía sale del tamaño, el tracking y la opacidad de la tinta.
 4. **Las cifras van en mono.** Usa JetBrains Mono tabular para horas, fechas y marcas.
-5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy. Única excepción: el resplandor esmeralda (`--diet-glow`) del día de alimentación cumplido, siempre fuera del borde y nunca como relleno.
+5. **El color significa algo.** Solo hay cinco familias de actividad y un rojo, que marca hoy. Excepciones: el resplandor esmeralda (`--diet-glow`) del día de alimentación cumplido, siempre fuera del borde y nunca como relleno, y la línea menta de **Descanso** (`--sleep-line`).
 6. **Hecho vs. planificado.** Lo hecho es sólido, con halo; lo planificado es un marco discontinuo.
 7. **El vidrio en todo lo que flota, y solo ahí.**
    - Header, nav, hojas, menús y controles superpuestos son vidrio. Cuanto más grande es la superficie, más grueso es el material (más desenfoque y más sombra).
@@ -278,3 +278,4 @@ Contraste con los principios de diseño fluido de Apple (*Designing Fluid Interf
 | 1.2 | 2026-11-07 | El sistema pasa al código: `index.css` lleva todos los tokens y `src/components/ui/` las piezas (`Sheet`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`). Contraste con Apple (§11): **hojas de cristal flotantes** (regla 7 revisada), salida con traspaso de velocidad, pulsación a 100 ms, filtro único con menú anclado al botón y tracking según el tamaño. Más rediseñada con las piezas. Se elimina el código que no se usaba (Dashboard, Planificador semanal, pop-up de Metas, otras 12 funciones y 2 paletas antiguas). |
 | 1.3 | 2026-11-08 | Patrón **Alimentación** (§6): marcas en tinta en la celda del día, pregunta del día y racha; la regla 5 aclara que lo que no es actividad va en tinta. El **filtro** gana la vista (entrenamiento, alimentación o ambos) sin dejar de ser uno. El **Comunicado** admite varias novedades separadas por hairline. |
 | 1.4 | 2026-11-08 | La alimentación pasa a ser casi invisible: fuera el bloque bajo la semana y el día cumplido se marca con un resplandor esmeralda exterior (token `--diet-glow`), primera excepción a la regla 5 por decisión de Jorge. La pregunta diaria vive solo en el pop-up. |
+| 1.5 | 2026-11-08 | **Descanso:** botón en «Últimas 16 semanas» que funde (600 ms, sin animación con movimiento reducido) una línea menta translúcida (`--sleep-line`, opacidad .6, 1.75 px, sin puntos) con el sueño medio por noche sobre la misma gráfica y el mismo eje en horas; el tooltip la nombra. Decisión de Jorge frente a la regla de no superponer: no hay segundo eje, ambas medidas van en horas. Tarjetas «Sueño y actividad» y «La noche después» (Días / Semanas) en Tus gráficas. |

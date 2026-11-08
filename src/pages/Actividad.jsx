@@ -62,10 +62,10 @@ const TEXT_FAINT = 'rgba(var(--ink),0.30)';
 // Tarjetas reordenables de «Tus gráficas». Sueño y noche solo con datos de WHOOP.
 const CARD_KEYS = ['ritmo', 'fuerza', 'sueno', 'noche'];
 
-function ChartTooltip({ active, payload, label, labelPrefix }) {
+function ChartTooltip({ active, payload, label, labelPrefix, extra = null }) {
  if (!active || !payload?.length) return null;
  const items = payload.filter(p => p.value != null && p.value > 0);
- if (items.length === 0) return null;
+ if (items.length === 0 && !extra) return null;
  const intervalLabel = payload[0]?.payload?.intervalLabel;
  const headerText = intervalLabel || `${labelPrefix || ''}${label}`;
 
@@ -98,6 +98,12 @@ function ChartTooltip({ active, payload, label, labelPrefix }) {
  <span style={{ color: 'rgba(var(--ink),0.85)', fontSize: 9 }}>{entry.value}h</span>
  </div>
  ))}
+ {extra && (
+ <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+ <div style={{ width: 8, height: 2, borderRadius: 1, background: 'rgba(var(--sleep-line),0.8)' }} />
+ <span style={{ color: 'rgba(var(--ink),0.7)', fontSize: 9 }}>{extra}</span>
+ </div>
+ )}
  </div>
  );
 }
@@ -429,6 +435,7 @@ export default function Actividad() {
  const chartData = loadTF === 'weeks' ? weeklyData : dailyData;
  const maxHours = Math.max(
  ...chartData.map(d => d.hours || 0),
+ ...(showSleep ? chartData.map(d => d.sleepHours || 0) : []),
  0.5
  );
  const xInterval = loadTF === 'weeks' ? 3 : 9;
@@ -895,41 +902,6 @@ export default function Actividad() {
  </button>
  )}
  </div>
- {/* Descanso: panel propio alineado encima (mismas semanas, cursor
-     compartido). Nunca en el mismo eje que la actividad. */}
- {showSleep && (
- <>
- <p className="text-[10px] mb-0.5" style={{ color: TEXT_MUTED }}>Sueño medio por noche</p>
- <div className="h-[72px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
- <ResponsiveContainer width="100%" height="100%">
- <AreaChart data={chartData} syncId="carga" margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
- <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
- <XAxis dataKey="label" hide />
- <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={26}
- domain={[4, 9]} ticks={[5, 7, 9]} allowDataOverflow tickFormatter={(v) => `${v}h`} />
- <Tooltip
- cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
- content={({ active, payload }) => {
- const d = payload?.[0]?.payload;
- if (!active || !d) return null;
- return (
- <div style={{ background: 'var(--surface)', border: '1px solid rgba(var(--ink),0.15)', borderRadius: 8, padding: '6px 9px', boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }}>
- <p style={{ color: 'rgba(var(--ink),0.55)', fontSize: 9, marginBottom: 2 }}>{d.intervalLabel}</p>
- <p style={{ color: TEXT_PRIMARY, fontSize: 11, fontFamily: '"JetBrains Mono", monospace' }}>{d.sleepHours != null ? `${fmtH(d.sleepHours)} / noche` : 'sin datos de sueño'}</p>
- <p style={{ color: TEXT_SECONDARY, fontSize: 10, fontFamily: '"JetBrains Mono", monospace' }}>{fmtH(d.hours)} entrenadas</p>
- </div>
- );
- }}
- />
- <Area type="monotone" dataKey="sleepHours" stroke={CH.tick} strokeWidth={2} fill="transparent"
- dot={{ r: 2.2, fill: CH.tick, strokeWidth: 0 }} activeDot={{ r: 4, fill: CH.tick, strokeWidth: 0 }}
- isAnimationActive={false} connectNulls={false} />
- </AreaChart>
- </ResponsiveContainer>
- </div>
- <p className="text-[10px] mt-1 mb-0.5" style={{ color: TEXT_MUTED }}>Actividad por semana</p>
- </>
- )}
  <div className="h-[120px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
  <AreaChart data={chartData} syncId="carga" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -946,12 +918,25 @@ export default function Actividad() {
  domain={yDomain} ticks={yTicks} tickFormatter={(v) => `${v}h`} />
  <Tooltip
  cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
- content={(props) => <ChartTooltip {...props} payload={(props.payload || []).map(p => ({ ...p, tooltipName: 'Entrenamiento' }))} />}
+ content={(props) => {
+ const d = props.payload?.[0]?.payload;
+ return <ChartTooltip {...props}
+ payload={(props.payload || []).filter(p => p.dataKey === 'hours').map(p => ({ ...p, tooltipName: 'Entrenamiento' }))}
+ extra={showSleep && d?.sleepHours != null ? `${fmtH(d.sleepHours)} de sueño / noche` : null} />;
+ }}
  />
  <Area type="monotone" dataKey="hours" stroke={CH.accent} strokeWidth={2}
  fill="url(#cargaGradient)"
  dot={{ r: 2.2, fill: CH.accent, fillOpacity: 1, strokeWidth: 0 }}
  activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} />
+ {/* Descanso: línea menta translúcida en el mismo eje (ambas en horas).
+     Siempre montada; aparece y se va con un fundido de opacidad. */}
+ {whoopSleepData.length > 0 && (
+ <Area type="monotone" dataKey="sleepHours" className="sleep-line"
+ stroke="rgb(var(--sleep-line))" strokeOpacity={showSleep ? 0.6 : 0} strokeWidth={1.75}
+ fill="transparent" dot={false} activeDot={showSleep ? { r: 3, fill: 'rgb(var(--sleep-line))', strokeWidth: 0 } : false}
+ isAnimationActive={false} connectNulls={false} />
+ )}
  </AreaChart>
  </ResponsiveContainer>
  </div>

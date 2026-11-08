@@ -28,6 +28,7 @@
   --cat-otro: 170, 160, 155;
   --success: #34d399;
   --diet-glow: 52, 211, 153;     /* esmeralda: día de alimentación cumplido (resplandor, no relleno) */
+  --sleep-line: 125, 214, 190;   /* menta: línea de descanso sobre la actividad */
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #a5b4fc;
@@ -54,6 +55,7 @@
   --cat-otro: 120, 110, 105;
   --success: #047857;
   --diet-glow: 5, 150, 105;
+  --sleep-line: 40, 140, 118;
   --warning: #b45309;
   --danger: #b91c1c;
   --info: #4338ca;
@@ -204,3 +206,7 @@ body { font-variant-numeric: tabular-nums; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Línea de descanso: aparece y desaparece con un fundido (sin saltos). */
+.sleep-line path { transition: stroke-opacity 600ms cubic-bezier(.32,.72,0,1); }
+@media (prefers-reduced-motion: reduce) { .sleep-line path { transition: none; } }
