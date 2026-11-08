@@ -97,7 +97,7 @@ export default function Mas() {
  setWhoopSyncing(true);
  setWhoopSyncResult(null);
  try {
- const response = await apiPost('/api/whoop-sync', { action: 'sync', days: 30 });
+ const response = await apiPost('/api/whoop-sync', { action: 'sync', days: 30, sleepDays: 120 });
  const data = await response.json().catch(() => ({}));
  if (response.ok) {
  setWhoopSyncResult({ type: 'success', message: whoopSummary(data.imported + data.linked, data.sleeps) });

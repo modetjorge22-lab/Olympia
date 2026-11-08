@@ -45,11 +45,11 @@ export default async function handler(req, res) {
 
     await sb.from('team_members').update({ whoop_connected: true }).eq('email', who.email);
 
-    // Primera importación: últimos 30 días. Si falla, el webhook y el
+    // Primera importación: entrenos de 30 días y sueño de 120 (16 semanas). Si falla, el webhook y el
     // sync al abrir la app lo completan; la conexión ya está hecha.
     let counts = null;
     try {
-      counts = await fullSync(sb, saved, 30);
+      counts = await fullSync(sb, saved, 30, { sleepDays: 120 });
     } catch (err) {
       console.error('[whoop-callback] initial sync failed:', err.message);
     }

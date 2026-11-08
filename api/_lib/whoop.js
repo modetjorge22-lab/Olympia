@@ -286,12 +286,15 @@ export async function importSleep(sb, row, sleep, recovery) {
 
 // ── Sincronización completa (al conectar, al abrir la app y como red de seguridad) ──
 
-export async function fullSync(sb, row, days = 30) {
-  const start = new Date(Date.now() - days * 86400000).toISOString();
+// days: entrenos. sleepDays: sueño y recuperación (puede ir más atrás para
+// alinear con las 16 semanas de actividad sin rellenar el historial con
+// entrenos antiguos duplicados).
+export async function fullSync(sb, row, days = 30, { sleepDays = days } = {}) {
+  const iso = n => new Date(Date.now() - n * 86400000).toISOString();
   const [workouts, sleeps, recoveries] = await Promise.all([
-    collectAll(sb, row, '/v2/activity/workout', start),
-    collectAll(sb, row, '/v2/activity/sleep', start),
-    collectAll(sb, row, '/v2/recovery', start),
+    collectAll(sb, row, '/v2/activity/workout', iso(days)),
+    collectAll(sb, row, '/v2/activity/sleep', iso(Math.max(days, sleepDays))),
+    collectAll(sb, row, '/v2/recovery', iso(Math.max(days, sleepDays))),
   ]);
 
   const counts = { imported: 0, linked: 0, updated: 0, sleeps: 0 };

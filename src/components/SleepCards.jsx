@@ -48,7 +48,7 @@ const PanelLabel = ({ children }) => <p className="text-[10px] mb-1" style={{ co
 
 // ── Semana a semana: sueño medio por noche (arriba) y horas de actividad (abajo) ──
 export function SleepWeeklyCard({ weeks, CH, glassCard }) {
-  const data = weeks.slice(-12);
+  const data = weeks.slice(-16);
   const withSleep = data.filter(w => w.sleepHours != null);
 
   // Frase: semanas por encima vs por debajo de tu mediana de actividad.

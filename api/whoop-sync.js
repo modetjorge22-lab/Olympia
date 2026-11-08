@@ -27,7 +27,8 @@ export default async function handler(req, res) {
 
   try {
     const days = Math.min(Math.max(Number(req.body?.days) || 7, 1), 90);
-    const counts = await fullSync(sb, row, days);
+    const sleepDays = Math.min(Math.max(Number(req.body?.sleepDays) || days, days), 120);
+    const counts = await fullSync(sb, row, days, { sleepDays });
     return res.status(200).json({ success: true, ...counts });
   } catch (err) {
     if (err.code === 'reconnect_required') {
