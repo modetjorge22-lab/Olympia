@@ -20,6 +20,7 @@ import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
 import { useDiet } from '@/hooks/useDiet';
+import { SleepWeeklyCard, SleepNightCard, buildNightPoints } from '@/components/SleepCards';
 import { DietDayRow, DietSheetHost, DietSettingsRow, useDietSheet } from '@/components/DietPanel';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
@@ -57,6 +58,9 @@ const TEXT_SECONDARY = 'rgba(var(--ink),0.65)';
 const TEXT_MUTED = 'rgba(var(--ink),0.45)';
 const TEXT_FAINT = 'rgba(var(--ink),0.30)';
 
+
+// Tarjetas reordenables de «Tus gráficas». Sueño y noche solo con datos de WHOOP.
+const CARD_KEYS = ['ritmo', 'fuerza', 'sueno', 'noche'];
 
 function ChartTooltip({ active, payload, label, labelPrefix }) {
  if (!active || !payload?.length) return null;
@@ -159,21 +163,16 @@ export default function Actividad() {
  try {
  const saved = JSON.parse(localStorage.getItem('olympia_tu_cards'));
  if (Array.isArray(saved)) {
- const valid = saved.filter(k => k === 'ritmo' || k === 'fuerza');
- if (valid.length === 2) return valid;
+ // Las tarjetas nuevas se añaden al final de un orden ya guardado.
+ const valid = saved.filter(k => CARD_KEYS.includes(k));
+ return [...valid, ...CARD_KEYS.filter(k => !valid.includes(k))];
  }
  } catch { /* noop */ }
- return ['ritmo', 'fuerza'];
+ return CARD_KEYS;
  });
  useEffect(() => {
  try { localStorage.setItem('olympia_tu_cards', JSON.stringify(cardOrder)); } catch { /* noop */ }
  }, [cardOrder]);
- const moveCard = (i, d) => setCardOrder(o => {
- const n = [...o]; const j = i + d;
- if (j < 0 || j >= n.length) return o;
- [n[i], n[j]] = [n[j], n[i]];
- return n;
- });
  const [actFilter, setActFilter] = useState('accumulated');
 
  // ── Metas / Marcas personales ──
@@ -398,6 +397,9 @@ export default function Actividad() {
  };
  });
  }, [myAllActivities, actFilter, computeHours, whoopSleepData]);
+
+ // La noche después: entreno del día D × sueño fechado D+1 (últimos 60 días)
+ const nightPoints = useMemo(() => buildNightPoints(myAllActivities, whoopSleepData), [myAllActivities, whoopSleepData]);
 
  const dailyData = useMemo(() => {
  const today = new Date();
@@ -759,6 +761,8 @@ export default function Actividad() {
  </div>
  </div>
  </>),
+ sueno: whoopSleepData.length > 0 ? <SleepWeeklyCard weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
+ noche: whoopSleepData.length > 0 ? <SleepNightCard points={nightPoints} CH={CH} glassCard={glassCard} /> : null,
  fuerza: (<>
  {/* ── Fuerza — volumen por grupo muscular ── */}
  {muscleData.strengthCount > 0 && (
@@ -834,6 +838,13 @@ export default function Actividad() {
  </div>
  )}
  </>),
+ };
+ // Solo las tarjetas con contenido; subir/bajar intercambia con la vecina visible.
+ const visibleCards = cardOrder.filter(k => chartCards[k]);
+ const moveVisible = (i, d) => {
+ const a = visibleCards[i], b = visibleCards[i + d];
+ if (!b) return;
+ setCardOrder(o => { const n = [...o]; const ia = n.indexOf(a), ib = n.indexOf(b); [n[ia], n[ib]] = [n[ib], n[ia]]; return n; });
  };
 
  return (
@@ -933,15 +944,15 @@ export default function Actividad() {
  {editCards ? 'Hecho' : 'Ordenar'}
  </button>
  </div>
- {cardOrder.map((key, idx) => (
+ {visibleCards.map((key, idx) => (
  <motion.div key={key} layout={editCards} transition={{ duration: 0.25 }} className="relative">
  {editCards && (
  <div className="absolute right-0 top-3 z-10 flex gap-1">
- <button disabled={idx === 0} onClick={() => moveCard(idx, -1)}
+ <button disabled={idx === 0} onClick={() => moveVisible(idx, -1)}
  className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30" style={glassBar} aria-label="Subir">
  <ChevronUp className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </button>
- <button disabled={idx === cardOrder.length - 1} onClick={() => moveCard(idx, 1)}
+ <button disabled={idx === visibleCards.length - 1} onClick={() => moveVisible(idx, 1)}
  className="w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-30" style={glassBar} aria-label="Bajar">
  <ChevronDown className="w-3.5 h-3.5" style={{ color: TEXT_PRIMARY }} />
  </button>
