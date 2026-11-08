@@ -904,9 +904,9 @@ export default function Actividad() {
  </button>
  )}
  </div>
- <div className="h-[200px] -ml-2 -mr-1" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+ <div className="h-[200px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
- <AreaChart data={chartData} syncId="carga" margin={{ top: 10, right: 4, left: 0, bottom: 0 }}>
+ <AreaChart data={chartData} syncId="carga" margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={CH.accent} stopOpacity="0.4" />
