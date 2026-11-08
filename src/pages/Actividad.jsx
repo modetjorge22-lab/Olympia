@@ -139,6 +139,16 @@ export default function Actividad() {
  const [whoopSleepData, setWhoopSleepData] = useState([]);
  const [showSleep, setShowSleep] = useState(() => { try { return localStorage.getItem('olympia_carga_descanso') === '1'; } catch { return false; } });
  const toggleSleep = () => setShowSleep(v => { try { localStorage.setItem('olympia_carga_descanso', v ? '0' : '1'); } catch { /* sin almacenamiento */ } return !v; });
+ // La línea se monta al encender (y se dibuja de izquierda a derecha) y se
+ // desmonta 650 ms después de apagar, cuando ha terminado el fundido.
+ const [sleepMounted, setSleepMounted] = useState(showSleep);
+ const [sleepDrawKey, setSleepDrawKey] = useState(0);
+ const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ useEffect(() => {
+ if (showSleep) { setSleepMounted(true); setSleepDrawKey(k => k + 1); return; }
+ const t = setTimeout(() => setSleepMounted(false), 650);
+ return () => clearTimeout(t);
+ }, [showSleep]);
  useEffect(() => {
  if (!user?.email) return;
  supabase
@@ -440,17 +450,13 @@ export default function Actividad() {
  );
  const xInterval = loadTF === 'weeks' ? 3 : 9;
 
- // Eje Y: max = pico real (sin headroom). Tope en la barra/punto más alto.
+ // Eje Y: tope en el pico real redondeado a la hora (no al múltiplo del
+ // paso: un pico de 10,4 h da 0–11 h, no 0–15 h). Marcas cada 1/2/5 h.
  const { yDomain, yTicks } = useMemo(() => {
  if (maxHours <= 0) return { yDomain: [0, 1], yTicks: [0, 1] };
- // Pasos preferidos para los ticks intermedios
- const niceSteps = [0.5, 1, 2, 5, 10, 20, 25, 50, 100];
- const idealStep = maxHours / 4;
- const step = niceSteps.find(s => s >= idealStep) || 100;
- // Redondeo al siguiente múltiplo de step para que el pico quede dentro
- const max = Math.ceil(maxHours / step) * step;
- const numTicks = Math.round(max / step) + 1;
- const ticks = Array.from({ length: numTicks }, (_, i) => +(i * step).toFixed(1));
+ const max = Math.max(1, Math.ceil(maxHours));
+ const step = max <= 6 ? 1 : max <= 14 ? 2 : max <= 30 ? 5 : 10;
+ const ticks = Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
  return { yDomain: [0, max], yTicks: ticks };
  }, [maxHours]);
 
@@ -874,37 +880,33 @@ export default function Actividad() {
  {/* Snapshot fijo — últimos 7 días vs media y tendencia de 16 semanas */}
  {view !== 'food' && (
  <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(var(--ink),0.06)' }}>
- <div className="flex items-end justify-between mb-2">
- <div>
- <p className="text-[20px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
+ {/* Una sola línea de cifras: la gráfica es la protagonista */}
+ <div className="flex items-center justify-between gap-3 mb-1">
+ <div className="flex items-baseline gap-2 min-w-0">
+ <span className="text-[17px] leading-none" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_PRIMARY }}>
  {formatHours(lastWeekHours)}
- </p>
- <p className="text-[10px] mt-1.5" style={{ color: TEXT_MUTED }}>Últimos 7 días</p>
- </div>
+ </span>
+ <span className="text-[10px] truncate" style={{ fontFamily: '"JetBrains Mono", monospace', color: TEXT_MUTED }}>
+ 7 días
  {avgWeeklyHours > 0 && (
- <div className="text-right">
- <p className="text-[12px]" style={{ fontFamily: '"JetBrains Mono", monospace', color: lastWeekHours >= avgWeeklyHours ? 'var(--accent)' : TEXT_MUTED }}>
- {lastWeekHours >= avgWeeklyHours ? '↑' : '↓'} {formatHours(Math.abs(lastWeekHours - avgWeeklyHours))}
- </p>
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>vs tu media semanal</p>
- </div>
+ <span style={{ color: lastWeekHours >= avgWeeklyHours ? 'var(--accent)' : TEXT_MUTED }}>
+ {' · '}{lastWeekHours >= avgWeeklyHours ? '↑' : '↓'} {formatHours(Math.abs(lastWeekHours - avgWeeklyHours))} vs media
+ </span>
  )}
+ {typeFilter ? ` · ${ACTIVITY_TYPES[typeFilter]?.label}` : ''}
+ </span>
  </div>
- <div className="flex items-center justify-between mb-1">
- <p className="text-[10px]" style={{ color: TEXT_MUTED }}>
- Últimas 16 semanas{typeFilter ? ` · ${ACTIVITY_TYPES[typeFilter]?.label}` : ''}
- </p>
  {whoopSleepData.length > 0 && (
  <button onClick={toggleSleep} aria-pressed={showSleep}
- className="o-press text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1"
- style={{ ...glassBar, color: showSleep ? 'var(--accent)' : TEXT_MUTED }}>
+ className="o-press text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 flex-shrink-0"
+ style={{ ...glassBar, color: showSleep ? 'rgb(var(--sleep-line))' : TEXT_MUTED }}>
  <Moon className="w-3 h-3" />Descanso
  </button>
  )}
  </div>
- <div className="h-[120px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+ <div className="h-[200px] -ml-2 -mr-1" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
- <AreaChart data={chartData} syncId="carga" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+ <AreaChart data={chartData} syncId="carga" margin={{ top: 10, right: 4, left: 0, bottom: 0 }}>
  <defs>
  <linearGradient id="cargaGradient" x1="0" y1="0" x2="0" y2="1">
  <stop offset="0%" stopColor={CH.accent} stopOpacity="0.4" />
@@ -914,7 +916,7 @@ export default function Actividad() {
  <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
  <XAxis dataKey="label" tickFormatter={(v) => chartData.find(d => d.label === v)?.monthLabel || ''}
  tick={{ fontSize: 9, fill: CH.tick }} axisLine={{ stroke: CH.axis }} tickLine={false} interval={0} minTickGap={18} />
- <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={26}
+ <YAxis tick={{ fontSize: 9, fill: CH.tick }} axisLine={false} tickLine={false} width={24}
  domain={yDomain} ticks={yTicks} tickFormatter={(v) => `${v}h`} />
  <Tooltip
  cursor={{ stroke: CH.cursor, strokeWidth: 1, strokeDasharray: '3 3' }}
@@ -930,12 +932,13 @@ export default function Actividad() {
  dot={{ r: 2.2, fill: CH.accent, fillOpacity: 1, strokeWidth: 0 }}
  activeDot={{ r: 4, fill: CH.accent, strokeWidth: 0 }} isAnimationActive={false} />
  {/* Descanso: línea menta translúcida en el mismo eje (ambas en horas).
-     Siempre montada; aparece y se va con un fundido de opacidad. */}
- {whoopSleepData.length > 0 && (
- <Area type="monotone" dataKey="sleepHours" className="sleep-line"
+     Entra dibujándose de izquierda a derecha y sale con un fundido. */}
+ {whoopSleepData.length > 0 && sleepMounted && (
+ <Area key={sleepDrawKey} type="monotone" dataKey="sleepHours" className="sleep-line"
  stroke="rgb(var(--sleep-line))" strokeOpacity={showSleep ? 0.6 : 0} strokeWidth={1.75}
  fill="transparent" dot={false} activeDot={showSleep ? { r: 3, fill: 'rgb(var(--sleep-line))', strokeWidth: 0 } : false}
- isAnimationActive={false} connectNulls={false} />
+ isAnimationActive={!reducedMotion} animationDuration={1100} animationEasing="ease-in-out"
+ connectNulls={false} />
  )}
  </AreaChart>
  </ResponsiveContainer>
