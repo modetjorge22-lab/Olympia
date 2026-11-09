@@ -25,13 +25,14 @@ const NOVEDADES = [
       <>Olympia ya se conecta con <Strong>WHOOP</Strong>. Actívalo en <Strong>Más → Integraciones</Strong> y tus entrenos entrarán solos, sin apuntar nada.</>,
       <>Si ya habías apuntado la sesión, a mano o desde Strava, no se duplica: Olympia la reconoce y la enlaza con WHOOP. Si la apuntas después, tu registro corrige el de WHOOP.</>,
       <>¿WHOOP se ha equivocado de deporte o de duración? Edita la actividad: tu cambio manda y WHOOP no lo vuelve a tocar. Si no era un entreno, bórrala y no volverá.</>,
+      <>Además, verás tu descanso reflejado junto a tus horas de actividad: en <Strong>Tú</Strong>, pulsa <Strong>Descanso</Strong> en la gráfica semanal.</>,
       <>Los paseos no cuentan. Tu sueño y tu recuperación son solo para ti.</>,
     ],
   },
   {
     titulo: 'Disciplina alimentaria',
     parrafos: [
-      <>La disciplina también se come. Es opcional: actívala abajo del todo en <Strong>Tú</Strong>.</>,
+      <>Actívala abajo del todo en <Strong>Tú</Strong>. Ahora vas a poder ver cómo de consistente eres con tus normas dietéticas.</>,
       <>Si quieres, apunta tus estándares en pequeñas etiquetas: sin azúcar, sin alcohol entre semana, lo que para ti sea innegociable.</>,
       <>Cada día, al abrir Olympia, te saldrá una pregunta: ¿ayer cumpliste? Un toque, sí o no, y listo hasta mañana. Si fallas, puedes marcar en cuál. Y si te equivocas, lo cambias desde el detalle del día.</>,
       <>Los días que cumplas se iluminarán con un leve resplandor verde en tu calendario. Y en el filtro de la semana puedes ver solo la alimentación.</>,
