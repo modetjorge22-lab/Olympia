@@ -218,38 +218,55 @@ export function SleepNightCard({ points, weeks = [], CH, glassCard }) {
 }
 
 // ── Corazón: FC en reposo y HRV, lo más simple posible ──
-// Dos líneas de 16 semanas, cada una con su escala (nunca en un mismo eje).
-// Sin cifras escritas: los valores salen solo al tocar una semana.
+// Dos líneas de 16 semanas, cada una con su eje y sus valores (nunca en un
+// mismo eje). Sin frases de conclusiones.
 export function HeartCard({ weeks, CH, glassCard }) {
   const data = weeks.slice(-16);
   if (!data.some(w => w.hrv != null && w.rhr != null)) return null;
+  const axisTick = { fontSize: 9, fill: CH.tick };
+  const niceTicks = key => {
+    const v = data.map(d => d[key]).filter(x => x != null);
+    const lo = Math.floor(Math.min(...v)), hi = Math.ceil(Math.max(...v));
+    const step = Math.max(1, Math.ceil((hi - lo) / 3 / (hi - lo > 15 ? 5 : 1)) * (hi - lo > 15 ? 5 : 1));
+    const start = Math.floor(lo / step) * step;
+    const ticks = [];
+    for (let t = start; t <= hi + step; t += step) ticks.push(t);
+    return { domain: [ticks[0], ticks[ticks.length - 1]], ticks };
+  };
 
   const tip = p => (
     <Tip {...p} render={d => (<><TipHead>{d.intervalLabel}</TipHead>
       <TipVal>{d.rhr != null ? `${Math.round(d.rhr)} lpm en reposo` : 'sin datos'}</TipVal>
       <TipVal>{d.hrv != null ? `${Math.round(d.hrv)} ms de HRV` : ''}</TipVal></>)} />
   );
-  const panel = (key, color) => (
-    <div className="h-[84px]" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} syncId="heart" margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-          <XAxis dataKey="label" hide />
-          <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
-          <Tooltip cursor={{ stroke: CH.cursor, strokeDasharray: '3 3' }} content={tip} />
-          <Line type="monotone" dataKey={key} stroke={color} strokeWidth={1.8} dot={false}
-            activeDot={{ r: 3.5, fill: color, strokeWidth: 0 }} connectNulls isAnimationActive={false} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
+  const panel = (key, color, unit, showMonths) => {
+    const { domain, ticks } = niceTicks(key);
+    return (
+      <div className={showMonths ? 'h-[118px] -ml-2' : 'h-[100px] -ml-2'} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} syncId="heart" margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+            <XAxis dataKey="label" hide={!showMonths} interval={0} tick={axisTick} axisLine={{ stroke: CH.axis }} tickLine={false}
+              tickFormatter={v => data.find(d => d.label === v)?.monthLabel || ''} />
+            <YAxis domain={domain} ticks={ticks} tick={axisTick} axisLine={false} tickLine={false} width={34}
+              tickFormatter={v => `${v}`} label={{ value: unit, position: 'insideTopLeft', offset: 0, dy: -4, fontSize: 9, fill: CH.tick }} />
+            <Tooltip cursor={{ stroke: CH.cursor, strokeDasharray: '3 3' }} content={tip} />
+            <Line type="monotone" dataKey={key} stroke={color} strokeWidth={1.8}
+              dot={{ r: 2.2, fill: color, strokeWidth: 0 }} activeDot={{ r: 4, fill: color, strokeWidth: 0 }}
+              connectNulls isAnimationActive={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
   return (
     <div className="rounded-2xl p-4" style={glassCard}>
       <h2 className="mb-3" style={{ fontSize: 13, letterSpacing: '0.14em', color: INK(0.95), fontWeight: 400 }}>Corazón</h2>
-      <PanelLabel>FC en reposo</PanelLabel>
-      {panel('rhr', INK(0.85))}
-      <PanelLabel>HRV</PanelLabel>
-      {panel('hrv', CH.accent)}
+      <PanelLabel>FC en reposo · lpm</PanelLabel>
+      {panel('rhr', INK(0.85), '', false)}
+      <PanelLabel>HRV · ms</PanelLabel>
+      {panel('hrv', CH.accent, '', true)}
     </div>
   );
 }
