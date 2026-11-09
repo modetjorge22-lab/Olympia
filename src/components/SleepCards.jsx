@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter, ZAxis, LineChart, Line, ReferenceArea } from 'recharts';
 
 // Sueño × actividad (privado: solo tus datos de WHOOP).
 // Reglas de dataviz: nunca doble eje. Por eso la semana va en DOS paneles
@@ -213,6 +213,110 @@ export function SleepNightCard({ points, weeks = [], CH, glassCard }) {
       <p className="text-[10px] mt-1 text-center" style={{ fontFamily: MONO, color: INK(0.45) }}>
         {byWeek ? 'horas entrenadas en la semana → sueño medio por noche' : 'minutos entrenados ese día → sueño de esa noche'}
       </p>
+    </div>
+  );
+}
+
+// ── Corazón: FC en reposo y HRV semanales frente a la actividad ──
+// Tres paneles alineados (actividad, FC en reposo, HRV), cada uno con su
+// escala: nunca dos medidas en un mismo eje. La banda es tu rango normal
+// (media ± 1 desviación de tus semanas), no un umbral genérico.
+const pearson = (xs, ys) => {
+  const n = xs.length;
+  if (n < 3) return 0;
+  const mx = avg(xs), my = avg(ys);
+  let sxy = 0, sx = 0, sy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxy += dx * dy; sx += dx * dx; sy += dy * dy; }
+  return sx && sy ? sxy / Math.sqrt(sx * sy) : 0;
+};
+const band = vals => {
+  const m = avg(vals);
+  const sd = Math.sqrt(avg(vals.map(v => (v - m) ** 2)));
+  return [m - sd, m + sd];
+};
+const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const signed = (v, unit) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v))} ${unit}`;
+
+export function HeartCard({ weeks, CH, glassCard }) {
+  const data = weeks.slice(-16);
+  const withHeart = data.filter(w => w.hrv != null && w.rhr != null);
+
+  const { trend, relation, rhrBand, hrvBand } = useMemo(() => {
+    if (withHeart.length < 4) return {};
+    const k = Math.min(4, Math.floor(withHeart.length / 2));
+    const first = withHeart.slice(0, k), last = withHeart.slice(-k);
+    const dHrv = avg(last.map(w => w.hrv)) - avg(first.map(w => w.hrv));
+    const dRhr = avg(last.map(w => w.rhr)) - avg(first.map(w => w.rhr));
+    const since = MONTHS_ES[new Date(`${first[0].startStr}T12:00:00`).getMonth()];
+    const r = pearson(withHeart.map(w => w.hours), withHeart.map(w => w.rhr));
+    return {
+      trend: withHeart.length >= 8 ? { since, dHrv, dRhr } : null,
+      relation: withHeart.length >= 8
+        ? (r <= -0.3 ? 'las semanas que más entrenas, tu FC en reposo es más baja'
+          : r >= 0.3 ? 'las semanas que más entrenas, tu FC en reposo es más alta'
+          : 'tu FC en reposo no depende de cuánto entrenes cada semana')
+        : null,
+      rhrBand: band(withHeart.map(w => w.rhr)),
+      hrvBand: band(withHeart.map(w => w.hrv)),
+    };
+  }, [withHeart]);
+
+  if (withHeart.length === 0) return null;
+
+  const headline = trend
+    ? <>Desde {trend.since}: HRV <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{signed(trend.dHrv, 'ms')}</span> · FC en reposo <span style={{ fontFamily: MONO, color: 'var(--accent)' }}>{signed(trend.dRhr, 'lpm')}</span></>
+    : 'Con unas semanas más de datos verás tu tendencia.';
+
+  const tip = p => (
+    <Tip {...p} render={d => (<><TipHead>{d.intervalLabel}</TipHead>
+      <TipVal>{d.rhr != null ? `${Math.round(d.rhr)} lpm en reposo` : 'sin datos'}</TipVal>
+      <TipVal>{d.hrv != null ? `${Math.round(d.hrv)} ms de HRV` : ''}</TipVal>
+      <TipVal>{fmtH(d.hours)} entrenadas</TipVal></>)} />
+  );
+  const yAxis = { tick: { fontSize: 9, fill: CH.tick }, axisLine: false, tickLine: false, width: 26 };
+  const panel = (key, bandRange, unit, color) => {
+    const vals = withHeart.map(w => w[key]);
+    const lo = Math.floor(Math.min(...vals, bandRange?.[0] ?? Infinity) - 2);
+    const hi = Math.ceil(Math.max(...vals, bandRange?.[1] ?? -Infinity) + 2);
+    return (
+      <div className="h-[78px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} syncId="heart" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+            {bandRange && <ReferenceArea y1={bandRange[0]} y2={bandRange[1]} fill={INK(0.06)} stroke="none" ifOverflow="hidden" />}
+            <XAxis dataKey="label" hide />
+            <YAxis {...yAxis} domain={[lo, hi]} ticks={[lo + 2, hi - 2]} tickFormatter={v => `${v}`} />
+            <Tooltip cursor={{ stroke: CH.cursor, strokeDasharray: '3 3' }} content={tip} />
+            <Line type="monotone" dataKey={key} stroke={color} strokeWidth={1.8} dot={{ r: 2, fill: color, strokeWidth: 0 }}
+              activeDot={{ r: 3.5, fill: color, strokeWidth: 0 }} connectNulls isAnimationActive={false} name={unit} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-2xl p-4" style={glassCard}>
+      <Header title="Corazón" headline={headline} meta={relation} />
+      <PanelLabel>Actividad por semana</PanelLabel>
+      <div className="h-[34px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} syncId="heart" margin={{ top: 2, right: 12, left: 0, bottom: 0 }} barCategoryGap="28%">
+            <XAxis dataKey="label" hide />
+            <YAxis hide domain={[0, 'dataMax']} width={26} />
+            <Tooltip cursor={{ fill: INK(0.05) }} content={tip} />
+            <Bar dataKey="hours" fill={CH.accent} fillOpacity={0.35} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <PanelLabel>FC en reposo · lpm</PanelLabel>
+      {panel('rhr', rhrBand, 'lpm', INK(0.85))}
+      <PanelLabel>HRV · ms</PanelLabel>
+      {panel('hrv', hrvBand, 'ms', CH.accent)}
+      <div className="flex justify-between -mt-0.5 pl-6 pr-3" style={{ fontFamily: MONO, fontSize: 9, color: INK(0.45) }}>
+        <span>{data[0]?.intervalLabel?.split(' – ')[0]}</span>
+        <span>banda: tu rango normal</span>
+        <span>{data[data.length - 1]?.intervalLabel?.split(' – ')[1]}</span>
+      </div>
     </div>
   );
 }

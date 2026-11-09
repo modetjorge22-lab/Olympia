@@ -20,7 +20,7 @@ import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
 import { useDiet } from '@/hooks/useDiet';
-import { SleepWeeklyCard, SleepNightCard, buildNightPoints, fmtH } from '@/components/SleepCards';
+import { SleepWeeklyCard, SleepNightCard, HeartCard, buildNightPoints, fmtH } from '@/components/SleepCards';
 import { DietDayRow, DietSheetHost, DietSettingsRow, useDietSheet } from '@/components/DietPanel';
 
 // Sección sobre el lienzo vino — sin marco, separada por hairline superior
@@ -60,7 +60,7 @@ const TEXT_FAINT = 'rgba(var(--ink),0.30)';
 
 
 // Tarjetas reordenables de «Tus gráficas». Sueño y noche solo con datos de WHOOP.
-const CARD_KEYS = ['ritmo', 'fuerza', 'sueno', 'noche'];
+const CARD_KEYS = ['ritmo', 'fuerza', 'sueno', 'noche', 'corazon'];
 
 function ChartTooltip({ active, payload, label, labelPrefix, extra = null }) {
  if (!active || !payload?.length) return null;
@@ -153,7 +153,7 @@ export default function Actividad() {
  if (!user?.email) return;
  supabase
  .from('whoop_sleep')
- .select('date, duration_minutes')
+ .select('date, duration_minutes, hrv_ms, resting_hr')
  .eq('user_email', user.email)
  .then(({ data }) => { if (data) setWhoopSleepData(data); });
  }, [user?.email]);
@@ -404,6 +404,11 @@ export default function Actividad() {
  const sleepHours = sleepInWeek.length > 0
  ? +(sleepInWeek.reduce((s, r) => s + (r.duration_minutes || 0), 0) / sleepInWeek.length / 60).toFixed(1)
  : null;
+ // Corazón: media semanal de HRV y FC en reposo (registro de recuperación de WHOOP)
+ const meanOf = k => {
+ const v = sleepInWeek.map(s => Number(s[k])).filter(x => x > 0);
+ return v.length ? +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null;
+ };
  return {
  startStr, endStr,
  label: `${start.getDate()}/${start.getMonth() + 1}`,
@@ -411,6 +416,8 @@ export default function Actividad() {
  intervalLabel: `${start.getDate()} ${MONTH_NAMES_SHORT[start.getMonth()]} – ${end.getDate()} ${MONTH_NAMES_SHORT[end.getMonth()]}`,
  hours: computeHours(startStr, endStr),
  sleepHours,
+ hrv: meanOf('hrv_ms'),
+ rhr: meanOf('resting_hr'),
  };
  });
  }, [myAllActivities, actFilter, computeHours, whoopSleepData]);
@@ -776,6 +783,7 @@ export default function Actividad() {
  </>),
  sueno: whoopSleepData.length > 0 ? <SleepWeeklyCard weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
  noche: whoopSleepData.length > 0 ? <SleepNightCard points={nightPoints} weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
+ corazon: weeklyData.some(w => w.hrv != null) ? <HeartCard weeks={weeklyData} CH={CH} glassCard={glassCard} /> : null,
  fuerza: (<>
  {/* ── Fuerza — volumen por grupo muscular ── */}
  {muscleData.strengthCount > 0 && (
