@@ -281,7 +281,7 @@ export function HeartCard({ weeks, CH, glassCard }) {
     return (
       <div className="h-[78px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} syncId="heart" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+          <LineChart data={data} syncId="heart" margin={{ top: 6, right: 12, left: 0, bottom: 6 }}>
             {bandRange && <ReferenceArea y1={bandRange[0]} y2={bandRange[1]} fill={INK(0.06)} stroke="none" ifOverflow="hidden" />}
             <XAxis dataKey="label" hide />
             <YAxis {...yAxis} domain={[lo, hi]} ticks={[lo + 2, hi - 2]} tickFormatter={v => `${v}`} />
