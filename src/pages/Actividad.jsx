@@ -904,7 +904,7 @@ export default function Actividad() {
  </button>
  )}
  </div>
- <div className="h-[200px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+ <div className="h-[160px] -ml-2" style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
  <ResponsiveContainer width="100%" height="100%">
  <AreaChart data={chartData} syncId="carga" margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
  <defs>
