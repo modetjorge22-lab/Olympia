@@ -2,7 +2,7 @@
 // que se lancen con el comunicado. Para lanzar una, pon `everyone: true`.
 
 const FEATURES = {
-  diet: { everyone: false, emails: ['modetjorge22@gmail.com'] },
+  diet: { everyone: true, emails: ['modetjorge22@gmail.com'] },
 };
 
 export function hasFeature(name, email) {

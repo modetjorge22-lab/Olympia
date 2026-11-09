@@ -5,7 +5,6 @@ import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import { useWhoopAutoSync } from '@/hooks/useWhoopAutoSync';
 import InfinityMark from './InfinityMark';
-import OfficialAnnouncement from './OfficialAnnouncement';
 import ComunicadoNovedades from './ComunicadoNovedades';
 import { DietDailyPrompt } from './DietPanel';
 
@@ -91,7 +90,6 @@ export default function AppLayout({ children }) {
 
   return (
     <>
-    <OfficialAnnouncement />
     {/* Borrador: solo se ve con ?comunicado=preview hasta que se lance */}
     <ComunicadoNovedades />
     <DietDailyPrompt />

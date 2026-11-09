@@ -4,27 +4,26 @@ import { X } from 'lucide-react';
 import { Sheet, Button, IconButton } from '@/components/ui';
 
 // ─────────────────────────────────────────────────────────────────────────
-// BORRADOR: comunicado de novedades (patrón «Comunicado», design-system §6).
+// Comunicado de novedades (patrón «Comunicado», design-system §6).
+// Lanzado en noviembre de 2026: WHOOP y disciplina alimentaria.
 //
-// Todavía NO está lanzado. Mientras ACTIVE sea false, solo se ve abriendo la
-// app con ?comunicado=preview (no marca nada como visto).
+// Siempre se puede revisar abriendo la app con ?comunicado=preview (no marca
+// nada como visto).
 //
-// Para lanzarlo:
-//   1. Completa NOVEDADES y ajusta MES.
-//   2. Pon ACTIVE = true y la clave con el mes de lanzamiento.
-//   3. En AppLayout, quita <OfficialAnnouncement /> (solo un comunicado activo).
+// Para el próximo comunicado: cambia NOVEDADES y MES, y sube SEEN_KEY
+// (olympia_comunicado_{aaaa_mm}_v{n}) para que vuelva a salir a todos.
 // ─────────────────────────────────────────────────────────────────────────
 
-const ACTIVE = false;
-const MES = 'diciembre 2026';
-const SEEN_KEY = 'olympia_comunicado_2026_12_v1';
+const ACTIVE = true;
+const MES = 'noviembre 2026';
+const SEEN_KEY = 'olympia_comunicado_2026_11_v2';
 
 const NOVEDADES = [
   {
     titulo: 'WHOOP, conectado',
     parrafos: [
       <>Olympia ya se conecta con <Strong>WHOOP</Strong>. Actívalo en <Strong>Más → Integraciones</Strong> y tus entrenos entrarán solos, sin apuntar nada.</>,
-      <>Si ya habías apuntado la sesión, a mano o desde Strava, no se duplica: Olympia la reconoce y le suma el strain y las pulsaciones. Si la apuntas después, tu registro corrige el de WHOOP.</>,
+      <>Si ya habías apuntado la sesión, a mano o desde Strava, no se duplica: Olympia la reconoce y la enlaza con WHOOP. Si la apuntas después, tu registro corrige el de WHOOP.</>,
       <>¿WHOOP se ha equivocado de deporte o de duración? Edita la actividad: tu cambio manda y WHOOP no lo vuelve a tocar. Si no era un entreno, bórrala y no volverá.</>,
       <>Los paseos no cuentan. Tu sueño y tu recuperación son solo para ti.</>,
     ],
