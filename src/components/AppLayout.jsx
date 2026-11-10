@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import { Newspaper, User, Users, MoreHorizontal } from 'lucide-react';
 import { useStravaAutoSync } from '@/hooks/useStravaAutoSync';
 import { useWhoopAutoSync } from '@/hooks/useWhoopAutoSync';
@@ -51,10 +51,19 @@ export default function AppLayout({ children }) {
   // motion values → solo transforms en el compositor, cero renders de React.
   const compact = useMotionValue(0);
   const c = useSpring(compact, { stiffness: 520, damping: 46, mass: 0.6 });
-  const headerY = useTransform(c, [0, 1], [0, -8]);
-  const headerScale = useTransform(c, [0, 1], [1, 0.76]);
-  const navY = useTransform(c, [0, 1], [0, 11]);
-  const navScale = useTransform(c, [0, 1], [1, 0.78]);
+  // Con «reducir movimiento» las barras no se recogen (useSpring no pasa por MotionConfig).
+  const still = useReducedMotion();
+  const headerY = useTransform(c, [0, 1], [0, still ? 0 : -8]);
+  const headerScale = useTransform(c, [0, 1], [1, still ? 1 : 0.76]);
+  const navY = useTransform(c, [0, 1], [0, still ? 0 : 11]);
+  const navScale = useTransform(c, [0, 1], [1, still ? 1 : 0.78]);
+
+  // Tocar la pestaña en la que ya estás vuelve arriba (convención de iOS).
+  const scrollToTop = () => {
+    const behavior = still ? 'instant' : 'smooth';
+    mainRef.current?.scrollTo({ top: 0, behavior });
+    window.scrollTo({ top: 0, behavior });
+  };
 
   useEffect(() => {
     const RANGE = 90; // px de scroll para pasar de completa a recogida
@@ -173,7 +182,8 @@ export default function AppLayout({ children }) {
                 <NavLink
                   key={path}
                   to={path}
-                  className="flex flex-col items-center gap-0.5 py-1.5 rounded-full transition-transform duration-150 ease-out active:scale-[0.96] relative"
+                  onClick={(e) => { if (isActive) { e.preventDefault(); scrollToTop(); } }}
+                  className="o-press flex flex-col items-center gap-0.5 py-1.5 rounded-full relative"
                 >
                   <Icon
                     className="w-[19px] h-[19px] transition-colors relative z-10"

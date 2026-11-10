@@ -65,7 +65,7 @@ function Avatar({ name, url, size = 36 }) {
 export default function Feed() {
   const { currentMonth } = useMonth();
   const { user } = useAuth();
-  const { allActivities } = useActivities(currentMonth);
+  const { allActivities, loading: dataLoading } = useActivities(currentMonth);
   const { members } = useTeamMembers();
   const [who, setWho] = useState(null);       // filtro por persona (email)
   const [limit, setLimit] = useState(PAGE);
@@ -221,7 +221,20 @@ export default function Feed() {
       </div>
 
       {/* ── Cronología ── */}
-      {grouped.length === 0 ? (
+      {grouped.length === 0 && dataLoading ? (
+        <div aria-hidden className="mt-5 pt-3" style={{ borderTop: `1px solid ${INK(0.12)}` }}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3 py-3">
+              <div className="o-skeleton flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 999 }} />
+              <div className="flex-1">
+                <div className="o-skeleton" style={{ width: `${46 + (i % 2) * 18}%`, height: 11 }} />
+                <div className="o-skeleton mt-2" style={{ width: '28%', height: 9 }} />
+              </div>
+              <div className="o-skeleton" style={{ width: 40, height: 11 }} />
+            </div>
+          ))}
+        </div>
+      ) : grouped.length === 0 ? (
         <p className="text-center text-[12px] py-12" style={{ color: INK(0.45) }}>
           {who ? 'Sin actividad registrada todavía.' : 'Aún no hay actividades en el equipo.'}
         </p>

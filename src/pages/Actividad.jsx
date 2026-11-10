@@ -16,6 +16,7 @@ import { buildSeasonalSeries, formatHours } from '@/utils/seasonal';
 import { TrainingSection, MonthScroller, toDateStr as tcDateStr } from '@/components/TrainingCalendar';
 import MuscleLoad from '@/components/MuscleLoad';
 import DayDetailSheet from '@/components/DayDetailSheet';
+import { useToast } from '@/components/ui';
 import GoalsSection from '@/components/GoalsSection';
 import ObjectivesPanel from '@/components/ObjectivesPanel';
 import { useObjectives } from '@/hooks/useObjectives';
@@ -116,8 +117,9 @@ export default function Actividad() {
  const calendarRef = useRef(null);
  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
  const avatarUrl = myProfile?.avatar_url || null;
- const { myActivities, allActivities, createActivity, deleteActivity, updateActivity } = useActivities(currentMonth);
- const { plans: weeklyPlans, addPlan, removePlan } = useWeeklyPlans(currentMonth);
+ const { myActivities, allActivities, createActivity, deleteActivityWithUndo, updateActivity } = useActivities(currentMonth);
+ const toast = useToast();
+ const { plans: weeklyPlans, addPlan, removePlan, removePlanWithUndo } = useWeeklyPlans(currentMonth);
  const { goals, createGoal, updateMark, deleteGoal, refresh: refreshGoals } = useGoals();
  const { myObjectives, available: objectivesAvailable, createObjective, deleteObjective } = useObjectives();
  const [goalsTab, setGoalsTab] = useState('objectives'); // 'objectives' | 'marks'
@@ -259,6 +261,20 @@ export default function Actividad() {
  () => allActivities.filter(a => a.user_email === user?.email),
  [allActivities, user]
  );
+
+ // «Repetir»: las 3 últimas sesiones de tipos distintos, con su duración.
+ const recentSessions = useMemo(() => {
+ const seen = new Set();
+ const out = [];
+ const sorted = [...myAllActivities].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+ for (const a of sorted) {
+ if (!a.type || !(a.duration_minutes > 0) || seen.has(a.type) || !ACTIVITY_TYPES[a.type]) continue;
+ seen.add(a.type);
+ out.push({ type: a.type, duration_minutes: Math.round(a.duration_minutes / 5) * 5 || 5 });
+ if (out.length === 3) break;
+ }
+ return out;
+ }, [myAllActivities]);
 
  const usedTypes = useMemo(() => {
  const keys = new Set(myAllActivities.map(a => a.type));
@@ -1050,10 +1066,12 @@ export default function Actividad() {
  {/* FAB — usa el color del fondo de la app */}
  <button
  onClick={() => { setSelectedDate(new Date()); setShowLogDialog(true); }}
- className="fixed bottom-24 right-5 w-[52px] h-[52px] rounded-full flex items-center justify-center z-40"
+ aria-label="Registrar actividad"
+ className="o-press fixed right-5 w-[52px] h-[52px] rounded-full flex items-center justify-center z-40"
  style={{
+ bottom: 'calc(env(safe-area-inset-bottom) + 88px)',
  background: ACCENT,
- boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+ boxShadow: 'var(--glass-shadow)',
  }}>
  <Plus className="w-5 h-5" style={{ color: ON_ACCENT }} />
  </button>
@@ -1067,9 +1085,15 @@ export default function Actividad() {
  prs={prAchievementsByDate[tcDateStr(detailDate)] || []}
  onClose={() => setDetailDate(null)}
  onEdit={(act) => { setDetailDate(null); setEditActivity(act); }}
- onDelete={(id) => deleteActivity(id)}
+ onDelete={(id) => {
+ const undo = deleteActivityWithUndo(id, { onError: () => toast({ message: 'No se ha podido eliminar. Sigue en tu día.', tone: 'error' }) });
+ if (undo) toast({ message: 'Actividad eliminada', action: { label: 'Deshacer', onClick: undo } });
+ }}
  onCompletePlan={(plan) => { setDetailDate(null); setConvertPlan(plan); }}
- onRemovePlan={(id) => removePlan(id)}
+ onRemovePlan={(id) => {
+ const undo = removePlanWithUndo(id, { onError: () => toast({ message: 'No se ha podido quitar el plan.', tone: 'error' }) });
+ if (undo) toast({ message: 'Plan quitado', action: { label: 'Deshacer', onClick: undo } });
+ }}
  onDeletePr={(id) => deletePrAchievement(id)}
  onAdd={(d) => { setDetailDate(null); setSelectedDate(d); setShowLogDialog(true); }}
  dietRow={detailDate <= new Date() ? <DietDayRow date={tcDateStr(detailDate)} /> : null}
@@ -1083,7 +1107,8 @@ export default function Actividad() {
  <LogActivityDialog
  isOpen
  onClose={() => { setShowLogDialog(false); setEditActivity(null); setConvertPlan(null); }}
- onSubmit={async (data) => { await createActivity(data); if (convertPlan) { await removePlan(convertPlan.id); setConvertPlan(null); } }}
+ onSubmit={async (data) => { const saved = await createActivity(data); if (convertPlan) { await removePlan(convertPlan.id); setConvertPlan(null); } return saved; }}
+ recent={recentSessions}
  onSubmitPlan={addPlan}
  onUpdate={updateActivity}
  editActivity={editActivity}

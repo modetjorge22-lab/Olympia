@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -25,6 +25,35 @@ export function Sheet({
 }) {
   const [exitVelocity, setExitVelocity] = useState(0);
   const sheet = useSheetDrag(onClose, { onDismissVelocity: setExitVelocity });
+  const panel = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  // Teclado y lectores de pantalla: el foco entra en la hoja al abrir y vuelve
+  // a quien la abrió al cerrar; Escape cierra (solo la hoja de más arriba) y
+  // Tab no sale de la hoja.
+  useEffect(() => {
+    const opener = document.activeElement;
+    const el = panel.current;
+    el?.focus({ preventScroll: true });
+    const onKey = (e) => {
+      if (!el) return;
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      if (dialogs[dialogs.length - 1] !== el) return;
+      if (e.key === 'Escape') { e.stopPropagation(); closeRef.current?.(); return; }
+      if (e.key !== 'Tab') return;
+      const items = el.querySelectorAll('button:not(:disabled), [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === el)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus({ preventScroll: true });
+    };
+  }, []);
 
   const bottom = aboveNav
     ? 'calc(env(safe-area-inset-bottom) + 84px)'
@@ -39,8 +68,9 @@ export function Sheet({
       onClick={dismissOnScrim ? onClose : undefined}
     >
       <motion.div
+        ref={panel} tabIndex={-1}
         role="dialog" aria-modal="true" aria-label={label}
-        className={`w-full max-w-lg flex flex-col overflow-hidden ${className}`}
+        className={`w-full max-w-lg flex flex-col overflow-hidden outline-none ${className}`}
         style={{
           maxHeight,
           background: 'var(--sheet-bg)',

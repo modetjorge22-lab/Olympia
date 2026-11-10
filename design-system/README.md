@@ -1,4 +1,4 @@
-# Olympia · Sistema de diseño v1.5
+# Olympia · Sistema de diseño v1.6
 
 > Constancia que se ve. Competición que se siente.
 
@@ -10,10 +10,11 @@ Olympia mide el tiempo que dedicas a moverte y lo convierte en algo que comparte
 | `olympia-tokens.css` | Variables CSS listas para importar en cualquier proyecto web |
 | `olympia-tokens.json` | Los mismos tokens para Figma, nativo, emails o scripts |
 | `auditoria-2026-11.md` | Auditoría de la app contra el sistema: qué falta por armonizar, por prioridad |
+| `auditoria-ux-2026-11.md` | Auditoría de experiencia (flujos, errores, movimiento): qué se ha corregido y qué queda, por prioridad |
 
 La fuente de verdad es la app:
 - `src/index.css` contiene todos los tokens de este documento.
-- `src/components/ui/` tiene las piezas del sistema: `Sheet`, `SheetTitle`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow` y `Chip`.
+- `src/components/ui/` tiene las piezas del sistema: `Sheet`, `SheetTitle`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`, `Segmented`, `StatusLine` y el aviso (`ToastProvider` / `useToast`).
 - También cuentan `src/components/ActivityFilterButton.jsx`, `src/components/sheetDrag.js`, `src/lib/theme.js` y `src/utils/activityIcons.js`.
 
 Lo nuevo se construye con esas piezas. Si cambias algo allí, actualiza también estos tokens.
@@ -33,6 +34,7 @@ Lo nuevo se construye con esas piezas. Si cambias algo allí, actualiza también
    - El contenido que vive en el lienzo nunca va en vidrio.
    - Nunca se apila un vidrio claro sobre otro.
 8. **Movimiento con física.** Usa muelles, inercia proyectada y gestos interrumpibles, y respeta la preferencia de reducir movimiento.
+9. **Nada pasa en silencio y casi todo se puede deshacer.** Toda escritura (guardar, eliminar, planificar) termina en un aviso o en un error visible junto a lo que lo causa. Lo reversible no se pregunta: se hace y se ofrece deshacer.
 
 ## 2. Color
 
@@ -139,10 +141,10 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
   - Al pulsar, escala a `.96` en 100 ms (clase `.o-press`), con respuesta en el pointer-down.
   - Pieza: `<Button>`.
 - **Botón secundario:** fondo `ink .06` con texto `ink .75`. Pieza: `<Button variant="secondary">`.
-- **Botón de icono:** 32 px, fondo `ink .07` y `aria-label` obligatorio. Pieza: `<IconButton icon={X} label="Cerrar">`.
+- **Botón de icono:** 32 px, fondo `ink .07` y `aria-label` obligatorio. Se ve de 32 pero se acierta como uno de 44 (clase `.o-hit`, incluida en la pieza). Dos acciones de icono contiguas van separadas 12 px. Pieza: `<IconButton icon={X} label="Cerrar">`.
 - **Título de sección:** `<SectionTitle>`. Para etiquetas de grupo pequeñas, en lugar de micro-mayúsculas, se usa `<Eyebrow>`.
 - **Chip:** fondo `accent .1` con texto `--accent`, a 10 px. Pieza: `<Chip>`.
-- **Selector segmentado:** contenedor `ink .06` con píldora activa `ink .1`, que se desliza con muelle. Referencia: el selector de tema en Más.
+- **Selector segmentado:** contenedor `ink .06` con píldora activa `ink .1`, que se desliza. Pieza: `<Segmented>` (`role="radiogroup"`). Se usa en el tema de Más y en Hecha / Planificada.
 - **Filtro:**
   - Botón arriba a la derecha de la sección. Afecta a todo lo que hay debajo (semana, calendario, tendencia, ritmo).
   - Hay una sola pieza, `ActivityFilterButton`. Su menú es de vidrio, nace del botón (`transform-origin` arriba a la derecha) con un muelle sin rebote y se cierra con Escape o tocando fuera.
@@ -156,7 +158,19 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
   - **Pregunta del día:** siempre sobre **ayer** (pasada la medianoche el día está cerrado). Al entrar en la app, si ayer sigue sin responder, sale una **hoja** (meta «Alimentación · {día}», pregunta en DM Sans 17, etiquetas de solo lectura, dos botones secundarios Sí / No y X «Ahora no»), una vez por visita y nunca encima de otra hoja; como los comunicados, tocar el scrim no la cierra. Respondida, no vuelve hasta el día siguiente. Es el único sitio donde se pregunta. Tras «No», chips opcionales con los estándares para marcar en cuál se falló.
   - **Racha:** solo en el pop-up («llevas N días seguidos») y, para el grupo, en la ficha de miembro.
   - Los días pasados se corrigen desde el detalle del día. El grupo solo ve la racha (en la ficha de miembro); los estándares y los fallos son privados.
-- **Estado en línea:** los resultados (sincronizado, error) van en una línea de 11 px junto a lo que los causa, con icono y color `--success`/`--danger`, sin cajas de color.
+- **Estado en línea:** los resultados (sincronizado, error) van en una línea de 11 px junto a lo que los causa, con icono y color `--success`/`--danger`, sin cajas de color. Pieza: `<StatusLine>`. Un guardado que falla deja la hoja abierta, muestra la línea sobre el botón y el botón pasa a «Reintentar».
+- **Aviso** (confirmación breve tras una acción):
+  - **Sitio:** ocupa exactamente el header (misma píldora de 52 px, mismo inset): «habla el header». Así no tapa la nav, ni el botón primario de una hoja, ni el teclado.
+  - **Material:** `--toast-bg` (casi opaco, porque cubre el vidrio del header) con `--sheet-filter`, borde `--sheet-edge` y sombra `--glass-shadow`.
+  - **Contenido:** icono de 15 px (`--success` o `--danger`), mensaje en DM Sans 12 a tinta .95 y, si hay, una sola acción en píldora `accent .1` de 40 px de alto.
+  - **Vida:** 4 s; 6 s si lleva acción. Se descarta deslizándolo hacia arriba. Solo hay uno: el nuevo sustituye al anterior en el sitio.
+  - **Deshacer en lugar de preguntar:** eliminar una actividad o quitar un plan se hace al instante y el aviso ofrece «Deshacer». El borrado real espera esos 6 s (o a que la app pase a segundo plano). Si falla, lo eliminado vuelve y se avisa. No hay diálogos de confirmación para lo reversible.
+  - **Voz:** el hecho, sin adornos: «Actividad guardada», «Plan quitado», «Actividad eliminada».
+  - Pieza: `useToast()` → `toast({ message, action: { label, onClick }, tone })`.
+- **Hoja con cambios sin guardar:** en cuanto se toca el formulario, tocar el scrim deja de cerrarla (se pasa `dismissOnScrim={false}`). La X y el arrastre siguen cerrando: son gestos deliberados.
+- **Repetir:** el registro empieza con las 3 últimas sesiones de tipos distintos (icono, nombre y duración en mono, píldora de 40 px). Un toque rellena tipo y duración; nada se guarda hasta pulsar el botón.
+- **Hecha no admite futuro:** elegir un día futuro pasa el registro a «Planificada»; volver a «Hecha» trae la fecha a hoy. La duración va de 1 min a 24 h.
+- **Carga en frío:** mientras llegan los datos se muestran bloques `.o-skeleton` con la forma de lo que viene, nunca un estado vacío («no hay actividades») que luego se desmiente.
 - **Nada que parezca pulsable sin hacer nada:** si una fila o botón aún no tiene destino, no se muestra.
 - **Anillo de ritmo:**
   - Primera vuelta en `--accent` y segunda en `--accent-over`.
@@ -205,7 +219,9 @@ Es la unidad básica de Olympia y siempre es un círculo. El número va en mono 
 | Arrastre de hoja | solo desde la cabecera; elasticidad arriba `.06`, abajo `.8` |
 | Cierre | `offset + proyección(velocidad) > 140 px` |
 | Proyección | `(v/1000) · 0.998 / (1 − 0.998)` |
-| Pulsar | escala `.96`, 100 ms (`.o-press`) |
+| Pulsar | escala `.96`, 100 ms (`.o-press`); un control desactivado no escala |
+| Aviso | spring crítico `stiffness 520 · damping 46` desde arriba; sale por arriba en 150 ms |
+| Pestaña activa | tocarla de nuevo vuelve arriba con scroll suave (instantáneo con movimiento reducido) |
 | Cambio de pestaña | solo un fundido de 150 ms (interacción frecuente) |
 | Scrim | 200 ms ease-out |
 | Cambio de tema | 250 ms |
@@ -233,7 +249,11 @@ import { Sheet, SheetTitle } from '@/components/ui';
 - `prefers-contrast: more`: el borde del vidrio y de las hojas sube a `.45`.
 - `touch-action: manipulation` en botones y enlaces, para que no haya espera por doble toque.
 - Las hojas llevan `role="dialog"` y los menús, `role="menu"`; el segmentado, `role="radiogroup"`.
-- `prefers-reduced-motion`: las transiciones son instantáneas y se aplica `MotionConfig reducedMotion="user"`.
+- **Foco en las hojas:** al abrir, el foco entra en la hoja; Tab no sale de ella; Escape la cierra; al cerrar, el foco vuelve a quien la abrió. El nombre accesible de la hoja es su título visible.
+- **Zona de toque mínima de 44 px** en toda acción (`.o-hit` amplía la de los iconos de 32).
+- El aviso es `role="status"` con `aria-live="polite"`; los errores en línea, `role="alert"`.
+- Las opciones seleccionables llevan `aria-pressed`; los campos, su `<label>` o `aria-label`.
+- `prefers-reduced-motion`: las transiciones son instantáneas y se aplica `MotionConfig reducedMotion="user"`. Las animaciones en bucle se quedan en una sola vuelta y las barras no se recogen al hacer scroll.
 - Los avatares llevan un contorno neutro al 10 % (`.img-outline`).
 
 ## 9. Voz
@@ -267,7 +287,8 @@ Contraste con los principios de diseño fluido de Apple (*Designing Fluid Interf
 | Tracking según el tamaño | Un tracking fijo por rol | **Adoptado:** `--tracking-title` negativo y óptico de DM Sans |
 | Jerarquía con peso | Olympia no usa negritas | **Descartado** como norma: la sobriedad es parte de la identidad. Solo se adopta la vibrancia (500) en etiquetas sobre vidrio |
 | Respetar el tamaño de texto del usuario | El viewport tiene `user-scalable=no` | **Pendiente:** quitarlo afecta al zoom al enfocar campos en iOS. Hay que decidirlo |
-| Hápticos y sonido con causalidad | Safari en iOS no ofrece vibración desde la web | No aplicable en la web |
+| Hápticos y sonido con causalidad | Safari en iOS no ofrece vibración desde la web | **Adoptado con reservas (v1.6):** `lib/haptics.js` da un toque al guardar y al deshacer. En Android usa la Vibration API; en iOS, el tic de un `<input switch>` (Safari 17.4+, no estándar). Si no está disponible, no pasa nada |
+| Perdón antes que permiso: deshacer en vez de confirmar | Eliminar era un toque sin vuelta atrás | **Adoptado (v1.6):** aviso con «Deshacer» y borrado diferido |
 
 ## 12. Historial
 
@@ -278,4 +299,5 @@ Contraste con los principios de diseño fluido de Apple (*Designing Fluid Interf
 | 1.2 | 2026-11-07 | El sistema pasa al código: `index.css` lleva todos los tokens y `src/components/ui/` las piezas (`Sheet`, `Button`, `IconButton`, `SectionTitle`, `Eyebrow`, `Chip`). Contraste con Apple (§11): **hojas de cristal flotantes** (regla 7 revisada), salida con traspaso de velocidad, pulsación a 100 ms, filtro único con menú anclado al botón y tracking según el tamaño. Más rediseñada con las piezas. Se elimina el código que no se usaba (Dashboard, Planificador semanal, pop-up de Metas, otras 12 funciones y 2 paletas antiguas). |
 | 1.3 | 2026-11-08 | Patrón **Alimentación** (§6): marcas en tinta en la celda del día, pregunta del día y racha; la regla 5 aclara que lo que no es actividad va en tinta. El **filtro** gana la vista (entrenamiento, alimentación o ambos) sin dejar de ser uno. El **Comunicado** admite varias novedades separadas por hairline. |
 | 1.4 | 2026-11-08 | La alimentación pasa a ser casi invisible: fuera el bloque bajo la semana y el día cumplido se marca con un resplandor esmeralda exterior (token `--diet-glow`), primera excepción a la regla 5 por decisión de Jorge. La pregunta diaria vive solo en el pop-up. |
+| 1.6 | 2026-11-10 | **Experiencia sin errores silenciosos** (principio 9). Patrón **Aviso** en el sitio del header, con «Deshacer» para eliminar actividades y quitar planes (borrado diferido 6 s). Los fallos al guardar se ven en línea y el botón pasa a «Reintentar». Piezas nuevas: `Segmented`, `StatusLine`, `useToast`; token `--toast-bg`; utilidades `.o-hit` (zona de toque de 44) y `.o-skeleton`. Las hojas gestionan el foco, Escape y el título accesible; con cambios sin guardar, el scrim no cierra. Registro: fila **Repetir**, «Hecha» no admite futuro y duración de 1 min a 24 h. Tocar la pestaña activa vuelve arriba. Háptico al guardar y deshacer. Los datos se refrescan al volver a la app. Ver `auditoria-ux-2026-11.md`. |
 | 1.5 | 2026-11-08 | **Descanso:** botón en «Últimas 16 semanas» que funde (600 ms, sin animación con movimiento reducido) una línea menta translúcida (`--sleep-line`, opacidad .6, 1.75 px, sin puntos) con el sueño medio por noche sobre la misma gráfica y el mismo eje en horas; el tooltip la nombra. Decisión de Jorge frente a la regla de no superponer: no hay segundo eje, ambas medidas van en horas. Tarjetas «Sueño y actividad» y «La noche después» (Días / Semanas) en Tus gráficas. |

@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useData } from '@/lib/DataContext';
 import { LogOut, Check, Loader2, RefreshCw, AlertCircle, Camera, Moon, Sun } from 'lucide-react';
-import { Button, SectionTitle } from '@/components/ui';
+import { Button, SectionTitle, Segmented } from '@/components/ui';
 import { useTheme } from '@/lib/theme';
 import { apiPost, startOAuth } from '@/lib/api';
 
@@ -247,6 +247,7 @@ export default function Mas() {
  <section className="py-5" style={DIVIDER}>
  <SectionTitle>Apariencia</SectionTitle>
  <Segmented
+ label="Apariencia"
  value={mode}
  onChange={setMode}
  options={[['dark', 'Oscuro', Moon], ['light', 'Claro', Sun]]}
@@ -310,32 +311,6 @@ function whoopSummary(workouts = 0, nights = 0) {
  return `${w} · ${n}`;
 }
 const DIVIDER = { borderTop: '1px solid rgba(var(--ink),0.12)' };
-
-// Selector segmentado del sistema: contenedor ink .06 y píldora activa ink .1
-// que se desliza (transform en el compositor, 420 ms).
-function Segmented({ value, onChange, options }) {
- const idx = Math.max(0, options.findIndex(([k]) => k === value));
- return (
- <div role="radiogroup" className="relative grid p-1 rounded-full"
- style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)`, background: INK(0.06) }}>
- <span aria-hidden="true" className="absolute top-1 bottom-1 left-1 rounded-full"
- style={{
- width: `calc((100% - 8px) / ${options.length})`,
- transform: `translateX(${idx * 100}%)`,
- transition: 'transform 420ms cubic-bezier(.32,.72,0,1)',
- background: INK(0.1),
- }} />
- {options.map(([key, label, Icon]) => (
- <button key={key} role="radio" aria-checked={value === key} onClick={() => onChange(key)}
- className="relative z-10 flex items-center justify-center gap-2 py-2 text-[12px]"
- style={{ color: value === key ? INK(0.95) : INK(0.5), transition: 'color 150ms ease-out' }}>
- <Icon className="w-3.5 h-3.5" />
- {label}
- </button>
- ))}
- </div>
- );
-}
 
 function IntegrationRow({ logo, name, detail, connected, syncing, onConnect, onSync, onDisconnect, children }) {
  return (

@@ -32,6 +32,7 @@
   --sheet-bg: rgba(58, 28, 40, 0.74);
   --sheet-edge: rgba(245, 237, 224, 0.14);
   --sheet-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --toast-bg: rgba(72, 38, 52, 0.9);   /* aviso: cubre el header, casi opaco */
 
   /* Familias de actividad (RGB) */
   --cat-fuerza: 240, 228, 208;
@@ -69,6 +70,7 @@
   --sheet-bg: rgba(255, 255, 255, 0.78);
   --sheet-edge: rgba(42, 18, 26, 0.10);
   --sheet-shadow: 0 24px 60px rgba(42, 18, 26, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --toast-bg: rgba(255, 255, 255, 0.92);
 
   --cat-fuerza: 74, 22, 38;
   --cat-cardio: 226, 178, 32;

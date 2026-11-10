@@ -1,9 +1,9 @@
 import React from 'react';
-import { X, Pencil, Trash2, Check, Plus, Trophy, TrendingUp, Shield } from 'lucide-react';
+import { Pencil, Trash2, Check, Plus, Trophy, TrendingUp, Shield } from 'lucide-react';
 import { ACTIVITY_TYPES } from '@/hooks/useActivities';
 import { iconFor, catColor } from '@/utils/activityIcons';
 import { detectMuscleGroups, muscleLabel } from '@/utils/muscles';
-import { Sheet } from '@/components/ui';
+import { Sheet, SheetTitle, IconButton } from '@/components/ui';
 
 // Detalle de un día (inspirado en Activity Details de Bevel): resumen del día,
 // tarjeta por actividad con sus métricas y acciones, planes pendientes y
@@ -48,14 +48,12 @@ function ActivityCard({ act, onEdit, onDelete }) {
             {act.description || info.label}
           </p>
         </div>
-        <div className="flex items-center gap-0.5">
-          <button onClick={() => onEdit(act)} className="p-2 rounded-full" aria-label="Editar"
-            style={{ background: INK(0.05) }}>
-            <Pencil className="w-3.5 h-3.5" style={{ color: INK(0.55) }} />
-          </button>
-          <button onClick={() => onDelete(act.id)} className="p-2 rounded-full" aria-label="Eliminar">
-            <Trash2 className="w-3.5 h-3.5" style={{ color: INK(0.35) }} />
-          </button>
+        {/* Editar y eliminar separados (12 px) y con zona de toque de 44 px:
+            eliminar se puede deshacer, pero no debe tocarse por error. */}
+        <div className="flex items-center gap-3">
+          <IconButton icon={Pencil} label={`Editar ${info.label}`} onClick={() => onEdit(act)} />
+          <IconButton icon={Trash2} label={`Eliminar ${info.label}`} onClick={() => onDelete(act.id)}
+            style={{ background: 'transparent' }} />
         </div>
       </div>
 
@@ -97,25 +95,18 @@ export default function DayDetailSheet({
   if (!date) return null;
   const totalMin = activities.reduce((s, a) => s + (a.duration_minutes || 0), 0);
   const isFuture = date > new Date();
-  const title = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  const rawTitle = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
 
   return (
-    <Sheet onClose={onClose} maxHeight="88dvh" label="Detalle del día" header={<>
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[15px] capitalize" style={{ color: INK(0.95), letterSpacing: '0.03em' }}>{title}</p>
-              <p className="text-[11px] mt-0.5" style={{ fontFamily: MONO, color: INK(0.45) }}>
-                {activities.length
-                  ? `${activities.length} ${activities.length === 1 ? 'actividad' : 'actividades'} · ${fmt(totalMin)}`
-                  : plans.length ? `${plans.length} planificad${plans.length === 1 ? 'a' : 'as'}` : 'Sin actividad'}
-              </p>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: INK(0.07) }} aria-label="Cerrar">
-              <X className="w-4 h-4" style={{ color: INK(0.6) }} />
-            </button>
-          </div>
-      </>}>
+    <Sheet onClose={onClose} maxHeight="88dvh" label={title} header={
+          <SheetTitle
+            title={title}
+            subtitle={activities.length
+              ? `${activities.length} ${activities.length === 1 ? 'actividad' : 'actividades'} · ${fmt(totalMin)}`
+              : plans.length ? `${plans.length} planificad${plans.length === 1 ? 'a' : 'as'}` : 'Sin actividad'}
+            onClose={onClose} />
+      }>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 pb-4 space-y-3">
           {dietRow && <div className="pb-3" style={{ borderBottom: '1px solid rgba(var(--ink),0.12)' }}>{dietRow}</div>}
@@ -146,13 +137,13 @@ export default function DayDetailSheet({
                 <div className="flex gap-2 mt-3">
                   {!isFuture && (
                     <button onClick={() => onCompletePlan(p)}
-                      className="flex-1 py-2 rounded-full text-[12px] flex items-center justify-center gap-1.5"
-                      style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+                      className="o-press flex-1 py-2.5 rounded-full text-[12px] flex items-center justify-center gap-1.5"
+                      style={{ background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }}>
                       <Check className="w-3.5 h-3.5" /> Marcar como hecha
                     </button>
                   )}
                   <button onClick={() => onRemovePlan(p.id)}
-                    className={`${isFuture ? 'flex-1' : ''} px-4 py-2 rounded-full text-[12px]`}
+                    className={`o-press ${isFuture ? 'flex-1' : ''} px-4 py-2.5 rounded-full text-[12px]`}
                     style={{ background: INK(0.06), color: INK(0.55) }}>
                     Quitar
                   </button>
@@ -172,9 +163,8 @@ export default function DayDetailSheet({
                   {pr.old_value != null ? `${pr.old_value} → ` : ''}{pr.new_value} {pr.unit}
                 </p>
               </div>
-              <button onClick={() => onDeletePr(pr.id)} className="p-2" aria-label="Eliminar marca">
-                <Trash2 className="w-3.5 h-3.5" style={{ color: INK(0.35) }} />
-              </button>
+              <IconButton icon={Trash2} label="Eliminar marca" onClick={() => onDeletePr(pr.id)}
+                style={{ background: 'transparent' }} />
             </div>
           ))}
 
@@ -187,7 +177,7 @@ export default function DayDetailSheet({
 
         <div className="flex-shrink-0 px-5 pt-2 pb-4" style={{ borderTop: `1px solid ${INK(0.06)}` }}>
           <button onClick={() => onAdd(date)}
-            className="w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px] transition-transform duration-150 ease-out enabled:active:scale-[0.96]"
+            className="o-press w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-[14px]"
             style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
             <Plus className="w-4 h-4" /> {isFuture ? 'Planificar actividad' : 'Añadir actividad'}
           </button>

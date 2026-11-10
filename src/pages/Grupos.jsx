@@ -210,7 +210,7 @@ function RecordsCard({ records, onOpenMember }) {
 export default function Grupos() {
  const { chart: CH } = useTheme();
  const { user } = useAuth();
- const { allActivities } = useActivities(new Date());
+ const { allActivities, loading: dataLoading } = useActivities(new Date());
  const { members } = useTeamMembers();
  const { plans: weeklyPlans } = useWeeklyPlans();
  const teamGoals = useTeamGoals();
@@ -344,6 +344,10 @@ export default function Grupos() {
  typeLabels,
  }), [allActivities, emails, members, teamPrAchievements]);
 
+ // Carga en frío: hueco neutro en vez del destello de «Sin actividad de equipo»
+ if (emails.length === 0 && dataLoading) {
+ return <div aria-busy="true" className="px-4 py-5 max-w-lg mx-auto"><div className="o-skeleton" style={{ height: 220, borderRadius: 24 }} /></div>;
+ }
  if (emails.length === 0) {
  return (
  <div className="px-4 py-5 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[50vh]">

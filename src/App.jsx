@@ -8,6 +8,7 @@ import { DataProvider } from '@/lib/DataContext';
 import { DietProvider } from '@/hooks/useDiet';
 import AppLayout from '@/components/AppLayout';
 import LoadingScreen from '@/components/LoadingScreen';
+import { ToastProvider } from '@/components/ui';
 
 // Landing importada de forma directa (no lazy): debe pintarse al instante,
 // sin splash ni espera de chunk.
@@ -129,9 +130,11 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <ThemeProvider>
         <AuthProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
+          <ToastProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
     </MotionConfig>

@@ -128,6 +128,25 @@ export function DataProvider({ children }) {
     return () => clearInterval(id);
   }, [user, fetchMonthActivities, fetchAllActivities, fetchTeamMembers, fetchWeeklyPlans]);
 
+  // Al volver a la app tras un rato en segundo plano (PWA reanudada), se
+  // refrescan los datos: lo que han hecho los demás aparece sin recargar.
+  useEffect(() => {
+    if (!user) return;
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 60 * 1000) {
+        fetchMonthActivities(true);
+        fetchAllActivities(true);
+        fetchTeamMembers(true);
+        fetchWeeklyPlans(true);
+      }
+      hiddenAt = 0;
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [user, fetchMonthActivities, fetchAllActivities, fetchTeamMembers, fetchWeeklyPlans]);
+
   // ─── MUTATIONS ───
   const createActivity = useCallback(async (activityData) => {
     // Si WHOOP ya importó esta sesión (mismo día, duración ±15 min), lo que
@@ -193,6 +212,90 @@ export function DataProvider({ children }) {
     return data;
   }, [user, mKey]);
 
+  // Quita una actividad de las cachés y del estado (todas las cachés de mes).
+  const dropActivityLocal = useCallback((id) => {
+    for (const k of Object.keys(monthCache.current)) {
+      monthCache.current[k] = (monthCache.current[k] || []).filter(a => a.id !== id);
+    }
+    setActivities(prev => prev.filter(a => a.id !== id));
+    if (allActsCache.current) allActsCache.current = allActsCache.current.filter(a => a.id !== id);
+    setAllActivities(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  // Borrado en servidor. Si venía de WHOOP, se recuerda para que la próxima
+  // sincronización no la vuelva a crear.
+  const commitDeleteActivity = useCallback(async (target) => {
+    if (target?.whoop_id) {
+      await supabase.from('whoop_dismissed')
+        .insert({ whoop_id: target.whoop_id, user_email: user.email });
+    }
+    const { error } = await supabase.from('activities').delete().eq('id', target.id);
+    if (error) throw error;
+  }, [user]);
+
+  // Borrado con deshacer («deshacer en lugar de preguntar»): la actividad
+  // desaparece al instante, pero el borrado real espera unos segundos. Devuelve
+  // una función que lo cancela y la devuelve a su sitio. Si el borrado falla,
+  // la actividad vuelve y se avisa con onError. Lo pendiente se confirma si la
+  // app pasa a segundo plano, para no dejar borrados a medias.
+  const pendingDeletes = useRef(new Map());
+  const UNDO_MS = 6000;
+  const deleteActivityWithUndo = useCallback((id, { onError } = {}) => {
+    const target = [...Object.values(monthCache.current).flat(), ...(allActsCache.current || [])].find(a => a?.id === id);
+    if (!target) return null;
+    const inMonths = Object.keys(monthCache.current).filter(k => (monthCache.current[k] || []).some(a => a.id === id));
+    const shownMonth = (monthCache.current[mKey] || []).some(a => a.id === id);
+    const byDate = (a, b) => String(b.date).localeCompare(String(a.date));
+    const restore = () => {
+      for (const k of inMonths) {
+        if (!(monthCache.current[k] || []).some(a => a.id === id)) {
+          monthCache.current[k] = [...(monthCache.current[k] || []), target].sort(byDate);
+        }
+      }
+      if (shownMonth) setActivities(prev => (prev.some(a => a.id === id) ? prev : [...prev, target].sort(byDate)));
+      if (allActsCache.current && !allActsCache.current.some(a => a.id === id)) {
+        allActsCache.current = [...allActsCache.current, target].sort(byDate);
+      }
+      setAllActivities(prev => (prev.some(a => a.id === id) ? prev : [...prev, target].sort(byDate)));
+    };
+    dropActivityLocal(id);
+    const commit = async () => {
+      const entry = pendingDeletes.current.get(id);
+      if (!entry) return;
+      clearTimeout(entry.timer);
+      pendingDeletes.current.delete(id);
+      try {
+        await commitDeleteActivity(target);
+        dropActivityLocal(id); // por si un refresco la trajo de vuelta mientras tanto
+      } catch (err) {
+        console.error('deleteActivity error:', err);
+        restore();
+        onError?.(err);
+      }
+    };
+    pendingDeletes.current.set(id, { timer: setTimeout(commit, UNDO_MS), commit });
+    return () => {
+      const entry = pendingDeletes.current.get(id);
+      if (!entry) return;
+      clearTimeout(entry.timer);
+      pendingDeletes.current.delete(id);
+      restore();
+    };
+  }, [dropActivityLocal, commitDeleteActivity, mKey]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (document.visibilityState !== 'hidden') return;
+      for (const { commit } of [...pendingDeletes.current.values()]) commit();
+    };
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, []);
+
   const deleteActivity = useCallback(async (id) => {
     // Si venía de WHOOP, se recuerda para que la próxima sincronización no la
     // vuelva a crear.
@@ -241,7 +344,7 @@ export function DataProvider({ children }) {
     }
     if (error) {
       console.error('updateActivity error:', error);
-      return null;
+      throw error;
     }
     if (data) {
       // Actualiza la fila en ambos cachés
@@ -316,7 +419,7 @@ export function DataProvider({ children }) {
 
     if (error) {
       console.error('addPlan error:', error);
-      return null;
+      throw error;
     }
 
     if (data) {
@@ -333,6 +436,34 @@ export function DataProvider({ children }) {
     }
     setWeeklyPlans(prev => prev.filter(p => p.id !== id));
     return true;
+  }, []);
+
+  // Quitar un plan con deshacer: misma mecánica que las actividades.
+  const plansRef = useRef(weeklyPlans);
+  plansRef.current = weeklyPlans;
+  const removePlanWithUndo = useCallback((id, { onError } = {}) => {
+    const plan = plansRef.current.find(p => p.id === id);
+    if (!plan) return null;
+    setWeeklyPlans(prev => prev.filter(p => p.id !== id));
+    const key = 'plan:' + id;
+    const restore = () => setWeeklyPlans(prev =>
+      (prev.some(p => p.id === id) ? prev : [...prev, plan].sort((a, b) => a.date.localeCompare(b.date))));
+    const commit = async () => {
+      const entry = pendingDeletes.current.get(key);
+      if (!entry) return;
+      clearTimeout(entry.timer);
+      pendingDeletes.current.delete(key);
+      const { error } = await supabase.from('weekly_plans').delete().eq('id', id);
+      if (error) { console.error('removePlan error:', error); restore(); onError?.(error); }
+    };
+    pendingDeletes.current.set(key, { timer: setTimeout(commit, UNDO_MS), commit });
+    return () => {
+      const entry = pendingDeletes.current.get(key);
+      if (!entry) return;
+      clearTimeout(entry.timer);
+      pendingDeletes.current.delete(key);
+      restore();
+    };
   }, []);
 
   // Derivados
@@ -357,10 +488,12 @@ export function DataProvider({ children }) {
     loading,
     createActivity,
     deleteActivity,
+    deleteActivityWithUndo,
     updateActivity,
     upsertProfile,
     addPlan,
     removePlan,
+    removePlanWithUndo,
     refresh: () => {
       fetchMonthActivities(true);
       fetchAllActivities(true);
