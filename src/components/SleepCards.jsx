@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter, ZAxis, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ScatterChart, Scatter, ZAxis, LineChart, Line, ReferenceArea } from 'recharts';
 
 // Sueño × actividad (privado: solo tus datos de WHOOP).
 // Reglas de dataviz: nunca doble eje. Por eso la semana va en DOS paneles
@@ -239,13 +239,23 @@ export function HeartCard({ weeks, CH, glassCard }) {
       <TipVal>{d.rhr != null ? `${Math.round(d.rhr)} lpm en reposo` : 'sin datos'}</TipVal>
       <TipVal>{d.hrv != null ? `${Math.round(d.hrv)} ms de HRV` : ''}</TipVal></>)} />
   );
+  // Franja de tu rango normal: media ± 1 desviación de tus semanas.
+  const normalBand = key => {
+    const v = data.map(d => d[key]).filter(x => x != null);
+    if (v.length < 4) return null;
+    const m = avg(v);
+    const sd = Math.sqrt(avg(v.map(x => (x - m) ** 2)));
+    return [m - sd, m + sd];
+  };
   const panel = (key, color, unit, showMonths) => {
     const { domain, ticks } = niceTicks(key);
+    const bandRange = normalBand(key);
     return (
       <div className={showMonths ? 'h-[118px] -ml-2' : 'h-[100px] -ml-2'} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} syncId="heart" margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={CH.grid} vertical={false} />
+            {bandRange && <ReferenceArea y1={bandRange[0]} y2={bandRange[1]} fill={INK(0.07)} stroke="none" ifOverflow="hidden" />}
             <XAxis dataKey="label" hide={!showMonths} interval={0} tick={axisTick} axisLine={{ stroke: CH.axis }} tickLine={false}
               tickFormatter={v => data.find(d => d.label === v)?.monthLabel || ''} />
             <YAxis domain={domain} ticks={ticks} tick={axisTick} axisLine={false} tickLine={false} width={34}
